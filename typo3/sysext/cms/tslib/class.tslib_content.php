@@ -5328,6 +5328,8 @@ class tslib_cObj {
 	 * Generally the concept "typolink" should be used in your own applications as an API for making links to pages with parameters and more. The reason for this is that you will then automatically make links compatible with all the centralized functions for URL simulation and manipulation of parameters into hashes and more.
 	 * For many more details on the parameters and how they are intepreted, please see the link to TSref below.
 	 *
+	 * the FAL API is handled with the namespace/prefix "file:..."
+	 *
 	 * @param	string		The string (text) to link
 	 * @param	array		TypoScript configuration (see link below)
 	 * @return	string		A link-wrapped string.
@@ -5362,6 +5364,18 @@ class tslib_cObj {
 					return $linkHandlerObj->main($linktxt, $conf, $linkHandlerKeyword, $linkHandlerValue, $link_param, $this);
 				}
 			}
+
+				// resolve FAL-api "file:UID-of-sys_file-record" and "file:combined-identifier"
+			if ($linkHandlerKeyword === 'file') {
+				$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+				if (t3lib_utility_Math::canBeInterpretedAsInteger($linkHandlerValue)) {
+					$fileObject = $fileFactory->getFileObject($linkHandlerValue);
+				} else {
+					$fileObject = $fileFactory->getObjectFromCombinedIdentifier($linkHandlerValue);
+				}
+				$link_paramA[0] = $fileObject->getPublicUrl();
+			}
+
 
 			$link_param = trim($link_paramA[0]); // Link parameter value
 			$linkClass = trim($link_paramA[2]); // Link class
