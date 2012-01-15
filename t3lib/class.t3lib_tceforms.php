@@ -621,8 +621,15 @@ class t3lib_TCEforms {
 
 				$collapsed = $this->isPalettesCollapsed($table, $palette);
 
+
+				// check if the palette is a hidden palette
+				$isHiddenPalette = false;
+				if(is_array($GLOBALS['TCA'][$table]['palettes'][$palette]) && $GLOBALS['TCA'][$table]['palettes'][$palette]['isHiddenPalette']) {
+					$isHiddenPalette = true;
+				}
+
 				$thePalIcon = '';
-				if ($collapsed && $collapsedHeader !== NULL) {
+				if ($collapsed && $collapsedHeader !== NULL && !$isHiddenPalette) {
 					list($thePalIcon,) = $this->wrapOpenPalette(
 						t3lib_iconWorks::getSpriteIcon(
 							'actions-system-options-view',
@@ -796,7 +803,7 @@ class t3lib_TCEforms {
 					$PA['label'] = $label = t3lib_BEfunc::wrapInHelp($table, $field, $label);
 
 						// Create output value:
-					if ($PA['fieldConf']['config']['form_type'] == 'user' && $PA['fieldConf']['config']['noTableWrapping']) {
+					if (($PA['fieldConf']['config']['form_type'] == 'user' && $PA['fieldConf']['config']['noTableWrapping'])) {
 						$out = $item;
 					} elseif ($PA['palette']) {
 							// Array:
@@ -1051,10 +1058,18 @@ class t3lib_TCEforms {
 		$mLgd = ($config['max'] ? $config['max'] : 256);
 		$iOnChange = implode('', $PA['fieldChangeFunc']);
 
-		$item .= '<input type="text" id="' . $inputId .
-				 '" class="' . implode(' ', $cssClasses) . '" name="' . $PA['itemFormElName'] .
-				 '_hr" value="" style="' . $cssStyle . '" maxlength="' . $mLgd . '" onchange="' .
-				 htmlspecialchars($iOnChange) . '"' . $PA['onFocus'] . ' />'; // This is the EDITABLE form field.
+		$cssClasses[] = 'hasDefaultValue';
+		$item .= '<input type="text" ' .
+				 $this->getPlaceholderAttribute($config['placeholder'], $row) .
+				 'id="' . $inputId . '" ' .
+				 'class="' . implode(' ', $cssClasses) . '" ' .
+				 'name="' . $PA['itemFormElName'] . '_hr" ' .
+				 'value=""' .
+				 'style="' . $cssStyle . '" ' .
+				 'maxlength="' . $mLgd . '" ' .
+				 'onchange="' . htmlspecialchars($iOnChange) . '"' .
+				 $PA['onFocus'] .
+				 ' />'; // This is the EDITABLE form field.
 		$item .= '<input type="hidden" name="' . $PA['itemFormElName'] . '" value="' .
 				 htmlspecialchars($PA['itemFormElValue']) . '" />'; // This is the ACTUAL form field - values from the EDITABLE field must be transferred to this field which is the one that is written to the database.
 		$item .= $fieldAppendix . '</span><div style="clear:both;"></div>';
@@ -1233,7 +1248,16 @@ class t3lib_TCEforms {
 
 				$iOnChange = implode('', $PA['fieldChangeFunc']);
 				$item .= '
-							<textarea id="' . uniqid('tceforms-textarea-') . '" name="' . $PA['itemFormElName'] . '"' . $formWidthText . $class . ' rows="' . $rows . '" wrap="' . $wrap . '" onchange="' . htmlspecialchars($iOnChange) . '"' . $PA['onFocus'] . '>' .
+							<textarea ' .
+						 'id="' . uniqid('tceforms-textarea-') . '" ' .
+						 'name="' . $PA['itemFormElName'] . '"' .
+						 $formWidthText .
+						 $class . ' ' .
+						 'rows="' . $rows . '" ' .
+						 'wrap="' . $wrap . '" ' .
+						 'onchange="' . htmlspecialchars($iOnChange) . '"' .
+						$this->getPlaceholderAttribute($config['placeholder'], $row) .
+						 $PA['onFocus'] . '>' .
 						 t3lib_div::formatForTextarea($PA['itemFormElValue']) .
 						 '</textarea>';
 				$item = $this->renderWizards(array($item, $altItem), $config['wizards'], $table, $row, $field, $PA, $PA['itemFormElName'], $specConf, $RTEwouldHaveBeenLoaded);
@@ -3051,12 +3075,36 @@ class t3lib_TCEforms {
 	function getRTypeNum($table, $row) {
 			// If there is a "type" field configured...
 		if ($GLOBALS['TCA'][$table]['ctrl']['type']) {
-			$typeFieldName = $GLOBALS['TCA'][$table]['ctrl']['type'];
-			$typeFieldConfig = $GLOBALS['TCA'][$table]['columns'][$typeFieldName];
-			$typeNum = $this->getLanguageOverlayRawValue($table, $row, $typeFieldName, $typeFieldConfig);
-			if (!strcmp($typeNum, '')) {
-				$typeNum = 0;
-			} // If that value is an empty string, set it to "0" (zero)
+			if(strstr($GLOBALS['TCA'][$table]['ctrl']['type'], ':') !== FALSE) {
+				list($foreignPointerField, $foreignTableTypeField) = explode(':', $GLOBALS['TCA'][$table]['ctrl']['type']);
+
+				$values = $this->extractValuesOnlyFromValueLabelList($row[$foreignPointerField]);
+
+				list(,$foreignUid) = t3lib_div::revExplode('_', $values[0], 2);
+
+				$fieldConfig = $GLOBALS['TCA'][$table]['columns'][$foreignPointerField]['config'];
+				$relationType = $fieldConfig['type'];
+				if($relationType === 'group') {
+					$foreignTable = $fieldConfig['allowed'];
+				} elseif($relationType === 'select') {
+					$foreignTable = $fieldConfig['foreign_table'];
+				} else{
+					throw new RuntimeException('TCA Foreign field pointer fields are only allowed to be used with group or select field types.', 1325861239);
+				}
+
+				$foreignRow = t3lib_BEfunc::getRecord($foreignTable, $foreignUid, $foreignTableTypeField);
+
+				if($foreignRow[$foreignTableTypeField]) {
+					$typeNum = $foreignRow[$foreignTableTypeField];
+				}
+			} else {
+				$typeFieldName = $GLOBALS['TCA'][$table]['ctrl']['type'];
+				$typeFieldConfig = $GLOBALS['TCA'][$table]['columns'][$typeFieldName];
+				$typeNum = $this->getLanguageOverlayRawValue($table, $row, $typeFieldName, $typeFieldConfig);
+				if (!strcmp($typeNum, '')) {
+					$typeNum = 0;
+				} // If that value is an empty string, set it to "0" (zero)
+			}
 		} else {
 			$typeNum = 0; // If no "type" field, then set to "0" (zero)
 		}
@@ -3700,7 +3748,8 @@ class t3lib_TCEforms {
 					'onFocus' => $onFocus,
 					'table' => $table,
 					'field' => $field,
-					'uid' => $uid
+					'uid' => $uid,
+					'config' => $GLOBALS['TCA'][$table]['columns'][$field],
 				);
 				$hookObject->dbFileIcons_postProcess($params, $selector, $thumbnails, $icons, $rightbox, $fName, $uidList, $additionalParams, $this);
 			}
@@ -5313,6 +5362,7 @@ class t3lib_TCEforms {
 
 			$this->loadJavascriptLib('../t3lib/jsfunc.evalfield.js');
 			$this->loadJavascriptLib('jsfunc.tbe_editor.js');
+			$this->loadJavascriptLib('jsfunc.placeholder.js');
 
 				// needed for tceform manipulation (date picker)
 			$typo3Settings = array(
@@ -5931,11 +5981,14 @@ class t3lib_TCEforms {
 	 * @return	boolean
 	 */
 	function isPalettesCollapsed($table, $palette) {
+		if (is_array($GLOBALS['TCA'][$table]['palettes'][$palette]) && $GLOBALS['TCA'][$table]['palettes'][$palette]['isHiddenPalette']) {
+			return true;
+		}
 		if ($GLOBALS['TCA'][$table]['ctrl']['canNotCollapse']) {
-			return 0;
+			return false;
 		}
 		if (is_array($GLOBALS['TCA'][$table]['palettes'][$palette]) && $GLOBALS['TCA'][$table]['palettes'][$palette]['canNotCollapse']) {
-			return 0;
+			return false;
 		}
 		return $this->palettesCollapsed;
 	}
@@ -6382,6 +6435,30 @@ class t3lib_TCEforms {
 				'level' => $dynNestedStack,
 			);
 		}
+	}
+
+	/**
+	 * @param string $placeholderKey
+	 * @param array $row
+	 * @return string
+	 */
+	protected function getPlaceholderAttribute($placeholderKey, $row) {
+		$placeholder = NULL;
+		// TODO overwrite configuration by TSConfig
+		if ($placeholderKey) {
+			if (substr($placeholderKey, 0, 6) === '__row|') {
+				$placeholderKey = substr($placeholderKey, 6);
+				if (substr($placeholderKey, 0, 10) === '__foreign|' && isset($row['__foreign'])) {
+					$placeholderKey = substr($placeholderKey, 10);
+					$placeholder =  $row['__foreign'][$placeholderKey];
+				} else if (isset($row[$placeholderKey])) {
+					$placeholder = $row[$placeholderKey];
+				}
+			} else {
+				$placeholder = $placeholderKey;
+			}
+		}
+		return $placeholder === NULL ? '' : (' placeholder="' . $placeholder . '" ');
 	}
 
 	/**

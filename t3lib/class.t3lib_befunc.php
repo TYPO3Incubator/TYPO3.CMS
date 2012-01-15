@@ -1493,6 +1493,26 @@ final class t3lib_BEfunc {
 		return $out;
 	}
 
+
+	/**
+	 * Get a URL for thumbanil
+	 * Note: this is not a public API yet, it might be moved to a separate class handling thumbnail generation for both BE and FE.
+	 *
+	 * @param t3lib_File_File $file
+	 * @param int $width
+	 * @param int $height
+	 * @return string
+	 */
+	public static function getThumbnailUrlForFile(t3lib_File_File $file, $width = 64, $height = 64) {
+		$thumbScript = 'thumbs.php';
+		$check = md5($file->getCombinedIdentifier() . '|' . $file->getMimeType() . '|' . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']);;
+		$params = '&file=' . rawurlencode($file->getCombinedIdentifier());
+		$params.= '&md5sum=' . $check;
+		$params.= '&size=' . $width . 'x' . $height;
+		return $thumbScript . '?&dummy=' . $GLOBALS['EXEC_TIME'] . $params;
+	}
+
+
 	/**
 	 * Returns a linked image-tag for thumbnail(s)/fileicons/truetype-font-previews from a database row with a list of image files in a field
 	 * All $GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'] extension are made to thumbnails + ttf file (renders font-example)
@@ -1509,7 +1529,7 @@ final class t3lib_BEfunc {
 	 * @param	integer		Optional: $size is [w]x[h] of the thumbnail. 56 is default.
 	 * @return	string		Thumbnail image tag.
 	 */
-	public static function thumbCode($row, $table, $field, $backPath, $thumbScript = '', $uploaddir = NULL, $abs = 0, $tparams = '', $size = '') {
+	public static function thumbCode($row, $table, $field, $backPath, $thumbScript = '', $uploaddir = NULL, $abs = 0, $tparams = '', $size = '', $linkInfoPopup = TRUE) {
 			// Load table.
 		t3lib_div::loadTCA($table);
 
@@ -1550,8 +1570,13 @@ final class t3lib_BEfunc {
 					// use the original image if it's size fits to the thumbnail size
 				if ($max && $max <= (count($sizeParts) && max($sizeParts) ? max($sizeParts) : 56)) {
 					$theFile = $url = ($abs ? '' : '../') . ($uploaddir ? $uploaddir . '/' : '') . trim($theFile);
-					$onClick = 'top.launchView(\'' . $theFile . '\',\'\',\'' . $backPath . '\');return false;';
-					$thumbData .= '<a href="#" onclick="' . htmlspecialchars($onClick) . '"><img src="' . $backPath . $url . '" ' . $imgInfo[3] . ' hspace="2" border="0" title="' . trim($url) . '"' . $tparams . ' alt="" /></a> ';
+					$image = '<img src="' . $backPath . $url . '" ' . $imgInfo[3] . ' hspace="2" border="0" title="' . trim($url) . '"' . $tparams . ' alt="" />';
+					if ($linkInfoPopup) {
+						$onClick = 'top.launchView(\'' . $theFile . '\',\'\',\'' . $backPath . '\');return false;';
+						$thumbData .= '<a href="#" onclick="' . htmlspecialchars($onClick) . '">' . $image . '</a> ';
+					} else {
+						$thumbData .= $image;
+					}
 					// New 190201 stop
 				} elseif ($ext == 'ttf' || t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'], $ext)) {
 					$theFile_abs = PATH_site . ($uploaddir ? $uploaddir . '/' : '') . trim($theFile);
@@ -1574,8 +1599,13 @@ final class t3lib_BEfunc {
 					$params .= '&md5sum=' . t3lib_div::shortMD5($check);
 
 					$url = $thumbScript . '?&dummy=' . $GLOBALS['EXEC_TIME'] . $params;
-					$onClick = 'top.launchView(\'' . $theFile . '\',\'\',\'' . $backPath . '\');return false;';
-					$thumbData .= '<a href="#" onclick="' . htmlspecialchars($onClick) . '"><img src="' . htmlspecialchars($backPath . $url) . '" hspace="2" border="0" title="' . trim($theFile) . '"' . $tparams . ' alt="" /></a> ';
+					$image = '<img src="' . htmlspecialchars($backPath . $url) . '" hspace="2" border="0" title="' . trim($theFile) . '"' . $tparams . ' alt="" />';
+					if ($linkInfoPopup) {
+						$onClick = 'top.launchView(\'' . $theFile . '\',\'\',\'' . $backPath . '\');return false;';
+						$thumbData .= '<a href="#" onclick="' . htmlspecialchars($onClick) . '">' . $image . '</a> ';
+					} else {
+						$thumbData .= $image;
+					}
 				} else {
 						// Icon
 					$theFile_abs = PATH_site . ($uploaddir ? $uploaddir . '/' : '') . trim($theFile);
@@ -1592,8 +1622,12 @@ final class t3lib_BEfunc {
 					$params .= '&md5sum=' . t3lib_div::shortMD5($check);
 
 					$url = $thumbScript . '?&dummy=' . $GLOBALS['EXEC_TIME'] . $params;
-					$onClick = 'top.launchView(\'' . $theFile . '\',\'\',\'' . $backPath . '\');return false;';
-					$thumbData .= '<a href="#" onclick="' . htmlspecialchars($onClick) . '">' . $fileIcon . '</a> ';
+					if ($linkInfoPopup) {
+						$onClick = 'top.launchView(\'' . $theFile . '\',\'\',\'' . $backPath . '\');return false;';
+						$thumbData .= '<a href="#" onclick="' . htmlspecialchars($onClick) . '">' . $fileIcon . '</a> ';
+					} else {
+						$thumbData .= $fileIcon;
+					}
 				}
 			}
 		}

@@ -46,14 +46,22 @@
 class t3lib_folderTree extends t3lib_treeView {
 
 	/**
+	 * @var t3lib_file_storage
+	 * the users' file Storages
+	 */
+	protected $storages = NULL;
+
+	protected $ajaxStatus = FALSE; // Indicates, whether the ajax call was successful, i.e. the requested page has been found
+
+	/**
 	 * Constructor function of the class
 	 *
 	 * @return	void
 	 */
-	function __construct() {
+	public function __construct() {
 		parent::init();
 
-		$this->MOUNTS = $GLOBALS['FILEMOUNTS'];
+		$this->storages = $GLOBALS['BE_USER']->getFileStorages();
 
 		$this->treeName = 'folder';
 		$this->titleAttrib = ''; //don't apply any title
@@ -74,6 +82,49 @@ class t3lib_folderTree extends t3lib_treeView {
 	}
 
 	/**
+	 * Generate the plus/minus icon for the browsable tree.
+	 *
+	 * @param	array		record for the entry
+	 * @param	integer		The current entry number
+	 * @param	integer		The total number of entries. If equal to $a, a "bottom" element is returned.
+	 * @param	integer		The number of sub-elements to the current element.
+	 * @param	boolean		The element was expanded to render subelements if this flag is set.
+	 * @return	string		Image tag with the plus/minus icon.
+	 * @access private
+	 * @see t3lib_pageTree::PMicon()
+	 */
+	public function PMicon($folderObject, $subFolderCounter, $totalSubFolders, $nextCount, $isExpanded) {
+		$PM   = $nextCount ? ($isExpanded ? 'minus' : 'plus') : 'join';
+		$BTM  = ($subFolderCounter == $totalSubFolders) ? 'bottom' : '';
+		$icon = '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/' . $PM . $BTM . '.gif','width="18" height="16"') . ' alt="" />';
+
+		if ($nextCount) {
+			$cmd = $this->generateExpandCollapseParameter($this->bank, !$isExpanded, $folderObject);
+			$icon = $this->PMiconATagWrap($icon, $cmd, !$isExpanded);
+		}
+		return $icon;
+	}
+
+
+	/**
+	 * Wrap the plus/minus icon in a link
+	 *
+	 * @param	string		HTML string to wrap, probably an image tag.
+	 * @param	string		Command for 'PM' get var
+	 * @return	string		Link-wrapped input string
+	 * @access private
+	 */
+	public function PMiconATagWrap($icon, $cmd, $isExpand = TRUE) {
+		if ($this->thisScript) {
+				// activate dynamic ajax-based tree
+			$js = htmlspecialchars('Tree.load(\'' . $cmd . '\', ' . intval($isExpand) . ', this);');
+			return '<a class="pm" onclick="' . $js . '">' . $icon . '</a>';
+		} else {
+			return $icon;
+		}
+	}
+
+	/**
 	 * Wrapping the folder icon
 	 *
 	 * @param	string		The image tag for the icon
@@ -81,15 +132,15 @@ class t3lib_folderTree extends t3lib_treeView {
 	 * @return	string		The processed icon input value.
 	 * @access private
 	 */
-	function wrapIcon($icon, $row) {
+	function wrapIcon($icon, $folderObject) {
 			// Add title attribute to input icon tag
-		$theFolderIcon = $this->addTagAttributes($icon, ($this->titleAttrib ? $this->titleAttrib . '="' . $this->getTitleAttrib($row) . '"' : ''));
+		$theFolderIcon = $this->addTagAttributes($icon, ($this->titleAttrib ? $this->titleAttrib . '="' . $this->getTitleAttrib($folderObject) . '"' : ''));
 
 			// Wrap icon in click-menu link.
 		if (!$this->ext_IconMode) {
-			$theFolderIcon = $GLOBALS['TBE_TEMPLATE']->wrapClickMenuOnIcon($theFolderIcon, $row['path'], '', 0);
+			$theFolderIcon = $GLOBALS['TBE_TEMPLATE']->wrapClickMenuOnIcon($theFolderIcon, $folderObject->getCombinedIdentifier(), '', 0);
 		} elseif (!strcmp($this->ext_IconMode, 'titlelink')) {
-			$aOnClick = 'return jumpTo(\'' . $this->getJumpToParam($row) . '\',this,\'' . $this->domIdPrefix . $this->getId($row) . '\',' . $this->bank . ');';
+			$aOnClick = 'return jumpTo(\'' . $this->getJumpToParam($folderObject) . '\',this,\'' . $this->domIdPrefix . $this->getId($folderObject) . '\',' . $this->bank . ');';
 			$theFolderIcon = '<a href="#" onclick="' . htmlspecialchars($aOnClick) . '">' . $theFolderIcon . '</a>';
 		}
 		return $theFolderIcon;
@@ -99,35 +150,35 @@ class t3lib_folderTree extends t3lib_treeView {
 	 * Wrapping $title in a-tags.
 	 *
 	 * @param	string		Title string
-	 * @param	string		Item record
+	 * @param	t3lib_file_Folder	$folderObject the folder record
 	 * @param	integer		Bank pointer (which mount point number)
 	 * @return	string
 	 * @access private
 	 */
-	function wrapTitle($title, $row, $bank = 0) {
-		$aOnClick = 'return jumpTo(\'' . $this->getJumpToParam($row) . '\',this,\'' . $this->domIdPrefix . $this->getId($row) . '\',' . $bank . ');';
-		$CSM = ' oncontextmenu="' . htmlspecialchars($GLOBALS['TBE_TEMPLATE']->wrapClickMenuOnIcon('', $row['path'], '', 0, '', '', TRUE)) . '"';
-		return '<a href="#" title="' . htmlspecialchars($row['title']) . '" onclick="' . htmlspecialchars($aOnClick) . '"' . $CSM . '>' . $title . '</a>';
+	function wrapTitle($title, $folderObject, $bank = 0) {
+		$aOnClick = 'return jumpTo(\'' . $this->getJumpToParam($folderObject) . '\', this, \'' . $this->domIdPrefix . $this->getId($folderObject) . '\', ' . $bank . ');';
+		$CSM = ' oncontextmenu="'.htmlspecialchars($GLOBALS['TBE_TEMPLATE']->wrapClickMenuOnIcon('', $folderObject->getCombinedIdentifier(), '', 0, '&bank=' . $this->bank, '', TRUE)) . '"';
+		return '<a href="#" title="' . htmlspecialchars($title) . '" onclick="' . htmlspecialchars($aOnClick) . '"' . $CSM . '>' . $title . '</a>';
 	}
 
 	/**
 	 * Returns the id from the record - for folders, this is an md5 hash.
 	 *
-	 * @param	array		Record array
+	 * @param	t3lib_file_Folder		The folder object
 	 * @return	integer		The "uid" field value.
 	 */
-	function getId($v) {
-		return t3lib_div::md5Int($v['path']);
+	public function getId($folderObject) {
+		return t3lib_div::md5Int($folderObject->getCombinedIdentifier());
 	}
 
 	/**
 	 * Returns jump-url parameter value.
 	 *
-	 * @param	array		The record array.
-	 * @return	string		The jump-url parameter.
+	 * @param	t3lib_file_Folder	The folder object
+	 * @return	string	The jump-url parameter.
 	 */
-	function getJumpToParam($v) {
-		return rawurlencode($v['path']);
+	public function getJumpToParam($folderObject) {
+		return rawurlencode($folderObject->getCombinedIdentifier());
 	}
 
 	/**
@@ -138,7 +189,7 @@ class t3lib_folderTree extends t3lib_treeView {
 	 * @param	integer		Title length (30)
 	 * @return	string		The title.
 	 */
-	function getTitleStr($row, $titleLen = 30) {
+	public function getTitleStr($row, $titleLen = 30) {
 		return $row['_title'] ? $row['_title'] : parent::getTitleStr($row, $titleLen);
 	}
 
@@ -148,149 +199,344 @@ class t3lib_folderTree extends t3lib_treeView {
 	 *
 	 * @return	string		HTML code for the browsable tree
 	 */
-	function getBrowsableTree() {
+	public function getBrowsableTree() {
 
 			// Get stored tree structure AND updating it if needed according to incoming PM GET var.
 		$this->initializePositionSaving();
 
 			// Init done:
-		$titleLen = intval($this->BE_USER->uc['titleLen']);
-		$treeArr = array();
+		$treeItems = array();
 
 			// Traverse mounts:
-		foreach ($this->MOUNTS as $key => $val) {
-			$md5_uid = md5($val['path']);
-			$specUID = hexdec(substr($md5_uid, 0, 6));
-			$this->specUIDmap[$specUID] = $val['path'];
-
-				// Set first:
-			$this->bank = $val['nkey'];
-			$isOpen = $this->stored[$val['nkey']][$specUID] || $this->expandFirst;
-			$this->reset();
-
-				// Set PM icon:
-			$cmd = $this->bank . '_' . ($isOpen ? '0_' : '1_') . $specUID . '_' . $this->treeName;
-			$icon = '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/' . ($isOpen ? 'minus' : 'plus') . 'only.gif', 'width="18" height="16"') . ' alt="" />';
-			$firstHtml = $this->PM_ATagWrap($icon, $cmd);
-
-			switch ($val['type']) {
-				case 'user':
-					$icon = 'gfx/i/_icon_ftp_user.gif';
-				break;
-				case 'group':
-					$icon = 'gfx/i/_icon_ftp_group.gif';
-				break;
-				case 'readonly':
-					$icon = 'gfx/i/_icon_ftp_readonly.gif';
-				break;
-				default:
-					$icon = 'gfx/i/_icon_ftp.gif';
-				break;
-			}
-
-				// Preparing rootRec for the mount
-			$firstHtml .= $this->wrapIcon('<img' . t3lib_iconWorks::skinImg($this->backPath, $icon, 'width="18" height="16"') . ' alt="" />', $val);
-			$row = array();
-			$row['path'] = $val['path'];
-			$row['uid'] = $specUID;
-			$row['title'] = $val['name'];
-
-				// Add the root of the mount to ->tree
-			$this->tree[] = array('HTML' => $firstHtml, 'row' => $row, 'bank' => $this->bank);
-
-				// If the mount is expanded, go down:
-			if ($isOpen) {
-					// Set depth:
-				$depthD = '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/blank.gif', 'width="18" height="16"') . ' alt="" />';
-				$this->getFolderTree($val['path'], 999, $depthD, $val['type']);
-			}
+		foreach ($this->storages as $storageObject) {
+			$this->getBrowseableTreeForStorage($storageObject);
 
 				// Add tree:
-			$treeArr = array_merge($treeArr, $this->tree);
+			$treeItems = array_merge($treeItems, $this->tree);
+
+
+				// if this is an AJAX call, don't run through all mounts, only
+				// show the expansion of the current one, not the rest of the mounts
+			if (TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_AJAX) {
+				// @todo: currently the AJAX script runs through all storages thus, if something is expanded on storage #2, it does not work, the break stops this, the goal should be that only the $this->storages iterates over the selected storage/bank
+				// break;
+			}
 		}
-		return $this->printTree($treeArr);
+
+		return $this->printTree($treeItems);
 	}
+
+
+	/**
+	 * internal function to get a tree for one storage
+	 * separated so it's easier to use this functionality in subclasses
+	 *
+	 * @param $storageObject
+	 *
+	 */
+	public function getBrowseableTreeForStorage($storageObject) {
+		$rootLevelFolder = $storageObject->getRootLevelFolder();
+		$folderHashSpecUID = t3lib_div::md5int($rootLevelFolder->getCombinedIdentifier());
+		$this->specUIDmap[$folderHashSpecUID] = $rootLevelFolder->getCombinedIdentifier();
+
+			// hash key
+		$storageHashNumber = $this->getShortHashNumberForStorage($storageObject);
+
+			// Set first:
+		$this->bank = $storageHashNumber;
+		$isOpen = $this->stored[$storageHashNumber][$folderHashSpecUID] || $this->expandFirst;
+		$this->reset();
+
+
+			// Set PM icon:
+		$cmd = $this->generateExpandCollapseParameter($this->bank, !$isOpen, $rootLevelFolder);
+		$icon = '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/' . ($isOpen ? 'minus' : 'plus') . 'only.gif') . ' alt="" />';
+		$firstHtml = $this->PM_ATagWrap($icon, $cmd);
+
+			// @todo: check the type
+			// @todo: create sprite icons for user/group mounts, readonly mounts etc
+		switch ($val['type']) {
+			case 'user':
+				$icon = 'gfx/i/_icon_ftp_user.gif';
+				$icon = 'apps-filetree-root';
+			break;
+			case 'group':
+				$icon = 'gfx/i/_icon_ftp_group.gif';
+				$icon = 'apps-filetree-root';
+			break;
+			case 'readonly':
+				$icon = 'gfx/i/_icon_ftp_readonly.gif';
+				$icon = 'apps-filetree-root';
+			break;
+			default:
+				$icon = 'gfx/i/_icon_ftp.gif';
+				$icon = 'apps-filetree-root';
+			break;
+		}
+
+			// Preparing rootRec for the mount
+		$firstHtml .= $this->wrapIcon(t3lib_iconWorks::getSpriteIcon($icon), $rootLevelFolder);
+		$row = array(
+			'uid'    => $folderHashSpecUID,
+			'title'  => $storageObject->getName(),
+			'path'   => $rootLevelFolder->getCombinedIdentifier(),
+			'folder' => $rootLevelFolder
+		);
+
+			// Add the storage root to ->tree
+		$this->tree[] = array(
+			'HTML'   => $firstHtml,
+			'row'    => $row,
+			'bank'   => $this->bank,
+				// hasSub is TRUE when the root of the storage is expanded
+			'hasSub' => ($isOpen ? TRUE : FALSE)
+		);
+
+			// If the mount is expanded, go down:
+		if ($isOpen) {
+				// Set depth:
+			$depthD = '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/blank.gif', 'width="18" height="16"') . ' alt="" />';
+			$this->getFolderTree($rootLevelFolder, 999, $depthD, $val['type']);
+		}
+	}
+
 
 	/**
 	 * Fetches the data for the tree
 	 *
-	 * @param	string		Abs file path
+	 * @param	t3lib_file_Folder $folderObject	the folderobject
 	 * @param	integer		Max depth (recursivity limit)
 	 * @param	string		HTML-code prefix for recursive calls.
 	 * @return	integer		The count of items on the level
 	 * @see getBrowsableTree()
 	 */
-	function getFolderTree($files_path, $depth = 999, $depthData = '', $type = '') {
+	public function getFolderTree($folderObject, $depth = 999, $type = '') {
+		$depth = intval($depth);
 
 			// This generates the directory tree
-		$dirs = t3lib_div::get_dirs($files_path);
+		$subFolders = $folderObject->getSubfolders();
 
+		sort($subFolders);
+		$totalSubFolders = count($subFolders);
+
+		$HTML = '';
+		$subFolderCounter = 0;
+
+		foreach ($subFolders as $subFolder) {
+			$subFolderCounter++;
+				// Reserve space.
+			$this->tree[] = array();
+				// Get the key for this space
+			end($this->tree);
+			$treeKey = key($this->tree);
+
+			$specUID = t3lib_div::md5int($subFolder->getCombinedIdentifier());
+			$this->specUIDmap[$specUID] = $subFolder->getCombinedIdentifier();
+
+			$row = array(
+				'uid'    => $specUID,
+				'path'   => $subFolder->getCombinedIdentifier(),
+				'title'  => $subFolder->getName(),
+				'folder' => $subFolder
+			);
+
+				// Make a recursive call to the next level
+			if ($depth > 1 && $this->expandNext($specUID)) {
+				$nextCount = $this->getFolderTree(
+					$subFolder,
+					$depth-1,
+					$this->makeHTML ? '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/' . ($subFolderCounter == $totalSubFolders ? 'blank' : 'line') . '.gif', 'width="18" height="16"') . ' alt="" />' : '',
+					$type
+				);
+
+					// Set "did expand" flag
+				$isOpen = 1;
+
+			} else {
+
+				$nextCount = $this->getNumberOfSubfolders($subFolder);
+					// Clear "did expand" flag
+				$isOpen = 0;
+			}
+
+				// Set HTML-icons, if any:
+			if ($this->makeHTML) {
+				$HTML = $this->PMicon($subFolder, $subFolderCounter, $totalSubFolders, $nextCount, $isOpen);
+				if ($subFolder->checkActionPermission('write')) {
+					$type = '';
+					$overlays = array();
+				} else {
+					$type = 'readonly';
+					$overlays = array('status-overlay-locked' => array());
+				}
+
+				if ($isOpen) {
+					$icon = 'apps-filetree-folder-opened';
+				} else {
+					$icon = 'apps-filetree-folder-default';
+				}
+
+				if ($subFolder->getIdentifier() == '_temp_') {
+					$icon = 'apps-filetree-folder-temp';
+					$row['title'] = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_mod_file_list.xml:temp', TRUE);
+					$row['_title'] = '<strong>' . $row['title'] . '</strong>';
+				}
+				if ($subFolder->getIdentifier() == '_recycler_') {
+					$icon = 'apps-filetree-folder-recycler';
+					$row['title'] = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_mod_file_list.xml:recycler', TRUE);
+					$row['_title'] = '<strong>' . $row['title'] . '</strong>';
+				}
+				$icon = t3lib_iconWorks::getSpriteIcon($icon, array('title' => $subFolder->getIdentifier()), $overlays);
+				$HTML .= $this->wrapIcon($icon, $subFolder);
+			}
+
+				// Finally, add the row/HTML content to the ->tree array in the reserved key.
+			$this->tree[$treeKey] = array(
+				'row'    => $row,
+				'HTML'   => $HTML,
+				'hasSub' => $nextCount && $this->expandNext($specUID),
+				'isFirst'=> ($subFolderCounter == 1),
+				'isLast' => FALSE,
+				'invertedDepth'=> $depth,
+				'bank'   => $this->bank
+			);
+		}
+
+		if ($subFolderCounter > 0) {
+			$this->tree[$treeKey]['isLast'] = TRUE;
+		}
+		return $totalSubFolders;
+
+	}
+
+	/**
+	 * Compiles the HTML code for displaying the structure found inside the ->tree array
+	 *
+	 * @param	array		"tree-array" - if blank string, the internal ->tree array is used.
+	 * @return	string		The HTML code for the tree
+	 */
+	function printTree($treeItems='') {
+		$titleLength = intval($this->BE_USER->uc['titleLen']);
+		if (!is_array($treeItems)) {
+			$treeItems = $this->tree;
+		}
+
+		$out = '
+			<!-- TYPO3 folder tree structure. -->
+			<ul class="tree" id="treeRoot">
+		';
+
+			// -- evaluate AJAX request
+		if (TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_AJAX) {
+			list(, $expandCollapseCommand, $expandedFolderHash, ) = $this->evaluateExpandCollapseParameter();
+			if ($expandCollapseCommand == 1) {
+				$ajaxOutput = '';
+					// We don't know yet. Will be set later.
+				$invertedDepthOfAjaxRequestedItem = 0;
+				$doExpand = TRUE;
+			} else	{
+				$doCollapse = TRUE;
+			}
+		}
+
+
+		// we need to count the opened <ul>'s every time we dig into another level,
+		// so we know how many we have to close when all children are done rendering
+		$closeDepth = array();
+
+		foreach ($treeItems as $treeItem) {
+			$folderObject = $treeItem['row']['folder'];
+			$classAttr = $treeItem['row']['_CSSCLASS'];
+			$folderIdentifier = $folderObject->getCombinedIdentifier();
+				// this is set if the AJAX request has just opened this folder (via the PM command)
+			$isExpandedFolderIdentifier = ($expandedFolderHash == t3lib_div::md5int($folderIdentifier));
+			$idAttr	= htmlspecialchars($this->domIdPrefix . $this->getId($folderObject) . '_' . $treeItem['bank']);
+			$itemHTML  = '';
+
+			// if this item is the start of a new level,
+			// then a new level <ul> is needed, but not in ajax mode
+			if($treeItem['isFirst'] && !($doCollapse) && !($doExpand && $isExpandedFolderIdentifier)) {
+				$itemHTML = "<ul>\n";
+			}
+
+			// add CSS classes to the list item
+			if ($treeItem['hasSub']) { $classAttr .= ' expanded'; }
+			if ($treeItem['isLast']) { $classAttr .= ' last';  }
+
+			$itemHTML .='
+				<li id="' . $idAttr . '" ' .($classAttr ? ' class="' . trim($classAttr) . '"' : '').'><div class="treeLinkItem">'.
+					$treeItem['HTML'].
+					$this->wrapTitle($this->getTitleStr($treeItem['row'], $titleLength), $folderObject, $treeItem['bank']) . '</div>';
+
+			if (!$treeItem['hasSub']) {
+				$itemHTML .= "</li>\n";
+			}
+
+			// we have to remember if this is the last one
+			// on level X so the last child on level X+1 closes the <ul>-tag
+			if ($treeItem['isLast'] && !($doExpand && $isExpandedFolderIdentifier)) {
+				$closeDepth[$treeItem['invertedDepth']] = 1;
+			}
+
+
+			// if this is the last one and does not have subitems, we need to close
+			// the tree as long as the upper levels have last items too
+			if ($treeItem['isLast'] && !$treeItem['hasSub'] && !$doCollapse && !($doExpand && $isExpandedFolderIdentifier)) {
+				for ($i = $treeItem['invertedDepth']; $closeDepth[$i] == 1; $i++) {
+					$closeDepth[$i] = 0;
+					$itemHTML .= "</ul></li>\n";
+				}
+			}
+
+				// ajax request: collapse
+			if ($doCollapse && $isExpandedFolderIdentifier) {
+				$this->ajaxStatus = TRUE;
+				return $itemHTML;
+			}
+
+				// ajax request: expand
+			if ($doExpand && $isExpandedFolderIdentifier) {
+				$ajaxOutput .= $itemHTML;
+				$invertedDepthOfAjaxRequestedItem = $treeItem['invertedDepth'];
+			} elseif ($invertedDepthOfAjaxRequestedItem) {
+				if ($treeItem['invertedDepth'] < $invertedDepthOfAjaxRequestedItem) {
+					$ajaxOutput .= $itemHTML;
+				} else {
+					$this->ajaxStatus = TRUE;
+					return $ajaxOutput;
+				}
+			}
+
+			$out .= $itemHTML;
+		}
+
+			// if this is a AJAX request, output directly
+		if ($ajaxOutput) {
+			$this->ajaxStatus = TRUE;
+			return $ajaxOutput;
+		}
+
+			// finally close the first ul
+		$out .= "</ul>\n";
+		return $out;
+	}
+
+
+
+	/**
+	 * Counts the number of directories in a file path.
+	 *
+	 * @param	string		File path.
+	 * @return	integer
+	 * @deprecated since TYPO3 4.7, as the folder objects do the counting automatically
+	 */
+	public function getCount($file) {
+		t3lib_div::logDeprecatedFunction();
+			// This generates the directory tree
+		$dirs = t3lib_div::get_dirs($file);
 		$c = 0;
 		if (is_array($dirs)) {
-			$depth = intval($depth);
-			$HTML = '';
-			$a = 0;
 			$c = count($dirs);
-			sort($dirs);
-
-			foreach ($dirs as $key => $val) {
-				$a++;
-				$this->tree[] = array(); // Reserve space.
-				end($this->tree);
-				$treeKey = key($this->tree); // Get the key for this space
-				$LN = ($a == $c) ? 'blank' : 'line';
-
-				$val = preg_replace('/^\.\//', '', $val);
-				$title = $val;
-				$path = $files_path . $val . '/';
-				$webpath = t3lib_BEfunc::getPathType_web_nonweb($path);
-
-				$md5_uid = md5($path);
-				$specUID = hexdec(substr($md5_uid, 0, 6));
-				$this->specUIDmap[$specUID] = $path;
-				$row = array();
-				$row['path'] = $path;
-				$row['uid'] = $specUID;
-				$row['title'] = $title;
-
-				if ($depth > 1 && $this->expandNext($specUID)) {
-					$nextCount = $this->getFolderTree(
-						$path,
-							$depth - 1,
-						$this->makeHTML ? $depthData . '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/' . $LN . '.gif', 'width="18" height="16"') . ' alt="" />' : '',
-						$type
-					);
-					$exp = 1; // Set "did expand" flag
-				} else {
-					$nextCount = $this->getCount($path);
-					$exp = 0; // Clear "did expand" flag
-				}
-
-					// Set HTML-icons, if any:
-				if ($this->makeHTML) {
-					$HTML = $depthData . $this->PMicon($row, $a, $c, $nextCount, $exp);
-
-					$icon = 'gfx/i/_icon_' . $webpath . 'folders' . ($type == 'readonly' ? '_ro' : '') . '.gif';
-					if ($val == '_temp_') {
-						$icon = 'gfx/i/sysf.gif';
-						$row['title'] = $GLOBALS['LANG']->sl('LLL:EXT:lang/locallang_mod_file_list.xml:temp', TRUE);
-						$row['_title'] = '<strong>' . $GLOBALS['LANG']->sl('LLL:EXT:lang/locallang_mod_file_list.xml:temp', TRUE) . '</strong>';
-					}
-					if ($val == '_recycler_') {
-						$icon = 'gfx/i/recycler.gif';
-						$row['title'] = $GLOBALS['LANG']->sl('LLL:EXT:lang/locallang_mod_file_list.xml:recycler', TRUE);
-						$row['_title'] = '<strong>' . $GLOBALS['LANG']->sl('LLL:EXT:lang/locallang_mod_file_list.xml:recycler', TRUE) . '</strong>';
-					}
-					$HTML .= $this->wrapIcon('<img' . t3lib_iconWorks::skinImg($this->backPath, $icon, 'width="18" height="16"') . ' alt="" />', $row);
-				}
-
-					// Finally, add the row/HTML content to the ->tree array in the reserved key.
-				$this->tree[$treeKey] = Array(
-					'row' => $row,
-					'HTML' => $HTML,
-					'bank' => $this->bank
-				);
-			}
 		}
 		return $c;
 	}
@@ -298,17 +544,12 @@ class t3lib_folderTree extends t3lib_treeView {
 	/**
 	 * Counts the number of directories in a file path.
 	 *
-	 * @param	string		File path.
+	 * @param	t3lib_file_Folder	$folderObject		File path.
 	 * @return	integer
 	 */
-	function getCount($files_path) {
-			// This generates the directory tree
-		$dirs = t3lib_div::get_dirs($files_path);
-		$c = 0;
-		if (is_array($dirs)) {
-			$c = count($dirs);
-		}
-		return $c;
+	public function getNumberOfSubfolders($folderObject) {
+		$subFolders = $folderObject->getSubfolders();
+		return count($subFolders);
 	}
 
 	/**
@@ -321,28 +562,95 @@ class t3lib_folderTree extends t3lib_treeView {
 			// Get stored tree structure:
 		$this->stored = unserialize($this->BE_USER->uc['browseTrees'][$this->treeName]);
 
-			// Mapping md5-hash to shorter number:
-		$hashMap = array();
-		foreach ($this->MOUNTS as $key => $val) {
-			$nkey = hexdec(substr($key, 0, 4));
-			$hashMap[$nkey] = $key;
-			$this->MOUNTS[$key]['nkey'] = $nkey;
-		}
+		$this->getShortHashNumberForStorage();
 
 			// PM action:
-			// (If an plus/minus icon has been clicked, the PM GET var is sent and we must update the stored positions in the tree):
-		$PM = explode('_', t3lib_div::_GP('PM')); // 0: mount key, 1: set/clear boolean, 2: item ID (cannot contain "_"), 3: treeName
-		if (count($PM) == 4 && $PM[3] == $this->treeName) {
-			if (isset($this->MOUNTS[$hashMap[$PM[0]]])) {
-				if ($PM[1]) { // set
-					$this->stored[$PM[0]][$PM[2]] = 1;
-					$this->savePosition($this->treeName);
-				} else { // clear
-					unset($this->stored[$PM[0]][$PM[2]]);
-					$this->savePosition($this->treeName);
+			// (If an plus/minus icon has been clicked, 
+			// the PM GET var is sent and we must update the stored positions in the tree):
+			// 0: mount key, 1: set/clear boolean, 2: item ID (cannot contain "_"), 3: treeName
+		list($mountKey, $doExpand, $numericFolderHash, $treeName) = $this->evaluateExpandCollapseParameter();
+		if ($treeName && $treeName == $this->treeName) {
+			if (isset($this->storages[$mountKey])) {
+				if ($doExpand == 1) {
+				 		// set
+					$this->stored[$mountKey][$numericFolderHash] = 1;
+				} else {
+					 	// clear
+					unset($this->stored[$mountKey][$numericFolderHash]);
 				}
+				$this->savePosition($this->treeName);
 			}
 		}
+	}
+	
+	/**
+	 * helper function to map md5-hash to shorter number
+	 *
+	 * @param $storage
+	 * @return integer
+	 */
+	protected function getShortHashNumberForStorage($storageObject = NULL) {
+		
+		if (!$this->storageHashNumbers) {
+			$this->storageHashNumbers = array();
+				// Mapping md5-hash to shorter number:
+			$hashMap = array();
+			foreach ($this->storages as $storageUid => $val) {
+				$nkey = hexdec(substr($storageUid, 0, 4));
+				$this->storageHashNumbers[$storageUid] = $nkey;
+			}
+		}
+		return ($storageObject ? $this->storageHashNumbers[$storageObject->getUid()] : NULL);
+	}
+
+
+	/**
+	 * get the values from the Expand/Collapse Parameter (&PM)
+	 * previously known as "PM" (plus/minus)
+	 * PM action:
+	 * (If an plus/minus icon has been clicked,
+	 * the PM GET var is sent and we must update the stored positions in the tree):
+	 * 0: mount key, 1: set/clear boolean, 2: item ID (cannot contain "_"), 3: treeName
+	 */
+	protected function evaluateExpandCollapseParameter($PM = NULL) {
+		if ($PM === NULL) {
+			$PM = t3lib_div::_GP('PM');
+				// IE takes anchor as parameter
+			if (($PMpos = strpos($PM, '#')) !== FALSE) {
+				$PM = substr($PM, 0, $PMpos);
+			}
+		}
+
+		// take the first three parameters
+		list($mountKey, $doExpand, $folderIdentifier) = explode('_', $PM, 3);
+
+		// in case the folder identifier contains "_", we just need to get the fourth/last parameter
+		list($folderIdentifier, $treeName) = t3lib_div::revExplode('_', $folderIdentifier, 2);
+		return array(
+			$mountKey,
+			$doExpand,
+			$folderIdentifier,
+			$treeName
+		);
+	}
+
+	/**
+	 * generates the "PM" string to sent to expand/collapse items
+	 *
+	 * @param $mountKey	the mount key / storage UID
+	 * @param $doExpand	whether to expand/collapse
+	 * @param $folderObject	the folder object
+	 * @param $treeName	the name of the tree
+	 * @return string
+	 */
+	protected function generateExpandCollapseParameter($mountKey = NULL, $doExpand = NULL, $folderObject = NULL, $treeName = NULL) {
+		$parts = array(
+			($mountKey !== NULL ? $mountKey : $this->bank),
+			($doExpand == 1 ? 1 : 0),
+			($folderObject !== NULL ? t3lib_div::md5int($folderObject->getCombinedIdentifier()) : ''),
+			($treeName !== NULL ? $treeName : $this->treeName)
+		);
+		return implode('_', $parts);
 	}
 }
 
