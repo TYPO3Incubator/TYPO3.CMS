@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+	<file source-language="en" datatype="plaintext" original="messages" date="2011-10-19T12:58:54Z" product-name="file">
+		<header/>
+		<body>
+			<trans-unit id="mlang_tabs_tab" approved="yes">
+				<source>Media Indexing</source>
+				<target>Media Indexing</target>
+			</trans-unit>
+			<trans-unit id="mlang_labels_tabdescr" approved="yes">
+				<source></source>
+				<target></target>
+			</trans-unit>
+			<trans-unit id="mlang_labels_tablabel" approved="yes">
+				<source>Media Indexing</source>
+				<target>Media Indexing</target>
+			</trans-unit>
+			<trans-unit id="modules.indexing.header" approved="yes">
+				<source>Indexing</source>
+				<target>Indexing</target>
+			</trans-unit>
+			<trans-unit id="modules.indexing.description" approved="yes">
+				<source>Choose from an option below to start indexing the selected folder.</source>
+				<target>Choose from an option below to start indexing the selected folder.</target>
+			</trans-unit>
+			<trans-unit id="modules.indexing.choose" approved="yes">
+				<source>Choose an existing indexing job</source>
+				<target>Choose an existing indexing job</target>
+			</trans-unit>
+			<trans-unit id="modules.indexing.createnew" approved="yes">
+				<source>or create a new indexing job</source>
+				<target>or create a new indexing job</target>
+			</trans-unit>
+			<trans-unit id="modules.indexing.button.run" approved="yes">
+				<source>Run</source>
+				<target>Run</target>
+			</trans-unit>
+			<trans-unit id="modules.indexing.button.add" approved="yes">
+				<source>Add indexing configuration</source>
+				<target>Add indexing configuration</target>
+			</trans-unit>
+			<trans-unit id="modules.indexing.button.goback" approved="yes">
+				<source>Go back</source>
+				<target>Go back</target>
+			</trans-unit>
+			<trans-unit id="tasks.indexing.name" approved="yes">
+				<source>File Abstraction Layer: Indexing job</source>
+				<target>File Abstraction Layer: Indexing job</target>
+			</trans-unit>
+			<trans-unit id="tasks.indexing.description" approved="yes">
+				<source>Runs indexing tasks based on an indexing configuration and a storage/folder information.</source>
+				<target>Runs indexing tasks based on an indexing configuration and a storage/folder information.</target>
+			</trans-unit>
+			<trans-unit id="tasks.validate.indexingConfiguration" approved="yes">
+				<source>Indexing configuration</source>
+				<target>Indexing configuration</target>
+			</trans-unit>
+			<trans-unit id="tasks.validate.paths" approved="yes">
+				<source>Paths</source>
+				<target>Paths</target>
+			</trans-unit>
+			<trans-unit id="tasks.validate.invalidIndexingConfiguration" approved="yes">
+				<source>Indexing configuration is empty. Please choose an indexing configuration.</source>
+				<target>Indexing configuration is empty. Please choose an indexing configuration.</target>
+			</trans-unit>
+			<trans-unit id="tasks.validate.invalidPaths" approved="yes">
+				<source>Paths are empty. Please set at least one path for indexing.</source>
+				<target>Paths are empty. Please set at least one path for indexing.</target>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>

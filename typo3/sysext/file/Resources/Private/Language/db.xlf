@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<xliff version="1.0">
+	<file source-language="en" datatype="plaintext" original="messages" date="2011-10-19T12:58:54Z" product-name="file">
+		<header/>
+		<body>
+			<trans-unit id="sys_file_storage" approved="yes">
+				<source>Storage</source>
+				<target>Storage</target>
+			</trans-unit>
+			<trans-unit id="sys_file_storage.type" approved="yes">
+				<source>Filemount</source>
+				<target>Filemount</target>
+			</trans-unit>
+			<trans-unit id="sys_file_storage.name" approved="yes">
+				<source>Name</source>
+				<target>Name</target>
+			</trans-unit>
+			<trans-unit id="sys_file_storage.description" approved="yes">
+				<source>Description</source>
+				<target>Description</target>
+			</trans-unit>
+			<trans-unit id="sys_file_storage.is_browsable" approved="yes">
+				<source>Is browsable?</source>
+				<target>Is browsable?</target>
+			</trans-unit>
+			<trans-unit id="sys_file_storage.is_public" approved="yes">
+				<source>Is publically available?</source>
+				<target>Is publically available?</target>
+			</trans-unit>
+			<trans-unit id="sys_file_storage.is_writable" approved="yes">
+				<source>Is writable?</source>
+				<target>Is writable?</target>
+			</trans-unit>
+			<trans-unit id="sys_file_storage.driver" approved="yes">
+				<source>Storage</source>
+				<target>Storage</target>
+			</trans-unit>
+			<trans-unit id="sys_file_storage.driver.local" approved="yes">
+				<source>Local Filesystem</source>
+				<target>Local Filesystem</target>
+			</trans-unit>
+			<trans-unit id="sys_file_storage.configuration" approved="yes">
+				<source>Configuration</source>
+				<target>Configuration</target>
+			</trans-unit>
+			<trans-unit id="sys_file" approved="yes">
+				<source>File</source>
+				<target>File</target>
+			</trans-unit>
+			<trans-unit id="sys_file.storage" approved="yes">
+				<source>Storage</source>
+				<target>Storage</target>
+			</trans-unit>
+			<trans-unit id="sys_file.identifier" approved="yes">
+				<source>Identifier</source>
+				<target>Identifier</target>
+			</trans-unit>
+			<trans-unit id="sys_file.name" approved="yes">
+				<source>Name</source>
+				<target>Name</target>
+			</trans-unit>
+			<trans-unit id="sys_file.type" approved="yes">
+				<source>File Type</source>
+				<target>File Type</target>
+			</trans-unit>
+			<trans-unit id="sys_file.type.unknown" approved="yes">
+				<source>Unknown</source>
+				<target>Unknown</target>
+			</trans-unit>
+			<trans-unit id="sys_file.type.text" approved="yes">
+				<source>Text</source>
+				<target>Text</target>
+			</trans-unit>
+			<trans-unit id="sys_file.type.image" approved="yes">
+				<source>Image</source>
+				<target>Image</target>
+			</trans-unit>
+			<trans-unit id="sys_file.type.audio" approved="yes">
+				<source>Audio</source>
+				<target>Audio</target>
+			</trans-unit>
+			<trans-unit id="sys_file.type.video" approved="yes">
+				<source>Video</source>
+				<target>Video</target>
+			</trans-unit>
+			<trans-unit id="sys_file.type.software" approved="yes">
+				<source>Software</source>
+				<target>Software</target>
+			</trans-unit>
+			<trans-unit id="sys_file.mime_type" approved="yes">
+				<source>Mime Type</source>
+				<target>Mime Type</target>
+			</trans-unit>
+			<trans-unit id="sys_file.sha1" approved="yes">
+				<source>SHA1</source>
+				<target>SHA1</target>
+			</trans-unit>
+			<trans-unit id="sys_file.size" approved="yes">
+				<source>Size</source>
+				<target>Size</target>
+			</trans-unit>
+			<trans-unit id="sys_file.usage_count" approved="yes">
+				<source>Usage Count</source>
+				<target>Usage Count</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference" approved="yes">
+				<source>File Usages</source>
+				<target>File Usages</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.uid_local" approved="yes">
+				<source>File</source>
+				<target>File</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.uid_foreign" approved="yes">
+				<source>Used by content elements</source>
+				<target>Used by content elements</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.tablenames" approved="yes">
+				<source>Table name</source>
+				<target>Table name</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.fieldname" approved="yes">
+				<source>Foreign Field</source>
+				<target>Foreign Field</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.sorting_foreign" approved="yes">
+				<source>Sorting foreign</source>
+				<target>Sorting foreign</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.overlayPalette" approved="yes">
+				<source>Overlays</source>
+				<target>Overlays</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.title" approved="yes">
+				<source>Title</source>
+				<target>Title</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.description" approved="yes">
+				<source>Description (Caption)</source>
+				<target>Description (Caption)</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.downloadname" approved="yes">
+				<source>Download Name</source>
+				<target>Download Name</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.alternative" approved="yes">
+				<source>Alternative Text</source>
+				<target>Alternative Text</target>
+			</trans-unit>
+			<trans-unit id="sys_file_reference.link" approved="yes">
+				<source>Link</source>
+				<target>Link</target>
+			</trans-unit>
+			<trans-unit id="sys_file_collection" approved="yes">
+				<source>File collection</source>
+				<target>File collection</target>
+			</trans-unit>
+			<trans-unit id="sys_file_collection.files" approved="yes">
+				<source>Files</source>
+				<target>Files</target>
+			</trans-unit>
+			<trans-unit id="sys_file_collection.title" approved="yes">
+				<source>Title</source>
+				<target>Title</target>
+			</trans-unit>
+			<trans-unit id="sys_file_collection.type" approved="yes">
+				<source>Type</source>
+				<target>Type</target>
+			</trans-unit>
+			<trans-unit id="sys_file_collection.criteria" approved="yes">
+				<source>Filter Criteria</source>
+				<target>Filter Criteria</target>
+			</trans-unit>
+			<trans-unit id="sys_file_collection.storage" approved="yes">
+				<source>Storage</source>
+				<target>Storage</target>
+			</trans-unit>
+			<trans-unit id="sys_file_collection.folder" approved="yes">
+				<source>Folder</source>
+				<target>Folder</target>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>
