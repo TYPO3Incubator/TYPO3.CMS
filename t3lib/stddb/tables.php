@@ -267,6 +267,7 @@ $TCA['sys_filemounts'] = array(
 		'enablecolumns' => array(
 			'disabled' => 'hidden'
 		),
+		'requestUpdate' => 'base',
 		'iconfile' => '_icon_ftp.gif',
 		'useColumnsForDefaultValues' => 'path,base',
 		'dynamicConfigFile' => 'T3LIB:tbl_be.php',

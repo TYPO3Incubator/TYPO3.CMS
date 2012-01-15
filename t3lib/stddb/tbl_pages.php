@@ -596,7 +596,7 @@ $TCA['pages'] = array(
 				'max' => '80',
 				'softref' => 'email[subst]',
 			),
-		),
+		),/* before introduction of FAL:
 		'media' => array(
 			'exclude' => 1,
 			'label' => 'LLL:EXT:cms/locallang_tca.xml:pages.media',
@@ -611,6 +611,11 @@ $TCA['pages'] = array(
 				'maxitems' => '100',
 				'minitems' => '0',
 			),
+		),*/
+		'media' => array(
+			'exclude' => 1,
+			'label' => 'LLL:EXT:cms/locallang_tca.xml:pages.media',
+			'config' => t3lib_extMgm::getFileFieldTCAConfig('media'),
 		),
 		'is_siteroot' => array(
 			'exclude' => 1,
