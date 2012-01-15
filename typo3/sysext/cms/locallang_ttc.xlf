@@ -612,6 +612,15 @@
 			<trans-unit id="media" xml:space="preserve">
 				<source>Files</source>
 			</trans-unit>
+			<trans-unit id="media.dataAttributes" xml:space="preserve">
+				<source>Additional data-* Attributes for HTML5 video tag</source>
+			</trans-unit>
+			<trans-unit id="media.dataAttributes.attributeName" xml:space="preserve">
+				<source>Name of attribute (without data-)</source>
+			</trans-unit>
+			<trans-unit id="media.dataAttributes.content" xml:space="preserve">
+				<source>Content</source>
+			</trans-unit>
 			<trans-unit id="media.ALT.uploads_formlabel" xml:space="preserve">
 				<source>Select Files</source>
 			</trans-unit>
@@ -623,6 +632,24 @@
 			</trans-unit>
 			<trans-unit id="filelink_size" xml:space="preserve">
 				<source>Show File Size:</source>
+			</trans-unit>
+			<trans-unit id="filelink_sorting" xml:space="preserve">
+				<source>Sort Filelist:</source>
+			</trans-unit>
+			<trans-unit id="filelink_sorting.none" xml:space="preserve">
+					<source>none</source>
+			</trans-unit>
+			<trans-unit id="filelink_sorting.extension" xml:space="preserve">
+					<source>after fileextension</source>
+			</trans-unit>
+			<trans-unit id="filelink_sorting.name" xml:space="preserve">
+					<source>after filename</source>
+			</trans-unit>
+			<trans-unit id="filelink_sorting.type" xml:space="preserve">
+					<source>after filetype</source>
+			</trans-unit>
+			<trans-unit id="filelink_sorting.size" xml:space="preserve">
+					<source>after filesize</source>
 			</trans-unit>
 			<trans-unit id="filelink_size_formlabel" xml:space="preserve">
 				<source>Display File Size Information</source>
@@ -830,6 +857,9 @@
 			</trans-unit>
 			<trans-unit id="media.fallbackUrl" xml:space="preserve">
 				<source>Path or URL to fallback video source (Flash or QuickTime)</source>
+			</trans-unit>
+			<trans-unit id="media.previewImage" xml:space="preserve">
+				<source>Preview-Image for the Video (HTML5 only)</source>
 			</trans-unit>
 			<trans-unit id="media.sources" xml:space="preserve">
 				<source>Video sources</source>

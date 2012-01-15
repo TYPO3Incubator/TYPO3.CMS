@@ -55,6 +55,10 @@
  */
 class tslib_cObj {
 
+
+	/** @var t3lib_file_Factory $fileFactory */
+	protected $fileFactory;
+	
 	var $align = array(
 		'center',
 		'right',
@@ -383,6 +387,10 @@ class tslib_cObj {
 	 * @see tslib_cObjh::$userObjectType
 	 */
 	const OBJECTTYPE_USER = 2;
+
+	public function __construct() {
+		$this->fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+	}
 
 	/**
 	 * Class constructor.
@@ -3915,13 +3923,17 @@ class tslib_cObj {
 	 * @access private
 	 * @see stdWrap()
 	 */
-	function filelink($theValue, $conf) {
+	function filelink($fileId, $conf) {
 		$conf['path'] = isset($conf['path.'])
 			? $this->stdWrap($conf['path'], $conf['path.'])
 			: $conf['path'];
-		$theFile = trim($conf['path']) . $theValue;
-		if (@is_file($theFile)) {
-			$theFileEnc = str_replace('%2F', '/', rawurlencode($theFile));
+		if (strpos($theValue, ':') == FALSE && $conf['path']) {
+			$theFile = $this->fileFactory->getFileObjectFromCombinedIdentifier($conf['path'] . $fileId);
+		} else {
+			$theFile = $this->fileFactory->getFileObjectFromCombinedIdentifier($fileId);
+		}
+
+		if ($theFile !== NULL) {
 
 			$title = $conf['title'];
 			if (isset($conf['title.'])) {
@@ -3942,11 +3954,11 @@ class tslib_cObj {
 					'fileTarget' => $target,
 					'title' => $title,
 					'ATagParams' => $this->getATagParams($conf),
-					'additionalParams' => '&jumpurl=' . rawurlencode($theFileEnc) . $this->locDataJU($theFileEnc, $conf['jumpurl.']['secure.']) . $GLOBALS['TSFE']->getMethodUrlIdToken
+					'additionalParams' => '&jumpurl=' . rawurlencode($theFile->getPublicUrl()) . $this->locDataJU($theFile, $conf['jumpurl.']['secure.']) . $GLOBALS['TSFE']->getMethodUrlIdToken
 				);
 			} else {
 				$typoLinkConf = array(
-					'parameter' => $theFileEnc,
+					'parameter' => $theFile->getPublicUrl(),
 					'fileTarget' => $target,
 					'title' => $title,
 					'ATagParams' => $this->getATagParams($conf)
@@ -3967,8 +3979,8 @@ class tslib_cObj {
 				// now the original value is set again
 			$GLOBALS['TSFE']->config['config']['jumpurl_enable'] = $globalJumpUrlEnabled;
 
-			$theSize = filesize($theFile);
-			$fI = t3lib_div::split_fileref($theFile);
+			$theSize = $theFile->getSize();
+			$icon ='';
 			if ($conf['icon']) {
 				$conf['icon.']['path'] = isset($conf['icon.']['path.'])
 					? $this->stdWrap($conf['icon.']['path'], $conf['icon.']['path.'])
@@ -3978,13 +3990,13 @@ class tslib_cObj {
 					? $this->stdWrap($conf['icon.']['ext'], $conf['icon.']['ext.'])
 					: $conf['icon.']['ext'];
 				$iconExt = !empty($conf['icon.']['ext']) ? '.' . $conf['icon.']['ext'] : '.gif';
-				$icon = @is_file($iconP . $fI['fileext'] . $iconExt) ? $iconP . $fI['fileext'] . $iconExt : $iconP . 'default' . $iconExt;
+				$icon = @is_file($iconP . $theFile->getExtension() . $iconExt) ? $iconP . $theFile->getExtension() . $iconExt : $iconP . 'default' . $iconExt;
 					// Checking for images: If image, then return link to thumbnail.
 				$IEList = isset($conf['icon_image_ext_list.'])
 					? $this->stdWrap($conf['icon_image_ext_list'], $conf['icon_image_ext_list.'])
 					: $conf['icon_image_ext_list'];
 				$image_ext_list = str_replace(' ', '', strtolower($IEList));
-				if ($fI['fileext'] && t3lib_div::inList($image_ext_list, $fI['fileext'])) {
+				if ($theFile->getExtension() && t3lib_div::inList($image_ext_list, $theFile->getExtension())) {
 					if ($conf['iconCObject']) {
 						$icon = $this->cObjGetSingle($conf['iconCObject'], $conf['iconCObject.'], 'iconCObject');
 					} else {
@@ -3998,7 +4010,7 @@ class tslib_cObj {
 							$check = basename($theFile) . ':' . filemtime($theFile) . ':' . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
 							$md5sum = '&md5sum=' . t3lib_div::shortMD5($check);
 							$icon = 't3lib/thumbs.php?dummy=' . $GLOBALS['EXEC_TIME'] . '&file=' .
-								rawurlencode('../' . $theFile) . $thumbSize . $md5sum;
+								rawurlencode('../' . $theFile->getForLocalProcessing()) . $thumbSize . $md5sum;
 						} else {
 							$icon = t3lib_extMgm::siteRelPath('cms') . 'tslib/media/miscicons/notfound_thumb.gif';
 						}
@@ -4025,17 +4037,20 @@ class tslib_cObj {
 					? $this->stdWrap($icon, $conf['icon.'])
 					: $icon;
 			}
+
+			$size = '';
 			if ($conf['size']) {
 				$size = isset($conf['size.'])
 					? $this->stdWrap($theSize, $conf['size.'])
 					: $theSize;
 			}
 
+			$theValue = $theFile->getName();
 				// Wrapping file label
 			if ($conf['removePrependedNumbers']) {
 				$theValue = preg_replace('/_[0-9][0-9](\.[[:alnum:]]*)$/', '\1', $theValue);
 			}
-			if(isset($conf['labelStdWrap.'])) {
+			if (isset($conf['labelStdWrap.'])) {
 				$theValue = $this->stdWrap($theValue, $conf['labelStdWrap.']);
 			}
 
@@ -4079,21 +4094,19 @@ class tslib_cObj {
 	 * Returns a URL parameter string setting parameters for secure downloads by "jumpurl".
 	 * Helper function for filelink()
 	 *
-	 * @param	string		The URL to jump to, basically the filepath
-	 * @param	array		TypoScript properties for the "jumpurl.secure" property of "filelink"
+	 * @param	t3lib_file_FileInterface $file		The URL to jump to, basically the filepath
+	 * @param	array $conf		TypoScript properties for the "jumpurl.secure" property of "filelink"
 	 * @return	string		URL parameters like "&juSecure=1....."
-	 * @access private
 	 * @see filelink()
 	 */
-	function locDataJU($jumpUrl, $conf) {
-		$fI = pathinfo($jumpUrl);
+	protected function locDataJU(t3lib_file_FileInterface $file, $conf) {
 		$mimetype = '';
 		$mimetypeValue = '';
-		if ($fI['extension']) {
+		if ($file->getExtension()) {
 			$mimeTypes = t3lib_div::trimExplode(',', $conf['mimeTypes'], 1);
 			foreach ($mimeTypes as $v) {
 				$parts = explode('=', $v, 2);
-				if (strtolower($fI['extension']) == strtolower(trim($parts[0]))) {
+				if (strtolower($file->getExtension()) == strtolower(trim($parts[0]))) {
 					$mimetypeValue = trim($parts[1]);
 					$mimetype = '&mimeType=' . rawurlencode($mimetypeValue);
 					break;
@@ -4103,7 +4116,7 @@ class tslib_cObj {
 		$locationData = $GLOBALS['TSFE']->id . ':' . $this->currentRecord;
 		$rec = '&locationData=' . rawurlencode($locationData);
 		$hArr = array(
-			$jumpUrl, $locationData, $mimetypeValue
+			$file->getPublicUrl(), $locationData, $mimetypeValue
 		);
 		$juHash = '&juHash=' . t3lib_div::hmac(serialize($hArr));
 		return '&juSecure=1' . $mimetype . $rec . $juHash;
@@ -4957,6 +4970,12 @@ class tslib_cObj {
 	 * @see IMG_RESOURCE(), cImage(), tslib_gifBuilder
 	 */
 	function getImgResource($file, $fileArray) {
+		if ($file instanceof t3lib_file_FileInterface) {
+			/** @var $fileObject t3lib_file_FileInterface */
+			$fileObject = $file;
+			$file = 'FAL';
+		}
+
 		if (is_array($fileArray)) {
 			switch ($file) {
 				case 'GIFBUILDER' :
@@ -4969,186 +4988,18 @@ class tslib_cObj {
 					}
 					$imageResource = $gifCreator->getImageDimensions($theImage);
 				break;
+
+				case 'FAL':
+					/** @var $service t3lib_file_Service_ImageProcessingService */
+					$service = t3lib_div::makeInstance('t3lib_file_Service_ImageProcessingService');
+					$imageResource = $service->getImgResource($this, $fileObject, $fileArray);
+
+					break;
+
 				default :
-					if ($fileArray['import.']) {
-						$ifile = $this->stdWrap('', $fileArray['import.']);
-						if ($ifile) {
-							$file = $fileArray['import'] . $ifile;
-						}
-					}
-					$theImage = $GLOBALS['TSFE']->tmpl->getFileName($file);
-					if ($theImage) {
-						$fileArray['width'] = isset($fileArray['width.'])
-							? $this->stdWrap($fileArray['width'], $fileArray['width.'])
-							: $fileArray['width'];
-						$fileArray['height'] = isset($fileArray['height.'])
-							? $this->stdWrap($fileArray['height'], $fileArray['height.'])
-							: $fileArray['height'];
-						$fileArray['ext'] = isset($fileArray['ext.'])
-							? $this->stdWrap($fileArray['ext'], $fileArray['ext.'])
-							: $fileArray['ext'];
-						$fileArray['maxW'] = isset($fileArray['maxW.'])
-							? intval($this->stdWrap($fileArray['maxW'], $fileArray['maxW.']))
-							: intval($fileArray['maxW']);
-						$fileArray['maxH'] = isset($fileArray['maxH.'])
-							? intval($this->stdWrap($fileArray['maxH'], $fileArray['maxH.']))
-							: intval($fileArray['maxH']);
-						$fileArray['minW'] = isset($fileArray['minW.'])
-							? intval($this->stdWrap($fileArray['minW'], $fileArray['minW.']))
-							: intval($fileArray['minW']);
-						$fileArray['minH'] = isset($fileArray['minH.'])
-							? intval($this->stdWrap($fileArray['minH'], $fileArray['minH.']))
-							: intval($fileArray['minH']);
-						$fileArray['noScale'] = isset($fileArray['noScale.'])
-							? $this->stdWrap($fileArray['noScale'], $fileArray['noScale.'])
-							: $fileArray['noScale'];
-						$fileArray['params'] = isset($fileArray['params.'])
-							? $this->stdWrap($fileArray['params'], $fileArray['params.'])
-							: $fileArray['params'];
-						$maskArray = $fileArray['m.'];
-						$maskImages = array();
-						if (is_array($fileArray['m.'])) { // Must render mask images and include in hash-calculating - else we cannot be sure the filename is unique for the setup!
-							$maskImages['m_mask'] = $this->getImgResource($maskArray['mask'], $maskArray['mask.']);
-							$maskImages['m_bgImg'] = $this->getImgResource($maskArray['bgImg'], $maskArray['bgImg.']);
-							$maskImages['m_bottomImg'] = $this->getImgResource($maskArray['bottomImg'], $maskArray['bottomImg.']);
-							$maskImages['m_bottomImg_mask'] = $this->getImgResource($maskArray['bottomImg_mask'], $maskArray['bottomImg_mask.']);
-						}
-						$hash = t3lib_div::shortMD5($theImage . serialize($fileArray) . serialize($maskImages));
-						if (!isset($GLOBALS['TSFE']->tmpl->fileCache[$hash])) {
-							$gifCreator = t3lib_div::makeInstance('tslib_gifbuilder');
-							$gifCreator->init();
-
-							if ($GLOBALS['TSFE']->config['config']['meaningfulTempFilePrefix']) {
-								$filename = basename($theImage);
-									// remove extension
-								$filename = substr($filename, 0, strrpos($filename, '.'));
-								$tempFilePrefixLength = intval($GLOBALS['TSFE']->config['config']['meaningfulTempFilePrefix']);
-								if ($GLOBALS['TYPO3_CONF_VARS']['SYS']['UTF8filesystem']) {
-										/** @var $t3libCsInstance t3lib_cs */
-									$t3libCsInstance = t3lib_div::makeInstance('t3lib_cs');
-									$filenamePrefix = $t3libCsInstance->substr('utf-8', $filename, 0, $tempFilePrefixLength);
-								} else {
-										// strip everything non-ascii
-									$filename = preg_replace('/[^A-Za-z0-9_-]/', '', trim($filename));
-									$filenamePrefix = substr($filename, 0, $tempFilePrefixLength);
-								}
-								$gifCreator->filenamePrefix = $filenamePrefix . '_';
-								unset($filename);
-							}
-
-							if ($fileArray['sample']) {
-								$gifCreator->scalecmd = '-sample';
-								$GLOBALS['TT']->setTSlogMessage('Sample option: Images are scaled with -sample.');
-							}
-							if ($fileArray['alternativeTempPath'] && t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['FE']['allowedTempPaths'], $fileArray['alternativeTempPath'])) {
-								$gifCreator->tempPath = $fileArray['alternativeTempPath'];
-								$GLOBALS['TT']->setTSlogMessage('Set alternativeTempPath: ' . $fileArray['alternativeTempPath']);
-							}
-
-							if (!trim($fileArray['ext'])) {
-								$fileArray['ext'] = 'web';
-							}
-							$options = array();
-							if ($fileArray['maxW']) {
-								$options['maxW'] = $fileArray['maxW'];
-							}
-							if ($fileArray['maxH']) {
-								$options['maxH'] = $fileArray['maxH'];
-							}
-							if ($fileArray['minW']) {
-								$options['minW'] = $fileArray['minW'];
-							}
-							if ($fileArray['minH']) {
-								$options['minH'] = $fileArray['minH'];
-							}
-							if ($fileArray['noScale']) {
-								$options['noScale'] = $fileArray['noScale'];
-							}
-
-								// checks to see if m (the mask array) is defined
-							if (is_array($maskArray) && $GLOBALS['TYPO3_CONF_VARS']['GFX']['im']) {
-									// Filename:
-								$fI = t3lib_div::split_fileref($theImage);
-								$imgExt = (strtolower($fI['fileext']) == $gifCreator->gifExtension ? $gifCreator->gifExtension : 'jpg');
-								$dest = $gifCreator->tempPath . $hash . '.' . $imgExt;
-								if (!file_exists($dest)) { // Generate!
-									$m_mask = $maskImages['m_mask'];
-									$m_bgImg = $maskImages['m_bgImg'];
-									if ($m_mask && $m_bgImg) {
-										$negate = $GLOBALS['TYPO3_CONF_VARS']['GFX']['im_negate_mask'] ? ' -negate' : '';
-
-										$temp_ext = 'png';
-										if ($GLOBALS['TYPO3_CONF_VARS']['GFX']['im_mask_temp_ext_gif']) { // If ImageMagick version 5+
-											$temp_ext = $gifCreator->gifExtension;
-										}
-
-										$tempFileInfo = $gifCreator->imageMagickConvert($theImage, $temp_ext, $fileArray['width'], $fileArray['height'], $fileArray['params'], $fileArray['frame'], $options);
-										if (is_array($tempFileInfo)) {
-											$m_bottomImg = $maskImages['m_bottomImg'];
-											if ($m_bottomImg) {
-												$m_bottomImg_mask = $maskImages['m_bottomImg_mask'];
-											}
-												//	Scaling:	****
-											$tempScale = array();
-											$command = '-geometry ' . $tempFileInfo[0] . 'x' . $tempFileInfo[1] . '!';
-											$command = $this->modifyImageMagickStripProfileParameters($command, $fileArray);
-											$tmpStr = $gifCreator->randomName();
-
-												//	m_mask
-											$tempScale['m_mask'] = $tmpStr . '_mask.' . $temp_ext;
-											$gifCreator->imageMagickExec($m_mask[3], $tempScale['m_mask'], $command . $negate);
-												//	m_bgImg
-											$tempScale['m_bgImg'] = $tmpStr . '_bgImg.' . trim($GLOBALS['TYPO3_CONF_VARS']['GFX']['im_mask_temp_ext_noloss']);
-											$gifCreator->imageMagickExec($m_bgImg[3], $tempScale['m_bgImg'], $command);
-
-												//	m_bottomImg / m_bottomImg_mask
-											if ($m_bottomImg && $m_bottomImg_mask) {
-												$tempScale['m_bottomImg'] = $tmpStr . '_bottomImg.' . $temp_ext;
-												$gifCreator->imageMagickExec($m_bottomImg[3], $tempScale['m_bottomImg'], $command);
-												$tempScale['m_bottomImg_mask'] = $tmpStr . '_bottomImg_mask.' . $temp_ext;
-												$gifCreator->imageMagickExec($m_bottomImg_mask[3], $tempScale['m_bottomImg_mask'], $command . $negate);
-
-													// BEGIN combining:
-													// The image onto the background
-												$gifCreator->combineExec($tempScale['m_bgImg'], $tempScale['m_bottomImg'], $tempScale['m_bottomImg_mask'], $tempScale['m_bgImg']);
-											}
-												// The image onto the background
-											$gifCreator->combineExec($tempScale['m_bgImg'], $tempFileInfo[3], $tempScale['m_mask'], $dest);
-												// Unlink the temp-images...
-											foreach ($tempScale as $file) {
-												if (@is_file($file)) {
-													unlink($file);
-												}
-											}
-										}
-									}
-								}
-									// Finish off
-								if (($fileArray['reduceColors'] || ($imgExt == 'png' && !$gifCreator->png_truecolor)) && is_file($dest)) {
-									$reduced = $gifCreator->IMreduceColors($dest, t3lib_utility_Math::forceIntegerInRange($fileArray['reduceColors'], 256, $gifCreator->truecolorColors, 256));
-									if (is_file($reduced)) {
-										unlink($dest);
-										rename($reduced, $dest);
-									}
-								}
-								$GLOBALS['TSFE']->tmpl->fileCache[$hash] = $gifCreator->getImageDimensions($dest);
-							} else { // Normal situation:
-								$fileArray['params'] = $this->modifyImageMagickStripProfileParameters($fileArray['params'], $fileArray);
-								$GLOBALS['TSFE']->tmpl->fileCache[$hash] = $gifCreator->imageMagickConvert($theImage, $fileArray['ext'], $fileArray['width'], $fileArray['height'], $fileArray['params'], $fileArray['frame'], $options);
-								if (($fileArray['reduceColors'] || ($imgExt == 'png' && !$gifCreator->png_truecolor)) && is_file($GLOBALS['TSFE']->tmpl->fileCache[$hash][3])) {
-									$reduced = $gifCreator->IMreduceColors($GLOBALS['TSFE']->tmpl->fileCache[$hash][3], t3lib_utility_Math::forceIntegerInRange($fileArray['reduceColors'], 256, $gifCreator->truecolorColors, 256));
-									if (is_file($reduced)) {
-										unlink($GLOBALS['TSFE']->tmpl->fileCache[$hash][3]);
-										rename($reduced, $GLOBALS['TSFE']->tmpl->fileCache[$hash][3]);
-									}
-								}
-							}
-							$GLOBALS['TSFE']->tmpl->fileCache[$hash]['origFile'] = $theImage;
-							$GLOBALS['TSFE']->tmpl->fileCache[$hash]['origFile_mtime'] = @filemtime($theImage); // This is needed by tslib_gifbuilder, ln 100ff in order for the setup-array to create a unique filename hash.
-							$GLOBALS['TSFE']->tmpl->fileCache[$hash]['fileCacheHash'] = $hash;
-						}
-						$imageResource = $GLOBALS['TSFE']->tmpl->fileCache[$hash];
-					}
+					/** @var $service t3lib_file_Service_ImageProcessingService */
+					$service = t3lib_div::makeInstance('t3lib_file_Service_ImageProcessingService');
+					$imageResource = $service->getImgResource($this, $file, $fileArray);
 
 				break;
 			}
@@ -5174,25 +5025,6 @@ class tslib_cObj {
 		}
 
 		return $imageResource;
-	}
-
-	/**
-	 * Modifies the parameters for ImageMagick for stripping of profile information.
-	 *
-	 * @param	string		$parameters: The parameters to be modified (if required)
-	 * @param	array		$configuration: The TypoScript configuration of [IMAGE].file
-	 * @param	string		The modified parameters
-	 */
-	protected function modifyImageMagickStripProfileParameters($parameters, array $configuration) {
-			// Strips profile information of image to save some space:
-		if (isset($configuration['stripProfile'])) {
-			if ($configuration['stripProfile']) {
-				$parameters = $GLOBALS['TYPO3_CONF_VARS']['GFX']['im_stripProfileCommand'] . $parameters;
-			} else {
-				$parameters .= '###SkipStripProfile###';
-			}
-		}
-		return $parameters;
 	}
 
 
@@ -5645,15 +5477,15 @@ class tslib_cObj {
 					$finalTagParts['aTagParams'] .= $this->extLinkATagParams($finalTagParts['url'], $finalTagParts['TYPE']);
 				} elseif ($containsSlash || $isLocalFile) { // file (internal)
 					$splitLinkParam = explode('?', $link_param);
-					if (file_exists(rawurldecode($splitLinkParam[0])) || $isLocalFile) {
+					$theFile = $this->fileFactory->getFileObjectFromCombinedIdentifier($splitLinkParam[0]);
+					if ($theFile) {
 						if ($linktxt == '')
 							$linktxt = rawurldecode($link_param);
 						if ($GLOBALS['TSFE']->config['config']['jumpurl_enable'] || $conf['jumpurl']) {
-							$theFileEnc = str_replace('%2F', '/', rawurlencode(rawurldecode($link_param)));
 							$this->lastTypoLinkUrl = $GLOBALS['TSFE']->absRefPrefix .
 								$GLOBALS['TSFE']->config['mainScript'] . $initP .
-								'&jumpurl=' . rawurlencode($link_param) .
-								($conf['jumpurl.']['secure'] ? $this->locDataJU($theFileEnc, $conf['jumpurl.']['secure.']) : '') .
+								'&jumpurl=' . rawurlencode($theFile->getPublicUrl()) .
+								($conf['jumpurl.']['secure'] ? $this->locDataJU($theFile, $conf['jumpurl.']['secure.']) : '') .
 								$GLOBALS['TSFE']->getMethodUrlIdToken;
 						} else {
 							$this->lastTypoLinkUrl = $GLOBALS['TSFE']->absRefPrefix . $link_param;

@@ -689,6 +689,7 @@ $TCA['tt_content'] = array(
 				),
 				'cols' => 4,			),
 		),
+		/* Old code, before the introduction of FAL:
 		'image' => array(
 #			'l10n_mode' => 'mergeIfNotBlank',
 			'label' => 'LLL:EXT:lang/locallang_general.xml:LGL.images',
@@ -704,6 +705,11 @@ $TCA['tt_content'] = array(
 				'minitems' => '0',
 				'autoSizeMax' => 40,
 			),
+		),
+		*/
+		'image' => array(
+			'label' => 'LLL:EXT:lang/locallang_general.xml:LGL.images',
+			'config' => t3lib_extMgm::getFileFieldTCAConfig('image'),
 		),
 		'imagewidth' => array(
 			'exclude' => 1,
@@ -1460,6 +1466,19 @@ $TCA['tt_content'] = array(
 				),
 			),
 		),
+		'filelink_sorting' => array(
+			'label' => 'LLL:EXT:cms/locallang_ttc.xml:filelink_sorting',
+			'config' => array(
+				'type' => 'select',
+				'items' => array (
+					array('LLL:EXT:cms/locallang_ttc.xlf:filelink_sorting.none', ''),
+					array('LLL:EXT:cms/locallang_ttc.xlf:filelink_sorting.extension', 'extension'),
+					array('LLL:EXT:cms/locallang_ttc.xlf:filelink_sorting.name', 'name'),
+					array('LLL:EXT:cms/locallang_ttc.xlf:filelink_sorting.type', 'type'),
+					array('LLL:EXT:cms/locallang_ttc.xlf:filelink_sorting.size', 'size'),
+				),
+			),
+		),
 		'target' => array(
 			'label' => 'LLL:EXT:cms/locallang_ttc.xml:target',
 			'config' => array(
@@ -1751,6 +1770,9 @@ $TCA['tt_content'] = array(
 					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.access;access,
 				--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.extended',
 		),
+
+		/* Old definitions, before the introduction of FAL:
+		TODO: Remove the commented-out code during merge into core master
 		'textpic' => 	array(
 			'showitem' =>
 					'--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.general;general,
@@ -1778,6 +1800,41 @@ $TCA['tt_content'] = array(
 					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.imagefiles;imagefiles,
 					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.imagelinks;imagelinks,
 					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.image_accessibility;image_accessibility,
+				--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.appearance,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.frames;frames,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.image_settings;image_settings,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.imageblock;imageblock,
+				--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.access,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.visibility;visibility,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.access;access,
+				--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.extended',
+		),*/
+
+		'textpic' => 	array(
+			'showitem' =>
+					'--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.general;general,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.header;header,
+					bodytext;Text;;richtext:rte_transform[flag=rte_enabled|mode=ts_css],
+					rte_enabled;LLL:EXT:cms/locallang_ttc.xml:rte_enabled_formlabel,' // Only the following tab is relevant to be changed for FAL:
+				.'--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.images,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.imagefiles;imagefiles,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.imagelinks;imagelinks,' // This palette will only have the clickEnlarge option in the future, as the real link field is moved to the sys_file_reference inline table. Maybe the clickEnlare link should be moved to the appearance tab of the content element instead?
+				.'--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.appearance,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.frames;frames,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.image_settings;image_settings,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.imageblock;imageblock,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.textlayout;textlayout,
+				--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.access,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.visibility;visibility,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.access;access,
+				--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.extended',
+		),
+		'image' => 		array(
+			'showitem' => '--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.general;general,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.header;header,
+				--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.images,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.imagefiles;imagefiles,
+					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.imagelinks;imagelinks,
 				--div--;LLL:EXT:cms/locallang_ttc.xml:tabs.appearance,
 					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.frames;frames,
 					--palette--;LLL:EXT:cms/locallang_ttc.xml:palette.image_settings;image_settings,
@@ -2048,7 +2105,7 @@ $TCA['tt_content'] = array(
 			'canNotCollapse' => 1,
 		),
 		'imagefiles' => array(
-			'showitem' => 'image;LLL:EXT:cms/locallang_ttc.xml:image_formlabel, imagecaption;LLL:EXT:cms/locallang_ttc.xml:imagecaption_formlabel',
+			'showitem' => 'image;LLL:EXT:cms/locallang_ttc.xml:image_formlabel',
 			'canNotCollapse' => 1,
 		),
 		'multimediafiles' => array(
@@ -2060,7 +2117,7 @@ $TCA['tt_content'] = array(
 			'canNotCollapse' => 1,
 		),
 		'imagelinks' => array(
-			'showitem' => 'image_zoom;LLL:EXT:cms/locallang_ttc.xml:image_zoom_formlabel, image_link;LLL:EXT:cms/locallang_ttc.xml:image_link_formlabel',
+			'showitem' => 'image_zoom;LLL:EXT:cms/locallang_ttc.xml:image_zoom_formlabel',
 			'canNotCollapse' => 1,
 		),
 		'image_accessibility' => array(
@@ -2076,7 +2133,7 @@ $TCA['tt_content'] = array(
 			'canNotCollapse' => 1,
 		),
 		'uploads' => array(
-			'showitem' => 'select_key;LLL:EXT:cms/locallang_ttc.xml:select_key.ALT.uploads_formlabel, --linebreak--, media;LLL:EXT:cms/locallang_ttc.xml:media.ALT.uploads_formlabel, --linebreak--, target, --linebreak--, imagecaption;LLL:EXT:cms/locallang_ttc.xml:imagecaption.ALT.uploads_formlabel, titleText;LLL:EXT:cms/locallang_ttc.xml:titleText_formlabel, --linebreak--, altText;LLL:EXT:cms/locallang_ttc.xml:altText_formlabel',
+			'showitem' => 'select_key;LLL:EXT:cms/locallang_ttc.xml:select_key.ALT.uploads_formlabel, --linebreak--, media;LLL:EXT:cms/locallang_ttc.xml:media.ALT.uploads_formlabel,filelink_sorting, --linebreak--, target, --linebreak--, imagecaption;LLL:EXT:cms/locallang_ttc.xml:imagecaption.ALT.uploads_formlabel, titleText;LLL:EXT:cms/locallang_ttc.xml:titleText_formlabel, --linebreak--, altText;LLL:EXT:cms/locallang_ttc.xml:altText_formlabel',
 			'canNotCollapse' => 1,
 		),
 		'mailform' => array(

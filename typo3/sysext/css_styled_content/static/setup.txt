@@ -1233,7 +1233,7 @@ tt_content.uploads {
 				10 = LOAD_REGISTER
 				10 {
 					oddEvenClass = li-odd li-first |*| li-even || li-odd
-					elementClass = csc-uploads-element csc-uploads-element-{register:fileExtension}
+					elementClass = csc-uploads-element csc-uploads-element-{field:extension}
 					elementClass.insertData = 1
 				}
 				20 = TEXT
@@ -1246,21 +1246,21 @@ tt_content.uploads {
 
 			10 = TEXT
 			10 {
-				data = register:linkedIcon
+				field = linkedIcon
 			}
 
 			20 = TEXT
 			20 {
-				data = register:description
-				htmlSpecialChars = 1
+				field = description
+				htmlSpecialChars =1
 				wrap = <span class="csc-uploads-description">|</span>
 				required = 1
 			}
 
 			30 = TEXT
 			30 {
-				if.isTrue.field = filelink_size
-				data = register:fileSize
+				if.isTrue.field = showFileSize
+				field = size
 				wrap = <span class="csc-uploads-fileSize">|</span>
 				bytes = 1
 				bytes.labels = {$styles.content.uploads.filesizeBytesLabels}
@@ -1299,7 +1299,7 @@ tt_content.uploads {
 			bytes.labels = {$styles.content.uploads.filesizeBytesLabels}
 		}
 		stdWrap {
-			editIcons = tt_content: media, layout [table_bgColor|table_border|table_cellspacing|table_cellpadding], filelink_size, imagecaption
+			editIcons = tt_content: media, layout [table_bgColor|table_border|table_cellspacing|table_cellpadding], filelink_size
 			editIcons.iconTitle.data = LLL:EXT:css_styled_content/pi1/locallang.xml:eIcon.filelist
 
 			prefixComment = 2 | File list:
