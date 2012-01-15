@@ -238,7 +238,6 @@ abstract class t3lib_collection_AbstractRecordCollection implements t3lib_collec
 		$this->description = $desc;
 	}
 
-
 	/**
 	 * Setter for the name of the data-source table
 	 *

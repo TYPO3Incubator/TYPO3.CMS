@@ -54,6 +54,7 @@ class t3lib_collection_StaticRecordCollection extends t3lib_collection_AbstractR
 		$entries = $relationService->getRecordsWithRelationFromCurrentRecord($this->toArray());
 		$this->removeAll();
 		foreach ($entries as $entry) {
+			// @TODO: instanticate FileReference object here instead of just putting the record array in
 			$this->add($entry);
 		}
 	}
