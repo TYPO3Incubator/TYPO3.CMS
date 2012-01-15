@@ -1,8 +1,7 @@
-<?php
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 2010-2011 Steffen Kamper (steffen@typo3.com)
+*  (c) 2011 Tobias Liebig <tobias.liebig@typo3.org>
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -24,27 +23,28 @@
 *
 *  This copyright notice MUST APPEAR in all copies of the script!
 ***************************************************************/
-/**
- * This is a wrapper file for direct calls to filelist module.
- * It's deprecated since 4.5, use proper link generation.
- *
- * @author	Steffen Kamper <steffen@typo3.com>
- * @deprecated since 4.5, will be removed in 4.8.
- *
- */
 
-require ('init.php');
-
-$query = t3lib_div::getIndpEnv('QUERY_STRING');
-t3lib_div::deprecationLog('file_list.php is deprecated since TYPO3 4.5, this file will be removed in TYPO3 4.8. The filelist module is a system extension now, do not link to this file.' .
-	LF .
-	'Referer: ' . t3lib_div::getIndpEnv('HTTP_REFERER')
-);
-if (t3lib_extMgm::isLoaded('filelist')) {
-	t3lib_utility_Http::redirect(t3lib_extMgm::extRelPath('filelist') . 'mod1/file_list.php?' . $query);
-} else {
-	$title = sprintf($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:extension.not.installed'), 'list');
-	$message = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:link.to.filelist.correctly');
-	throw new RuntimeException($title . ': ' . $message, 1294586842);
-}
-?>
+Ext.onReady(function() {
+	// TODO rewrite in ExtJS
+	$$('[placeholder]').each(function(el) {
+		if (el.getAttribute('placeholder') != "") {
+			el.observe('TYPO3:focus', function() {
+				var input = Ext.get(this);
+				if (this.getValue() == this.getAttribute('placeholder')) {
+					this.setValue('');
+					input.removeClass('placeholder');
+				}
+			});
+			el.observe('focus', function() { el.fire('TYPO3:focus'); });
+			el.observe('TYPO3:blur', function() {
+				var input = Ext.get(this);
+				if (input.getValue() == '' || this.getValue() == this.getAttribute('placeholder')) {
+					this.setValue(this.getAttribute('placeholder'));
+					input.addClass('placeholder');
+				}
+			});
+			el.observe('blur', function() { el.fire('TYPO3:blur'); });
+			el.fire('TYPO3:blur');
+		}
+	});
+});

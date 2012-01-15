@@ -34,8 +34,8 @@
 
 
 $GLOBALS['BACK_PATH'] = '';
-require('init.php');
-require('template.php');
+require_once('init.php');
+require_once('template.php');
 
 
 
@@ -125,9 +125,14 @@ class SC_show_item {
 
 		// Internal, dynamic:
 	var $content;		// Content Accumulation
-	var $file;			// For type "file": Filename
 	var $pageinfo;		// For type "db": Set to page record of the parent page of the item set (if type="db")
 	var $row;			// For type "db": The database record row.
+
+	/**
+	 * the fileObject if present
+	 * @var t3lib_file_File
+	 */
+	protected $fileObject = null;
 
 
 	/**
@@ -143,8 +148,11 @@ class SC_show_item {
 
 			// Initialize:
 		$this->perms_clause = $GLOBALS['BE_USER']->getPagePermsClause(1);
-		$this->access = 0;	// Set to TRUE if there is access to the record / file.
+		$this->access = false;	// Set to TRUE if there is access to the record / file.
 		$this->type = '';	// Sets the type, "db" or "file". If blank, nothing can be shown.
+
+		/** @var t3lib_file_Factory $factory */
+		$factory = t3lib_div::makeInstance('t3lib_file_Factory');
 
 			// Checking if the $table value is really a table and if the user has access to it.
 		if (isset($GLOBALS['TCA'][$this->table])) {
@@ -154,7 +162,7 @@ class SC_show_item {
 
 				// Check permissions and uid value:
 			if ($this->uid && $GLOBALS['BE_USER']->check('tables_select',$this->table)) {
-				if ((string)$this->table=='pages')	{
+				if ((string)$this->table=='pages') {
 					$this->pageinfo = t3lib_BEfunc::readPageAccess($this->uid,$this->perms_clause);
 					$this->access = is_array($this->pageinfo) ? 1 : 0;
 					$this->row = $this->pageinfo;
@@ -170,17 +178,16 @@ class SC_show_item {
 				$treatData->renderRecord($this->table, $this->uid, 0, $this->row);
 				$cRow = $treatData->theRecord;
 			}
-		} else	{
-			// if the filereference $this->file is relative, we correct the path
-			if (substr($this->table,0,3)=='../')	{
-				$this->file = PATH_site.preg_replace('/^\.\.\//','',$this->table);
-			} else {
-				$this->file = $this->table;
-			}
-			if (@is_file($this->file) && t3lib_div::isAllowedAbsPath($this->file))	{
-				$this->type = 'file';
-				$this->access = 1;
-			}
+		} elseif($this->table == '_FILE') {
+			/** @var t3lib_file_File $file */
+			$file = $factory->getFileObjectFromCombinedIdentifier($this->uid);
+
+			$this->type = 'file';
+			$this->fileObject = $file;
+			$this->access = $file->checkActionPermission('read');
+		} elseif($this->table == '_FOLDER') {
+			$this->type = 'folder';
+			$this->access = true;
 		}
 
 			// Initialize document template object:
@@ -209,7 +216,7 @@ class SC_show_item {
 			if (is_array ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['typo3/show_item.php']['typeRendering'])) {
 				foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['typo3/show_item.php']['typeRendering'] as $classRef) {
 					$typeRenderObj = t3lib_div::getUserObj($classRef);
-					if(is_object($typeRenderObj) && method_exists($typeRenderObj, 'isValid') && method_exists($typeRenderObj, 'render'))	{
+					if(is_object($typeRenderObj) && method_exists($typeRenderObj, 'isValid') && method_exists($typeRenderObj, 'render')) {
 						if ($typeRenderObj->isValid($this->type, $this)) {
 							$this->content .=  $typeRenderObj->render($this->type, $this);
 							$typeRendered = TRUE;
@@ -222,7 +229,7 @@ class SC_show_item {
 				// if type was not rendered use default rendering functions
 			if(!$typeRendered) {
 					// Branch out based on type:
-				switch($this->type)	{
+				switch($this->type) {
 					case 'db':
 						$this->renderDBInfo();
 					break;
@@ -295,127 +302,45 @@ class SC_show_item {
 	/**
 	 * Main function. Will generate the information to display for the item set internally.
 	 *
-	 * @param	string		<a> tag closing/returning.
+	 * @param	string	$returnLinkTag	<a> tag closing/returning.
 	 * @return	void
 	 */
 	function renderFileInfo($returnLinkTag)	{
-
-			// Initialize object to work on the image:
-		$imgObj = t3lib_div::makeInstance('t3lib_stdGraphic');
-		$imgObj->init();
-		$imgObj->mayScaleUp = 0;
-		$imgObj->absPrefix = PATH_site;
-
-			// Read Image Dimensions (returns FALSE if file was not an image type, otherwise dimensions in an array)
-		$imgInfo = '';
-		$imgInfo = $imgObj->getImageDimensions($this->file);
-
-			// File information
-		$fI = t3lib_div::split_fileref($this->file);
-		$ext = $fI['fileext'];
+		$file = &$this->fileObject;
+		$ext = $file->getExtension();
 
 		$code = '<div class="fileInfoContainer">';
 
 			// Setting header:
-		$fileName = t3lib_iconWorks::getSpriteIconForFile($ext) . '<strong>' . $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.file', TRUE) . ':</strong> ' . $fI['file'];
-		if (t3lib_div::isFirstPartOfStr($this->file,PATH_site))	{
-			$code.= '<a href="../'.substr($this->file,strlen(PATH_site)).'" target="_blank">'.$fileName.'</a>';
-		} else {
-			$code.= $fileName;
-		}
+		$fileName = t3lib_iconWorks::getSpriteIconForFile($ext) . '<strong>' . $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.file', TRUE) . ':</strong> ' . $file->getName();
+
+		$code.= $fileName;
 		$code.=' &nbsp;&nbsp;'
 			. '<strong>' . $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.filesize') . ':</strong> '
-			. t3lib_div::formatSize(@filesize($this->file)) . '</div>
+			. t3lib_div::formatSize($file->getSize()) . '</div>
 			';
-		if (is_array($imgInfo))	{
+		$this->content .= $this->doc->section('',$code);
+		$this->content .= $this->doc->divider(2);
+			// If the file was an image...:
+		if ($file->getType() == 'Image') {
+			// @TODO adapt the accessing of image width
 			$code.= '<div class="fileInfoContainer fileDimensions">'
 				. '<strong>' . $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.dimensions') . ':</strong> '
-				. $imgInfo[0] . 'x' . $imgInfo[1] . ' '
+				/*. $file->getProperty('width')*/ . '0x0' /*. $file->getProperty('height')*/ . ' '
 				. $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.pixels') . '</div>';
-		}
-		$this->content.=$this->doc->section('',$code);
-		$this->content.=$this->doc->divider(2);
-
-			// If the file was an image...:
-		if (is_array($imgInfo))	{
-
-			$imgInfo = $imgObj->imageMagickConvert($this->file,'web','520','390m','','','',1);
-			$imgInfo[3] = '../'.substr($imgInfo[3],strlen(PATH_site));
 			$code = '<br />
-				<div align="center">'.$returnLinkTag.$imgObj->imgTag($imgInfo).'</a></div>';
+				<div align="center">' . $returnLinkTag . '<img src="' . t3lib_BEfunc::getThumbnailUrlForFile($file, '150m', '150m'). '" alt="' . $file->getName() . '" title="' . $file->getName() . '" /></a></div>';
 			$this->content.= $this->doc->section('', $code);
-		} else {
-			$this->content.= $this->doc->spacer(10);
-			$lowerFilename = strtolower($this->file);
-
-				// Archive files:
-			if (TYPO3_OS!='WIN' && !$GLOBALS['TYPO3_CONF_VARS']['BE']['disable_exec_function'])	{
-				if ($ext=='zip')	{
-					$code = '';
-					$t = array();
-					t3lib_utility_Command::exec('unzip -l ' . $this->file, $t);
-					if (is_array($t))	{
-						reset($t);
-						next($t);
-						next($t);
-						next($t);
-						while(list(,$val)=each($t))	{
-							$parts = explode(' ',trim($val),7);
-							$code.= '
-								'.$parts[6].'<br />';
-						}
-						$code = '
-							<span class="nobr">'.$code.'
-							</span>
-							<br /><br />';
-					}
-					$this->content.= $this->doc->section('', $code);
-				} elseif($ext=='tar' || $ext=='tgz' || substr($lowerFilename,-6)=='tar.gz' || substr($lowerFilename,-5)=='tar.z')	{
-					$code = '';
-					if ($ext=='tar')	{
-						$compr = '';
-					} else {
-						$compr = 'z';
-					}
-					$t = array();
-					t3lib_utility_Command::exec('tar t' . $compr . 'f ' . $this->file, $t);
-					if (is_array($t))	{
-						foreach($t as $val)	{
-							$code.='
-								'.$val.'<br />';
-						}
-
-						$code.='
-								 -------<br/>
-								 '.count($t).' '.$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.files');
-
-						$code = '
-							<span class="nobr">'.$code.'
-							</span>
-							<br /><br />';
-					}
-					$this->content.= $this->doc->section('',$code);
-				}
-			} elseif ($GLOBALS['TYPO3_CONF_VARS']['BE']['disable_exec_function']) {
-				$this->content.= $this->doc->section('',$GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.cannotDisplayArchive'));
-			}
-
-				// Font files:
-			if ($ext=='ttf')	{
-				$thumbScript = 'thumbs.php';
-				$check = basename($this->file).':'.filemtime($this->file).':'.$GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
-				$params = '&file='.rawurlencode($this->file);
-				$params.= '&md5sum='.t3lib_div::shortMD5($check);
-				$url = $thumbScript.'?&dummy='.$GLOBALS['EXEC_TIME'].$params;
-				$thumb = '<br />
-					<div align="center">'.$returnLinkTag.'<img src="'.htmlspecialchars($url).'" border="0" title="'.htmlspecialchars(trim($this->file)).'" alt="" /></a></div>';
-				$this->content.= $this->doc->section('',$thumb);
-			}
+		} elseif ($file->getExtension() == 'ttf') {
+			$thumb = '<br />
+				<div align="center">' . $returnLinkTag . '<img src="'.htmlspecialchars(t3lib_BEfunc::getThumbnailUrlForFile($file, '530m', '600m')) . '" border="0" title="' . htmlspecialchars(trim($file->getName())) . '" alt="" /></a></div>';
+			$this->content.= $this->doc->section('',$thumb);
 		}
 
-
-			// References:
-		$this->content.= $this->doc->section($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.referencesToThisItem'),$this->makeRef('_FILE',$this->file));
+		if ($file->isIndexed()) {
+				// References:
+			$this->content .=  $this->doc->section($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.referencesToThisItem'), $this->makeRef('_FILE', $file));
+		}
 	}
 
 	/**
@@ -459,19 +384,11 @@ class SC_show_item {
 	function makeRef($table, $ref) {
 
 		if ($table === '_FILE') {
-				// First, fit path to match what is stored in the refindex:
-			$fullIdent = $ref;
-
-			if (t3lib_div::isFirstPartOfStr($fullIdent, PATH_site)) {
-				$fullIdent = substr($fullIdent, strlen(PATH_site));
-			}
-
 				// Look up the path:
 			$rows = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 				'*',
-				'sys_refindex',
-				'ref_table=' . $GLOBALS['TYPO3_DB']->fullQuoteStr('_FILE', 'sys_refindex') . ' AND ref_string=' .
-					$GLOBALS['TYPO3_DB']->fullQuoteStr($fullIdent, 'sys_refindex') . ' AND deleted=0'
+				'sys_file_reference',
+				'uid_local=' . $ref->getUid()
 			);
 		} else {
 				// Look up the path:
@@ -557,6 +474,23 @@ class SC_show_item {
 		return count($infoData)
 			? '<table border="0" cellpadding="0" cellspacing="0" class="typo3-dblist">' . implode('', $infoData) . '</table>'
 			: '';
+	}
+
+	/**
+	 * returns the URL of the dynamically generated "thumbnail image"
+	 * with basic checksum etc
+	 *
+	 * @param t3lib_File_File $file
+	 * @param int $width
+	 * @param int $height
+	 * @return string
+	 */
+	protected function getThumbsScriptUrl(t3lib_File_File $file, $width = 64, $height = 64) {
+		$thumbScript = 'thumbs.php';
+		$params = '&file=' . $file->getCombinedIdentifier();
+		$params.= '&md5sum=' . $file->calculateChecksum();
+		$params.= '&size=' . $width . 'x' . $height;
+		return $thumbScript . '?&dummy=' . $GLOBALS['EXEC_TIME'] . $params;
 	}
 }
 
