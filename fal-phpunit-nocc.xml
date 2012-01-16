@@ -1,0 +1,12 @@
+<phpunit mapTestClassNameToCoveredClassName="true">
+	<testsuites>
+		<testsuite name="test">
+			<directory>tests/t3lib/file/</directory>
+		</testsuite>
+	</testsuites>
+	<filter>
+		<whitelist>
+			<directory suffix=".php">t3lib/file/</directory>
+		</whitelist>
+	</filter>
+</phpunit>

@@ -1,0 +1,18 @@
+<phpunit mapTestClassNameToCoveredClassName="true">
+	<testsuites>
+		<testsuite name="test">
+			<directory>tests/t3lib/file/</directory>
+		</testsuite>
+	</testsuites>
+	<filter>
+		<whitelist>
+			<directory suffix=".php">t3lib/file/</directory>
+			<exclude>
+				<file>t3lib/file/class.t3lib_vfs_cli.php</file>
+			</exclude>
+		</whitelist>
+	</filter>
+	<logging>
+		<log type="coverage-html" target="fal-coverage/" charset="UTF-8" yui="true"/>
+	</logging>
+</phpunit>
