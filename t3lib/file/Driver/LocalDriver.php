@@ -337,12 +337,13 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * @param string $pattern
 	 * @param integer $start The position to start the listing; if not set, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param array $fileData Two-dimensional, identifier-indexed array of file index records from the database
 	 * @return array
 	 */
 	// TODO add unit tests
 	// TODO implement pattern matching
-	public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0) {
-		return $this->getDirectoryItemList($path, $start, $numberOfItems, 'getFileList_itemCallback');
+	public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0, $fileData = array()) {
+		return $this->getDirectoryItemList($path, $start, $numberOfItems, 'getFileList_itemCallback', $fileData);
 	}
 
 	/**
@@ -368,7 +369,7 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
 	 * @return array
 	 */
-	protected function getDirectoryItemList($path, $start = 0, $numberOfItems = 0, $itemHandlerMethod) {
+	protected function getDirectoryItemList($path, $start = 0, $numberOfItems = 0, $itemHandlerMethod, $itemRows = array()) {
 		$realPath = $this->absoluteBasePath . trim($path, '/') . '/';
 
 		if (!is_dir($realPath)) {
@@ -396,8 +397,14 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 		while ($iterator->valid() && ($numberOfItems == 0 || $c > 0)) {
 			--$c;
 			$iteratorItem = $iterator->current();
+
 			$iterator->next();
-			list($key, $item) = $this->$itemHandlerMethod($iteratorItem, $path);
+			$identifier = $path . $iteratorItem;
+			if (isset($itemRows[$identifier])) {
+				list($key, $item) = $this->$itemHandlerMethod($iteratorItem, $path, $itemRows[$identifier]);
+			} else {
+				list($key, $item) = $this->$itemHandlerMethod($iteratorItem, $path);
+			}
 
 			if (empty($item)) {
 				++$c;
@@ -423,9 +430,15 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 		if (!is_file($filePath) || t3lib_div::isFirstPartOfStr($fileName, '.') === TRUE) {
 			return array('', array());
 		}
-		$fileInfo = new SplFileInfo($filePath);
 
-		return array($fileName, $this->extractFileInformation($fileInfo, $path));
+			// TODO adjust column naming for modification time
+			// TODO add unit test for existing file row
+		if (!empty($fileRow) && filemtime($filePath) <= $fileRow['tstamp']) {
+			return array($fileName, $fileRow);
+		} else {
+			return array($fileName, $this->extractFileInformation($filePath, $path));
+		}
+
 	}
 
 	/**
@@ -435,8 +448,9 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * @param string $path
 	 * @return array
 	 */
-	protected function getFolderList_itemCallback($fileName, $path) {
+	protected function getFolderList_itemCallback($fileName, $path, $folderRow = array()) {
 		$filePath = $this->getAbsolutePath($path . $fileName);
+
 		if (!is_dir($filePath)) {
 			return array('', array());
 		}
@@ -444,12 +458,13 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 		if ($fileName == '..' || $fileName == '.' || $fileName == '' || t3lib_div::isFirstPartOfStr($fileName, '.') === TRUE) {
 			return array('', array());
 		}
-		$fileInfo = new SplFileInfo($filePath);
+		//$fileInfo = new SplFileInfo($filePath);
 
 		return array($fileName, array(
 			'name' => $fileName,
 			'identifier' => $path . $fileName . '/',
-			'creationDate' => $fileInfo->getCTime(),
+			'creationDate' => filectime($filePath),//$fileInfo->getCTime(),
+			'modificationDate' => filemtime($filePath),
 			'storage' => $this->storage->getUid()
 			// TODO add more information
 		));

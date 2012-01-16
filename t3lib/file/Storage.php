@@ -751,11 +751,20 @@ class t3lib_file_Storage {
 	 * @param string $pattern The pattern the files have to match
 	 * @param integer $start The position to start the listing; if not set or 0, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param bool $loadIndexRecords If set to TRUE, the index records for all files are loaded from the database. This can greatly improve performance of this method, especially with a lot of files.
 	 * @return array Information about the files found.
 	 */
 	// TODO check if we should use a folder object instead of $path
-	public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0) {
-		$items = $this->driver->getFileList($path, $pattern, $start, $numberOfItems);
+	// TODO add unit test for $loadIndexRecords
+	public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0, $loadIndexRecords = TRUE) {
+		$rows = array();
+		if ($loadIndexRecords) {
+			/** @var $repository t3lib_file_Repository_FileRepository */
+			$repository = t3lib_div::makeInstance('t3lib_file_Repository_FileRepository');
+			$rows = $repository->getFileIndexRecordsForFolder($this->getFolder($path));
+		}
+
+		$items = $this->driver->getFileList($path, $pattern, $start, $numberOfItems, $rows);
 		uksort($items, 'strnatcasecmp');
 
 		return $items;

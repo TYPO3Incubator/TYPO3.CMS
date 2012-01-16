@@ -411,9 +411,10 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @param string $pattern
 	 * @param integer $start The position to start the listing; if not set, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param array $fileData Two-dimensional, identifier-indexed array of file index records from the database
 	 * @return array
 	 */
-	abstract public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0);
+	abstract public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0, $fileData = array());
 
 	/**
 	 * Copies a file to a temporary path and returns that path.
