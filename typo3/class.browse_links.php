@@ -778,20 +778,29 @@ class browse_links {
 			} else {
 				$currentValue = '';
 			}
+
 			$currentLinkParts = t3lib_div::unQuoteFilenames($currentValue, TRUE);
+
 			$initialCurUrlArray = array (
-				'href'   => $currentLinkParts[0],
-				'target' => $currentLinkParts[1],
-				'class'  => $currentLinkParts[2],
-				'title'  => $currentLinkParts[3],
+				'href'    => $currentLinkParts[0],
+				'target'  => $currentLinkParts[1],
+				'class'   => $currentLinkParts[2],
+				'title'   => $currentLinkParts[3],
 				'params'  => $currentLinkParts[4]
 			);
 			$this->curUrlArray = (is_array(t3lib_div::_GP('curUrl'))) ?
 				array_merge($initialCurUrlArray, t3lib_div::_GP('curUrl')) :
 				$initialCurUrlArray;
+
 			$this->curUrlInfo = $this->parseCurUrl($this->siteURL.'?id='.$this->curUrlArray['href'], $this->siteURL);
 			if ($this->curUrlInfo['pageid'] == 0 && $this->curUrlArray['href']) { // pageid == 0 means that this is not an internal (page) link
-				if (file_exists(PATH_site.rawurldecode($this->curUrlArray['href'])))	{ // check if this is a link to a file
+					// check if there is the FAL API
+				if (t3lib_div::isFirstPartOfStr($this->curUrlArray['href'], 'file:')) {
+					$this->curUrlInfo = $this->parseCurUrl($this->curUrlArray['href'], $this->siteURL);
+					$currentLinkParts[0] = rawurldecode(substr($this->curUrlArray['href'], 5));	// remove the "file:" prefix
+
+					// check if this is a link to a file
+				} else if (file_exists(PATH_site.rawurldecode($this->curUrlArray['href'])))	{
 					if (t3lib_div::isFirstPartOfStr($this->curUrlArray['href'], PATH_site)) {
 						$currentLinkParts[0] = substr($this->curUrlArray['href'], strlen(PATH_site));
 					}
@@ -1324,23 +1333,22 @@ class browse_links {
 
 				if (!$this->curUrlInfo['value'] || $this->curUrlInfo['act'] != $this->act)	{
 					$cmpPath = '';
-				} elseif (substr(trim($this->curUrlInfo['info']), -1) != '/')	{
-					$cmpPath = PATH_site.dirname($this->curUrlInfo['info']).'/';
-					if (!isset($this->expandFolder)) {
-						$this->expandFolder = $cmpPath;
-					}
 				} else {
-					$cmpPath = PATH_site.$this->curUrlInfo['info'];
-					if (!isset($this->expandFolder) && $this->curUrlInfo['act'] == 'folder') {
+					$cmpPath = $this->curUrlInfo['value'];
+					if (!isset($this->expandFolder)) {
 						$this->expandFolder = $cmpPath;
 					}
 				}
 
 				if ($this->expandFolder) {
 					$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
-					$selectedFolder = $fileFactory->getFolderObjectFromCombinedIdentifier($this->expandFolder);
+					try {
+						$selectedFolder = $fileFactory->getFolderObjectFromCombinedIdentifier($this->expandFolder);
+					} catch (Exception $e) {
+						$selectedFolder = FALSE;
+					}
 				}
-					// render teh filelist if there is a folder selected
+					// render the filelist if there is a folder selected
 				if ($selectedFolder) {
 					$files = $this->expandFolder(
 						$selectedFolder,
@@ -2080,7 +2088,7 @@ class browse_links {
 
 				if ($renderFolders) {
 					$icon = t3lib_iconWorks::getSpriteIconForFile('folder');
-					$itemUid = 'file:' . $fileOrFolderObject->getCombinedIdentifier();
+					$itemUid = 'file:' . t3lib_div::rawUrlEncodeFP($fileOrFolderObject->getCombinedIdentifier());
 				} else {
 						// File icon:
 					$fileExtension = $fileOrFolderObject->getExtension();
@@ -2200,7 +2208,6 @@ class browse_links {
 					$bulkCheckBox = '';
 				} else {	// If filename is OK, just add it:
 				*/
-					// @todo: this needs to be corrected to work!
 					$filesIndex = count($this->elements);
 					$this->elements['file_' . $filesIndex] = array(
 						'type'     => 'file',
@@ -2601,10 +2608,10 @@ class browse_links {
 	 * @param	string		The URL of the current website (frontend)
 	 * @return	array		Array with URL information stored in assoc. keys: value, act (page, file, spec, mail), pageid, cElement, info
 	 */
-	function parseCurUrl($href,$siteUrl)	{
+	function parseCurUrl($href, $siteUrl) {
 		$href = trim($href);
-		if ($href)	{
-			$info=array();
+		if ($href) {
+			$info = array();
 
 				// Default is "url":
 			$info['value']=$href;
@@ -2614,10 +2621,27 @@ class browse_links {
 			if (count($specialParts)==2)	{	// Special kind (Something RTE specific: User configurable links through: "userLinks." from ->thisConfig)
 				$info['value']='#_SPECIAL'.$specialParts[1];
 				$info['act']='spec';
+					// is a FAL resource/identifier
+			} elseif (strpos($href, 'file:') !== FALSE) {
+				$rel = substr($href, strpos($href, 'file:')+5);
+				$rel = rawurldecode($rel);
+
+					// resolve FAL-api "file:UID-of-sys_file-record" and "file:combined-identifier"
+				$fileObject = $this->isFileOrFolderIdentifier($rel);
+
+				if (is_a($fileObject, 't3lib_file_Folder')) {
+					$info['act'] = 'folder';
+					$info['value'] = $fileObject->getCombinedIdentifier();
+				} elseif (is_a($fileObject, 't3lib_file_File')) {
+					$info['act'] = 'file';
+					$info['value'] = $fileObject->getUid();
+				} else {
+					$info['value'] = $rel;
+				}
+
 			} elseif (t3lib_div::isFirstPartOfStr($href,$siteUrl))	{	// If URL is on the current frontend website:
-				$rel = substr($href,strlen($siteUrl));
-				if (file_exists(PATH_site.rawurldecode($rel)))	{	// URL is a file, which exists:
-					$info['value']=rawurldecode($rel);
+				if (file_exists(PATH_site.rawurldecode($href)))	{	// URL is a file, which exists:
+					$info['value']=rawurldecode($href);
 					if (@is_dir(PATH_site . $info['value'])) {
 						$info['act'] = 'folder';
 					} else {
@@ -2631,7 +2655,7 @@ class browse_links {
 						$parameters = explode('&', $pp[1]);
 						$id = array_shift($parameters);
 						if ($id)	{
-								// Checking if the id-parameter is an alias.
+							// Checking if the id-parameter is an alias.
 							if (!t3lib_utility_Math::canBeInterpretedAsInteger($id))	{
 								list($idPartR) = t3lib_BEfunc::getRecordsByField('pages','alias',$id);
 								$id=intval($idPartR['uid']);
@@ -2862,6 +2886,28 @@ class browse_links {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * check if this can be interpreted as a file or folder object and return the corresponding object to it
+	 * @param $identifier
+	 */
+	protected function isFileOrFolderIdentifier($identifier) {
+		if (t3lib_div::isFirstPartOfStr($identifier, 'file:')) {
+			$identifier = substr($identifier, 4);
+		}
+		$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+
+		try {
+			if (t3lib_utility_Math::canBeInterpretedAsInteger($identifier)) {
+				$fileOrFolderObject = $fileFactory->getFileObject($identifier);
+			} else {
+				$fileOrFolderObject = $fileFactory->getObjectFromCombinedIdentifier($identifier);
+			}
+		} catch (Exception $e) {
+			return FALSE;
+		}
+		return $fileOrFolderObject;
 	}
 }
 
