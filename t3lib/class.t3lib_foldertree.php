@@ -235,69 +235,94 @@ class t3lib_folderTree extends t3lib_treeView {
 	 *
 	 */
 	public function getBrowseableTreeForStorage($storageObject) {
-		$rootLevelFolder = $storageObject->getRootLevelFolder();
-		$folderHashSpecUID = t3lib_div::md5int($rootLevelFolder->getCombinedIdentifier());
-		$this->specUIDmap[$folderHashSpecUID] = $rootLevelFolder->getCombinedIdentifier();
+		
+			// if there are filemounts, show each, otherwise just the rootlevel folder
+		$fileMounts = $storageObject->getFileMounts();
+		$rootLevelFolders = array();
+		if (count($fileMounts)) {
+			foreach ($fileMounts as $fileMountInfo) {
+				$rootLevelFolders[] = array(
+					'folder' => $fileMountInfo['folder'],
+					'name' => $fileMountInfo['title']
+				);
+			}
+		} else {
+			$rootLevelFolders[] = array(
+				'folder' => $storageObject->getRootLevelFolder(),
+				'name' => $storageObject->getName()
+			);
+		}
 
-			// hash key
-		$storageHashNumber = $this->getShortHashNumberForStorage($storageObject);
-
-			// Set first:
-		$this->bank = $storageHashNumber;
-		$isOpen = $this->stored[$storageHashNumber][$folderHashSpecUID] || $this->expandFirst;
+			// clean the tree
 		$this->reset();
+		
+			// go through all "root level folders" of this tree (can be the rootlevel folder or any file mount points)
+		foreach ($rootLevelFolders as $rootLevelFolderInfo) {
+			$rootLevelFolder = $rootLevelFolderInfo['folder'];
+			$rootLevelFolderName = $rootLevelFolderInfo['name'];
+			$folderHashSpecUID = t3lib_div::md5int($rootLevelFolder->getCombinedIdentifier());
+			$this->specUIDmap[$folderHashSpecUID] = $rootLevelFolder->getCombinedIdentifier();
+
+				// hash key
+			$storageHashNumber = $this->getShortHashNumberForStorage($storageObject, $rootLevelFolder);
+
+				// Set first:
+			$this->bank = $storageHashNumber;
+			$isOpen = $this->stored[$storageHashNumber][$folderHashSpecUID] || $this->expandFirst;
 
 
-			// Set PM icon:
-		$cmd = $this->generateExpandCollapseParameter($this->bank, !$isOpen, $rootLevelFolder);
-		$icon = '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/' . ($isOpen ? 'minus' : 'plus') . 'only.gif') . ' alt="" />';
-		$firstHtml = $this->PM_ATagWrap($icon, $cmd);
+				// Set PM icon:
+			$cmd = $this->generateExpandCollapseParameter($this->bank, !$isOpen, $rootLevelFolder);
+			$icon = '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/' . ($isOpen ? 'minus' : 'plus') . 'only.gif') . ' alt="" />';
+			$firstHtml = $this->PM_ATagWrap($icon, $cmd);
 
-			// @todo: check the type
-			// @todo: create sprite icons for user/group mounts, readonly mounts etc
-		switch ($val['type']) {
-			case 'user':
-				$icon = 'gfx/i/_icon_ftp_user.gif';
-				$icon = 'apps-filetree-root';
-			break;
-			case 'group':
-				$icon = 'gfx/i/_icon_ftp_group.gif';
-				$icon = 'apps-filetree-root';
-			break;
-			case 'readonly':
-				$icon = 'gfx/i/_icon_ftp_readonly.gif';
-				$icon = 'apps-filetree-root';
-			break;
-			default:
-				$icon = 'gfx/i/_icon_ftp.gif';
-				$icon = 'apps-filetree-root';
-			break;
+				// @todo: check the type
+				// @todo: create sprite icons for user/group mounts, readonly mounts etc
+			switch ($val['type']) {
+				case 'user':
+					$icon = 'gfx/i/_icon_ftp_user.gif';
+					$icon = 'apps-filetree-root';
+				break;
+				case 'group':
+					$icon = 'gfx/i/_icon_ftp_group.gif';
+					$icon = 'apps-filetree-root';
+				break;
+				case 'readonly':
+					$icon = 'gfx/i/_icon_ftp_readonly.gif';
+					$icon = 'apps-filetree-root';
+				break;
+				default:
+					$icon = 'gfx/i/_icon_ftp.gif';
+					$icon = 'apps-filetree-root';
+				break;
+			}
+
+				// Preparing rootRec for the mount
+			$firstHtml .= $this->wrapIcon(t3lib_iconWorks::getSpriteIcon($icon), $rootLevelFolder);
+			$row = array(
+				'uid'    => $folderHashSpecUID,
+				'title'  => $rootLevelFolderName,
+				'path'   => $rootLevelFolder->getCombinedIdentifier(),
+				'folder' => $rootLevelFolder
+			);
+
+				// Add the storage root to ->tree
+			$this->tree[] = array(
+				'HTML'   => $firstHtml,
+				'row'    => $row,
+				'bank'   => $this->bank,
+					// hasSub is TRUE when the root of the storage is expanded
+				'hasSub' => ($isOpen ? TRUE : FALSE)
+			);
+
+				// If the mount is expanded, go down:
+			if ($isOpen) {
+					// Set depth:
+				$depthD = '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/blank.gif', 'width="18" height="16"') . ' alt="" />';
+				$this->getFolderTree($rootLevelFolder, 999, $val['type']);
+			}
 		}
 
-			// Preparing rootRec for the mount
-		$firstHtml .= $this->wrapIcon(t3lib_iconWorks::getSpriteIcon($icon), $rootLevelFolder);
-		$row = array(
-			'uid'    => $folderHashSpecUID,
-			'title'  => $storageObject->getName(),
-			'path'   => $rootLevelFolder->getCombinedIdentifier(),
-			'folder' => $rootLevelFolder
-		);
-
-			// Add the storage root to ->tree
-		$this->tree[] = array(
-			'HTML'   => $firstHtml,
-			'row'    => $row,
-			'bank'   => $this->bank,
-				// hasSub is TRUE when the root of the storage is expanded
-			'hasSub' => ($isOpen ? TRUE : FALSE)
-		);
-
-			// If the mount is expanded, go down:
-		if ($isOpen) {
-				// Set depth:
-			$depthD = '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/blank.gif', 'width="18" height="16"') . ' alt="" />';
-			$this->getFolderTree($rootLevelFolder, 999, $depthD, $val['type']);
-		}
 	}
 
 
@@ -345,7 +370,6 @@ class t3lib_folderTree extends t3lib_treeView {
 				$nextCount = $this->getFolderTree(
 					$subFolder,
 					$depth-1,
-					$this->makeHTML ? '<img' . t3lib_iconWorks::skinImg($this->backPath, 'gfx/ol/' . ($subFolderCounter == $totalSubFolders ? 'blank' : 'line') . '.gif', 'width="18" height="16"') . ' alt="" />' : '',
 					$type
 				);
 
@@ -568,17 +592,17 @@ class t3lib_folderTree extends t3lib_treeView {
 			// (If an plus/minus icon has been clicked, 
 			// the PM GET var is sent and we must update the stored positions in the tree):
 			// 0: mount key, 1: set/clear boolean, 2: item ID (cannot contain "_"), 3: treeName
-		list($mountKey, $doExpand, $numericFolderHash, $treeName) = $this->evaluateExpandCollapseParameter();
+		list($storageHashNumber, $doExpand, $numericFolderHash, $treeName) = $this->evaluateExpandCollapseParameter();
 		if ($treeName && $treeName == $this->treeName) {
-			if (isset($this->storages[$mountKey])) {
+			if (in_array($storageHashNumber, $this->storageHashNumbers)) {
 				if ($doExpand == 1) {
 				 		// set
-					$this->stored[$mountKey][$numericFolderHash] = 1;
+					$this->stored[$storageHashNumber][$numericFolderHash] = 1;
 				} else {
 					 	// clear
-					unset($this->stored[$mountKey][$numericFolderHash]);
+					unset($this->stored[$storageHashNumber][$numericFolderHash]);
 				}
-				$this->savePosition($this->treeName);
+				$this->savePosition();
 			}
 		}
 	}
@@ -589,18 +613,34 @@ class t3lib_folderTree extends t3lib_treeView {
 	 * @param $storage
 	 * @return integer
 	 */
-	protected function getShortHashNumberForStorage($storageObject = NULL) {
-		
+	protected function getShortHashNumberForStorage(t3lib_file_Storage $storageObject = NULL, t3lib_file_Folder $startingPointFolder = NULL) {
 		if (!$this->storageHashNumbers) {
 			$this->storageHashNumbers = array();
 				// Mapping md5-hash to shorter number:
 			$hashMap = array();
-			foreach ($this->storages as $storageUid => $val) {
-				$nkey = hexdec(substr($storageUid, 0, 4));
-				$this->storageHashNumbers[$storageUid] = $nkey;
+			foreach ($this->storages as $storageUid => $storage) {
+				$fileMounts = $storage->getFileMounts();
+				if (count($fileMounts)) {
+					foreach ($fileMounts as $fileMount) {
+						$nkey = hexdec(substr(t3lib_div::md5int($fileMount['folder']->getCombinedIdentifier()), 0, 4));
+						$this->storageHashNumbers[$storageUid . $fileMount['folder']->getCombinedIdentifier()] = $nkey;
+					}
+				} else {
+					$folder = $storage->getRootLevelFolder();
+					$nkey = hexdec(substr(t3lib_div::md5int($folder>getCombinedIdentifier()), 0, 4));
+					$this->storageHashNumbers[$storageUid . $folder->getCombinedIdentifier()] = $nkey;
+				}
 			}
 		}
-		return ($storageObject ? $this->storageHashNumbers[$storageObject->getUid()] : NULL);
+		if ($storageObject) {
+			if ($startingPointFolder) {
+				return $this->storageHashNumbers[$storageObject->getUid() . $startingPointFolder->getCombinedIdentifier()];
+			} else {
+				return $this->storageHashNumbers[$storageObject->getUid()];
+			}
+		} else {
+			return NULL;
+		}
 	}
 
 
