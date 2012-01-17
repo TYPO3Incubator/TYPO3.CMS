@@ -31,7 +31,6 @@
  *
  * @author		Kasper Skårhøj	<kasperYYYY@typo3.com>
  */
-
 /**
  * Class for generating a thumbnail from the input parameters given to the script
  *
@@ -73,18 +72,30 @@ class SC_t3lib_thumbs {
 	 */
 	function init() {
 			// Setting GPvars:
-		$size = t3lib_div::_GP('size'); // Only needed for MD5 sum calculation of backwards-compatibility uplods/ files thumbnails.
-		$filePathOrCombinedFileIdentifier = t3lib_div::_GP('file');
+		$size = t3lib_div::_GP('size'); // Only needed for MD5 sum calculation of backwards-compatibility uploads/ files thumbnails.
+		$filePathOrCombinedFileIdentifier = rawurldecode(t3lib_div::_GP('file'));
 		$md5sum = t3lib_div::_GP('md5sum');
+		/** @var t3lib_file_Factory $factory */
+		$factory = t3lib_div::makeInstance('t3lib_file_Factory');
+
 
 			// Image extension list is set:
 		$this->imageList = $GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'];			// valid extensions. OBS: No spaces in the list, all lowercase...
 
-			// Check if we got a combined file identifier of the form storageUid:fileIdentifer. We need to distinguish it from absolute Windows paths by cbecking for an integer as first part.
+			// Check if we got a combined file identifier of the form storageUid:fileIdentifer.
+		// We need to distinguish it from absolute Windows paths by cbecking for an integer as first part.
 		$parts = t3lib_div::trimExplode(':', $filePathOrCombinedFileIdentifier);
-		if(count($parts) <= 1 || !t3lib_utility_Math::canBeInterpretedAsInteger($parts[0])) {
 
-				// TODO: Historically, the input parameter could also be an absolute path. This should be suppoted again to stay compatible.
+
+			// best case: we get a sys_file UID
+		if (t3lib_utility_Math::canBeInterpretedAsInteger($filePathOrCombinedFileIdentifier)) {
+
+			/** @var t3lib_file_File $filePathOrCombinedFileIdentifier */
+			$fileObject = $factory->getFileObject($filePathOrCombinedFileIdentifier);
+
+		} elseif (count($parts) <= 1 || !t3lib_utility_Math::canBeInterpretedAsInteger($parts[0])) {
+
+				// TODO: Historically, the input parameter could also be an absolute path. This should be supported again to stay compatible.
 			$relativeFilePath = $filePathOrCombinedFileIdentifier; // We assume the FilePath to be a relative file path (as in backwards compatibility mode)
 
 				// The incoming relative path is relative to the typo3/ directory, but we need it relative to PATH_site. This is corrected here:
@@ -142,12 +153,12 @@ class SC_t3lib_thumbs {
 			$OK = FALSE;
 		}
 
-		/** @var t3lib_file_Factory $factory */
-		$factory = t3lib_div::makeInstance('t3lib_file_Factory');
 		/** @var t3lib_file_File $filePathOrCombinedFileIdentifier */
-		$fileObject = $factory->getFileObjectFromCombinedIdentifier($combinedIdentifier);
+		if (!$fileObject) {
+			$fileObject = $factory->getFileObjectFromCombinedIdentifier($combinedIdentifier);
+		}
 
-		if(!$OK) {
+		if (!$OK) {
 			$OK = $fileObject !== NULL && $fileObject->checkActionPermission('read') && $fileObject->calculateChecksum() == $md5sum;
 		}
 
@@ -380,7 +391,10 @@ if (defined('TYPO3_MODE') && isset($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLA
 }
 
 
-
+// Make instance:
+$SOBE = t3lib_div::makeInstance('SC_t3lib_thumbs');
+$SOBE->init();
+$SOBE->main();
 
 
 ?>
