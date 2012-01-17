@@ -318,7 +318,15 @@ class tslib_content_Media extends tslib_content_Abstract {
 	protected function retrieveMediaUrl($identifier) {
 		$returnValue = NULL;
 
-		$fileObject = $this->fileFactory->getFileObjectFromCombinedIdentifier($identifier);
+			// check if the URL is a "FAL" url
+		if (t3lib_div::isFirstPartOfStr($identifier, 'file:')) {
+			$combinedIdentifier = substr($identifier, 5);
+			if (t3lib_utility_Math::canBeInterpretedAsInteger($combinedIdentifier)) {
+				$fileObject = $this->fileFactory->getFileObject($combinedIdentifier);
+			} else {
+				$fileObject = $this->fileFactory->getFileObjectFromCombinedIdentifier($combinedIdentifier);
+			}
+		}
 
 		if ($fileObject !== NULL) {
 			$returnValue = $fileObject->getPublicUrl();
