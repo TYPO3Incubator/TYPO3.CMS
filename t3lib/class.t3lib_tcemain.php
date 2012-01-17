@@ -1492,10 +1492,15 @@ class t3lib_TCEmain {
 							// This array contains the filenames in the uploadfolder that should be deleted:
 						foreach ($theFileValues as $key => $theFile) {
 							$theFile = trim($theFile);
-							if (@is_file($dest . '/' . $theFile)) {
-								$this->removeFilesStore[] = $dest . '/' . $theFile;
-							} elseif ($theFile) {
-								$this->log($table, $id, 5, 0, 1, "Could not delete file '%s' (does not exist). (%s)", 10, array($dest . '/' . $theFile, $recFID), $propArr['event_pid']);
+							if (t3lib_utility_Math::canBeInterpretedAsInteger($theFile)) {
+								// do nothing for now as it is a file reference from FAL
+								// @todo: check if there are other references ==> should we delete it?
+							} else {
+								if (@is_file($dest . '/' . $theFile)) {
+									$this->removeFilesStore[] = $dest . '/' . $theFile;
+								} elseif ($theFile) {
+									$this->log($table, $id, 5, 0, 1, "Could not delete file '%s' (does not exist). (%s)", 10, array($dest . '/' . $theFile, $recFID), $propArr['event_pid']);
+								}
 							}
 						}
 					}
@@ -1504,7 +1509,9 @@ class t3lib_TCEmain {
 					// Traverse the submitted values:
 				foreach ($valueArray as $key => $theFile) {
 						// NEW FILES? If the value contains '/' it indicates, that the file is new and should be added to the uploadsdir (whether its absolute or relative does not matter here)
-					if (strstr(t3lib_div::fixWindowsFilePath($theFile), '/')) {
+					if (t3lib_utility_Math::canBeInterpretedAsInteger($theFile)) {
+						// FAL-handling, nothing to do as it's a simple UID
+					} elseif (strstr(t3lib_div::fixWindowsFilePath($theFile), '/')) {
 							// Init:
 						$maxSize = intval($tcaFieldConf['max_size']);
 						$cmd = '';
@@ -1565,11 +1572,15 @@ class t3lib_TCEmain {
 						}
 
 							// If the destination file was created, we will set the new filename in the value array, otherwise unset the entry in the value array!
-						if (@is_file($theDestFile)) {
-							$info = t3lib_div::split_fileref($theDestFile);
-							$valueArray[$key] = $info['file']; // The value is set to the new filename
+						if (t3lib_utility_Math::canBeInterpretedAsInteger($theDestFile)) {
+							// do nothing for now as it is a file reference from FAL
 						} else {
-							unset($valueArray[$key]); // The value is set to the new filename
+							if (@is_file($theDestFile)) {
+								$info = t3lib_div::split_fileref($theDestFile);
+								$valueArray[$key] = $info['file']; // The value is set to the new filename
+							} else {
+								unset($valueArray[$key]); // The value is set to the new filename
+							}
 						}
 					}
 				}
@@ -1607,9 +1618,11 @@ class t3lib_TCEmain {
 				if (!$this->bypassFileHandling) { // If filehandling should NOT be bypassed, do processing:
 					$propArr = $this->getRecordProperties($table, $id); // For logging..
 					foreach ($valueArray as &$theFile) {
+						if (t3lib_utility_Math::canBeInterpretedAsInteger($theFile)) {
+							// FAL-handling, nothing to do as it's a simple UID
 
+						} else if ($this->alternativeFilePath[$theFile]) {
 							// if alernative File Path is set for the file, then it was an import
-						if ($this->alternativeFilePath[$theFile]) {
 
 								// don't import the file if it already exists
 							if (@is_file(PATH_site . $this->alternativeFilePath[$theFile])) {
@@ -6434,10 +6447,15 @@ class t3lib_TCEmain {
 				if ($theFile) {
 					switch ($func) {
 						case 'deleteAll':
-							if (@is_file($uploadPath . '/' . $theFile)) {
-								unlink($uploadPath . '/' . $theFile);
+							if (t3lib_utility_Math::canBeInterpretedAsInteger($theFile)) {
+								// do nothing for now as it is a file reference from FAL
+								// @todo: check if there are other references ==> should we delete it?
 							} else {
-								$this->log($table, 0, 3, 0, 100, "Delete: Referenced file that was supposed to be deleted together with it's record didn't exist");
+								if (@is_file($uploadPath . '/' . $theFile)) {
+									unlink($uploadPath . '/' . $theFile);
+								} else {
+									$this->log($table, 0, 3, 0, 100, "Delete: Referenced file that was supposed to be deleted together with it's record didn't exist");
+								}
 							}
 						break;
 					}

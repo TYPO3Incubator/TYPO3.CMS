@@ -2138,6 +2138,19 @@ class t3lib_TCEforms {
 					// Making the array of file items:
 				$itemArray = t3lib_div::trimExplode(',', $PA['itemFormElValue'], TRUE);
 
+				/* @var $fileFactory t3lib_file_Factory */
+				$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+
+					// correct the filename for the FAL items
+				foreach ($itemArray as &$fileItem) {
+					list($fileUid, $fileLabel) = explode('|', $fileItem);
+					if (t3lib_utility_Math::canBeInterpretedAsInteger($fileUid)) {
+						$fileObject = $fileFactory->getFileObject($fileUid);
+						$fileLabel = $fileObject->getName();
+					}
+					$fileItem = $fileUid. '|' . $fileLabel;
+				}
+
 					// Showing thumbnails:
 				$thumbsnail = '';
 				if ($show_thumbs) {
@@ -2146,12 +2159,31 @@ class t3lib_TCEforms {
 						$imgP = explode('|', $imgRead);
 						$imgPath = rawurldecode($imgP[0]);
 
-						$rowCopy = array();
-						$rowCopy[$field] = $imgPath;
+							// FAL icon production
+						if (t3lib_utility_Math::canBeInterpretedAsInteger($imgP[0])) {
+							$fileObject = $fileFactory->getFileObject($imgP[0]);
+							if (t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'], $fileObject->getExtension())) {
+								$imageUrl = t3lib_BEfunc::getThumbnailUrlForFile($fileObject);
+								$imgTag = '<img src="' . $imageUrl . '" alt="' . htmlspecialchars($fileObject->getName()) . '" />';
 
-						$imgs[] = '<span class="nobr">' . t3lib_BEfunc::thumbCode($rowCopy, $table, $field, $this->backPath, 'thumbs.php', $config['uploadfolder'], 0, ' align="middle"') .
-								  $imgPath .
-								  '</span>';
+							} else {
+									// Icon
+								$imgTag = t3lib_iconWorks::getSpriteIconForFile(
+									strtolower($fileObject->getExtension()),
+									array('title' => $fileObject->getName())
+								);
+							}
+
+							$imgs[] = '<span class="nobr">' . $imgTag . $fileObject->getName() . '</span>';
+						} else {
+							$rowCopy = array();
+							$rowCopy[$field] = $imgPath;
+
+							$imgs[] = '<span class="nobr">' . t3lib_BEfunc::thumbCode($rowCopy, $table, $field, $this->backPath, 'thumbs.php', $config['uploadfolder'], 0, ' align="middle"') .
+									  $imgPath .
+									  '</span>';
+						}
+
 					}
 					$thumbsnail = implode('<br />', $imgs);
 				}
@@ -3613,7 +3645,7 @@ class t3lib_TCEforms {
 					foreach ($itemArray as $item) {
 						$itemParts = explode('|', $item);
 						$uidList[] = $pUid = $pTitle = $itemParts[0];
-						$opt[] = '<option value="' . htmlspecialchars(rawurldecode($itemParts[0])) . '">' . htmlspecialchars(basename(rawurldecode($itemParts[0]))) . '</option>';
+						$opt[] = '<option value="' . htmlspecialchars(rawurldecode($itemParts[0])) . '">' . htmlspecialchars(basename(rawurldecode($itemParts[1]))) . '</option>';
 					}
 				break;
 				case 'folder':

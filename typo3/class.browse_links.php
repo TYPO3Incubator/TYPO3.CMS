@@ -2214,7 +2214,7 @@ class browse_links {
 						'table'    => 'sys_file',
 						'uid'      => $fileObject->getUid(),
 						'fileName' => $fileObject->getName(),
-						'filePath' => $fileObject->getCombinedIdentifier(),
+						'filePath' => $fileObject->getUid(),
 						'fileExt'  => $fileExtension,
 						'fileIcon' => $icon,
 					);
