@@ -77,7 +77,7 @@ class Tx_File_BackwardsCompatibility_TslibContentAdapter {
 						'captions' => array(),
 						'links' => array(),
 						'alternativeTexts' => array(),
-						'fileUid' => array()
+						'sysFileUids' => array()
 					);
 					foreach ($files as $file) {
 						/** @var $file t3lib_file_FileReference */
@@ -86,7 +86,7 @@ class Tx_File_BackwardsCompatibility_TslibContentAdapter {
 						$fileFieldContents['captions'][] = $file->getProperty('description');
 						$fileFieldContents['links'][] = $file->getProperty('link');
 						$fileFieldContents['alternativeTexts'][] = $file->getProperty('alternative');
-						$fileFieldContents['sysFileUids'] = $file->getUid();
+						$fileFieldContents['sysFileUids'][] = $file->getUid();
 					}
 					foreach ($oldFieldNames as $oldFieldType => $oldFieldName) {
 							// For paths, make comma separated list
