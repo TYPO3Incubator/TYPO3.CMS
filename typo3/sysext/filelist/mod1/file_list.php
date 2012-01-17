@@ -80,6 +80,7 @@ class SC_file_list {
 
 		// Internal, static: GPvars:
 	var $id;		// "id" -> the path to list.
+	/* @var t3lib_file_Folder $folderObject */
 	protected $folderObject;
 	var $pointer;	// Pointer to listing
 	var $table;		// "Table"
