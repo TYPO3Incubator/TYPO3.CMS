@@ -330,9 +330,14 @@ class t3lib_file_Storage {
 		if (empty($additionalData)) {
 			$additionalData = array(
 				'path' => $folderIdentifier,
-				'label' => $folderIdentifier,
+				'title' => $folderIdentifier,
 				'folder' => $this->getFolder($folderIdentifier)
 			);
+		} else {
+			$additionalData['folder'] = $this->getFolder($folderIdentifier);
+			if (!isset($additionalData['title'])) {
+				$additionalData['title'] = $folderIdentifier;
+			}
 		}
 		$this->fileMounts[$folderIdentifier] = $additionalData;
 	}
@@ -1283,16 +1288,28 @@ class t3lib_file_Storage {
 	 * @return t3lib_file_Folder
 	 */
 	public function getFolder($identifier) {
-		return $this->driver->getFolder($identifier);
+		$folderObject = $this->driver->getFolder($identifier);
+		if ($this->fileMounts && !$this->isWithinFileMountBoundaries($folderObject)) {
+			// @todo: throw an exception instead when the requested folder is not within the filemount boundaries
+			return FALSE;
+		} else {
+			return $folderObject;
+		}
 	}
 
 	/**
 	 * Returns the folders on the root level of the storage
+	 * or the first mount point of this storage for this user
 	 *
 	 * @return t3lib_file_Folder
 	 */
 	public function getRootLevelFolder() {
-		return $this->driver->getRootLevelFolder();
+		if (count($this->fileMounts)) {
+			$mount = reset($this->fileMounts);
+			return $mount['folder'];
+		} else {
+			return $this->driver->getRootLevelFolder();
+		}
 	}
 
 	protected function emitPreFileCopySignal(t3lib_file_File $file, $targetFolder) {
