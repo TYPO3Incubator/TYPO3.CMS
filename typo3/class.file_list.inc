@@ -385,11 +385,16 @@ class fileList extends t3lib_recordList {
 	 * @param	string		ID (path)
 	 * @return	string		HTML
 	 */
-	function linkWrapFile($code,$path)	{
+	function linkWrapFile($code, $fileObject)	{
 
-		if (t3lib_div::isFirstPartOfStr($path, PATH_site)) {
-			$href = t3lib_div::getIndpEnv('TYPO3_SITE_URL') . substr($path, strlen(PATH_site));
-			$aOnClick = "return top.openUrlInWindow('".$href."','WebFile');";
+		$fileUrl = $fileObject->getPublicUrl();
+
+		if ($fileUrl) {
+			$urlParts = parse_url($fileUrl);
+			if (!$urlParts['host']) {
+				$fileUrl = t3lib_div::getIndpEnv('TYPO3_SITE_URL') . $fileUrl;
+			}
+			$aOnClick = "return top.openUrlInWindow('" . $fileUrl . "','WebFile');";
 			$code = '<a href="#" title="'.htmlspecialchars($code).'" onclick="'.htmlspecialchars($aOnClick).'">'.t3lib_div::fixed_lgd_cs($code,$this->fixedL).'</a>';
 		}
 		return $code;
@@ -482,7 +487,7 @@ class fileList extends t3lib_recordList {
 							$theData[$field] = $this->makeRef($fileObject);
 						break;
 						case 'file':
-							$theData[$field] = $this->linkWrapFile($fileName, $fileObject->getCombinedIdentifier());
+							$theData[$field] = $this->linkWrapFile($fileName, $fileObject);
 
 								// Thumbnails?
 							if ($this->thumbs && $this->isImage($ext)) {
@@ -491,6 +496,7 @@ class fileList extends t3lib_recordList {
 							}
 						break;
 						default:
+								// @todo: fix the access on the array
 							$theData[$field]=t3lib_div::fixed_lgd_cs($theFile[$field], $this->fixedL);
 						break;
 					}
