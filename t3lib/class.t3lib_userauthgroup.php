@@ -1433,7 +1433,8 @@ abstract class t3lib_userAuthGroup extends t3lib_userAuth {
 	 * permissions.file.default {
 	 * 		addFile = 1
 	 * 		readFile = 1
-	 *      editFile = 1
+	 * 		editFile = 1
+	 * 		writeFile = 1
 	 * 		uploadFile = 1
 	 * 		copyFile = 1
 	 * 		moveFile = 1
@@ -1444,9 +1445,9 @@ abstract class t3lib_userAuthGroup extends t3lib_userAuth {
 	 * 		addFolder = 1
 	 * 		browseFolder = 1
 	 * 		moveFolder = 1
+	 * 		writeFolder = 1
 	 * 		renameFolder = 1
 	 * 		removeFolder = 1
-	 * 		removeFilesInFolder = 1
 	 * 		removeSubfolders = 1
 	 * }
 	 *
@@ -1482,7 +1483,6 @@ abstract class t3lib_userAuthGroup extends t3lib_userAuth {
 				'renameFolder' => TRUE,
 				'writeFolder' => TRUE,	// new option, generic check of the user rights
 				'removeFolder' => TRUE,
-				'removeFilesInFolder' => TRUE,	// new, does it make sense?
 				'removeSubfolders' => TRUE	// was "delete recursively" previously
 			);
 
