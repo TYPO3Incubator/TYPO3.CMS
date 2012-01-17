@@ -121,6 +121,8 @@ class SC_file_list {
 			// take the first object of the first storage
 			$fileStorages = $GLOBALS['BE_USER']->getFileStorages();
 			$fileStorage = reset($fileStorages);
+				// Validating the input "id" (the path, directory!) and 
+				// checking it against the mounts of the user. - now done in the controller
 			$this->folderObject = $fileStorage->getRootLevelFolder();
 		}
 
@@ -163,14 +165,8 @@ class SC_file_list {
 		$this->doc->setModuleTemplate('templates/file_list.html');
 		$this->doc->getPageRenderer()->loadPrototype();
 
-			// Validating the input "id" (the path, directory!) and checking it against the mounts of the user.
-		// @todo: $this->id = $this->basicFF->is_directory($this->id);
-		$access = $this->id && $this->basicFF->checkPathAgainstMounts($this->id.'/');
-		// @todo: fix access
-		$access = TRUE;
-
 			// There there was access to this file path, continue, make the list
-		if ($access) {
+		if ($this->folderObject) {
 				// include the initialization for the flash uploader
 			if ($GLOBALS['BE_USER']->uc['enableFlashUploader']) {
 
@@ -457,18 +453,23 @@ class SC_file_list {
 			// FileList Module CSH:
 		$buttons['csh'] = t3lib_BEfunc::cshItem('xMOD_csh_corebe', 'filelist_module', $GLOBALS['BACK_PATH'], '', TRUE);
 
-			// upload button
-		$buttons['upload'] = '<a href="' . $GLOBALS['BACK_PATH'] . 'file_upload.php?target=' . rawurlencode($this->id) .
-			'&amp;returnUrl=' . rawurlencode($this->filelist->listURL()) . '" id="button-upload" title="' .
-			$GLOBALS['LANG']->makeEntities($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:cm.upload', 1)) . '">' .
-			t3lib_iconWorks::getSpriteIcon('actions-edit-upload') .
-		'</a>';
+			// upload button (only if upload to this directory is allowed)
+		if ($this->folderObject && $this->folderObject->getStorage()->checkUserActionPermission('upload', 'File') && $this->folderObject->checkActionPermission('write')) {
+			$buttons['upload'] = '<a href="' . $GLOBALS['BACK_PATH'] . 'file_upload.php?target=' . rawurlencode($this->folderObject->getCombinedIdentifier()) .
+				'&amp;returnUrl=' . rawurlencode($this->filelist->listURL()) . '" id="button-upload" title="' .
+				$GLOBALS['LANG']->makeEntities($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:cm.upload', 1)) . '">' .
+				t3lib_iconWorks::getSpriteIcon('actions-edit-upload') .
+			'</a>';
+		}
 
-		$buttons['new'] = '<a href="' . $GLOBALS['BACK_PATH'] . 'file_newfolder.php?target=' . rawurlencode($this->id) .
-			'&amp;returnUrl=' . rawurlencode($this->filelist->listURL()) . '" title="' .
-			$GLOBALS['LANG']->makeEntities($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:cm.new', 1)) . '">' .
-			t3lib_iconWorks::getSpriteIcon('actions-document-new') .
-		'</a>';
+			// new folder button
+		if ($this->folderObject && $this->folderObject->checkActionPermission('add')) {
+			$buttons['new'] = '<a href="' . $GLOBALS['BACK_PATH'] . 'file_newfolder.php?target=' . rawurlencode($this->folderObject->getCombinedIdentifier()) .
+				'&amp;returnUrl=' . rawurlencode($this->filelist->listURL()) . '" title="' .
+				$GLOBALS['LANG']->makeEntities($GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:cm.new', 1)) . '">' .
+				t3lib_iconWorks::getSpriteIcon('actions-document-new') .
+			'</a>';
+		}
 
 		return $buttons;
 	}
