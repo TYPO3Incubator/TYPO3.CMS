@@ -44,6 +44,7 @@ class Tx_File_BackwardsCompatibility_TslibContentAdapter {
 				'captions' => 'imagecaption',
 				'links' => 'image_link',
 				'alternativeTexts' => 'altText',
+				'sysFileUids' => 'sysFileUids',	// additional fields for the UIDs
 			),
 		),
 		'pages' => array(
@@ -76,18 +77,20 @@ class Tx_File_BackwardsCompatibility_TslibContentAdapter {
 						'captions' => array(),
 						'links' => array(),
 						'alternativeTexts' => array(),
+						'fileUid' => array()
 					);
-					foreach($files as $file) {
+					foreach ($files as $file) {
 						/** @var $file t3lib_file_FileReference */
-						$fileFieldContents['paths'][] = '../../'.$file->getPublicUrl();
+						$fileFieldContents['paths'][] = $file->getPublicUrl();
 						$fileFieldContents['titleTexts'][] = $file->getProperty('title');
 						$fileFieldContents['captions'][] = $file->getProperty('description');
 						$fileFieldContents['links'][] = $file->getProperty('link');
 						$fileFieldContents['alternativeTexts'][] = $file->getProperty('alternative');
+						$fileFieldContents['sysFileUids'] = $file->getUid();
 					}
-					foreach($oldFieldNames as $oldFieldType => $oldFieldName) {
+					foreach ($oldFieldNames as $oldFieldType => $oldFieldName) {
 							// For paths, make comma separated list
-						if($oldFieldType === 'paths') {
+						if ($oldFieldType === 'paths') {
 							$fieldContents = implode(',', $fileFieldContents[$oldFieldType]);
 						} else {
 							// For all other fields, separate by newline
