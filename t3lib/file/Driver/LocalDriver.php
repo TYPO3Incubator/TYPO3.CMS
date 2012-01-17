@@ -27,7 +27,7 @@
 
 
 /**
- * Storage for the local file system
+ * Driver for the local file system
  *
  * @author  Andreas Wolf <andreas.wolf@ikt-werk.de>
  * @package	TYPO3
@@ -1041,9 +1041,10 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * @return bool TRUE if $content is within $container, always FALSE if $container is not within this storage
 	 */
 	public function isWithin(t3lib_file_Folder $container, $content) {
-		if (!$container->getStorage() != $this) {
+		if ($container->getStorage() != $this->storage) {
 			return FALSE;
 		}
+
 		if ($content instanceof t3lib_file_File || $content instanceof t3lib_file_Folder) {
 			$content = $container->getIdentifier();
 		}
