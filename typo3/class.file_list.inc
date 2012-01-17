@@ -367,7 +367,7 @@ class fileList extends t3lib_recordList {
 	 * @return	string		HTML
 	 */
 	function linkWrapDir($title, $folderObject) {
-		$href = $this->script . '?id=' . rawurlencode($folderObject->getCombinedIdentifier());
+		$href = $this->backPath . $this->script . '?id=' . rawurlencode($folderObject->getCombinedIdentifier());
 		$onclick = ' onclick="'.htmlspecialchars('top.content.nav_frame.hilight_row("file","folder' . t3lib_div::md5int($folderObject->getCombinedIdentifier()) . '_"+top.fsMod.currentBank)') . '"';
 
 			// Sometimes $code contains plain HTML tags. In such a case the string should not be modified!
@@ -406,7 +406,7 @@ class fileList extends t3lib_recordList {
 	 * @return	string		URL
 	 */
 	function listURL()	{
-		return $this->script.'?id='.rawurlencode($this->folderObject->getCombinedIdentifier()).'&imagemode='.$this->thumbs;
+		return $this->backPath . $this->script.'?id='.rawurlencode($this->folderObject->getCombinedIdentifier()).'&imagemode='.$this->thumbs;
 	}
 
 	/**
@@ -654,7 +654,7 @@ class fileList extends t3lib_recordList {
 		$fullIdentifier = $fileOrFolderObject->getCombinedIdentifier();
 
 			// edit metadata of file
-		if (is_a($fileOrFolderObject, 't3lib_file_File') && $fileOrFolderObject->isIndexed()) {
+		if (is_a($fileOrFolderObject, 't3lib_file_File') && $fileOrFolderObject->isIndexed() && $fileOrFolderObject->checkActionPermission('edit')) {
 			$data = array(
 				'sys_file' => array($fileOrFolderObject->getUid() => 'edit')
 			);
@@ -665,7 +665,7 @@ class fileList extends t3lib_recordList {
 		}
 
 			// edit file content (if editable)
-		if (is_a($fileOrFolderObject, 't3lib_file_File') && $fileOrFolderObject->checkActionPermission('write') && t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['SYS']['textfile_ext'], $fileOrFolderObject->getExtension())) {
+		if (is_a($fileOrFolderObject, 't3lib_file_File') && $fileOrFolderObject->checkActionPermission('edit') && t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['SYS']['textfile_ext'], $fileOrFolderObject->getExtension())) {
 			$editOnClick = 'top.content.list_frame.location.href=top.TS.PATH_typo3+\'file_edit.php?target=' .
 				rawurlencode($fullIdentifier) .
 				'&returnUrl=\'+top.rawurlencode(top.content.list_frame.document.location.pathname+top.content.list_frame.document.location.search);return false;';
@@ -674,12 +674,16 @@ class fileList extends t3lib_recordList {
 			$cells['edit'] = t3lib_iconWorks::getSpriteIcon('empty-empty');
 		}
 
-			//rename
-		$renameOnClick = 'top.content.list_frame.location.href=top.TS.PATH_typo3+\'file_rename.php?target=' .
-			rawurlencode($fullIdentifier) .
-			'&returnUrl=\'+top.rawurlencode(top.content.list_frame.document.location.pathname+top.content.list_frame.document.location.search);return false;';
+			// rename the file
+		if ($fileOrFolderObject->checkActionPermission('rename')) {
+			$renameOnClick = 'top.content.list_frame.location.href=top.TS.PATH_typo3+\'file_rename.php?target=' .
+				rawurlencode($fullIdentifier) .
+				'&returnUrl=\'+top.rawurlencode(top.content.list_frame.document.location.pathname+top.content.list_frame.document.location.search);return false;';
 
-		$cells['rename'] = '<a href="#" onclick="' . $renameOnClick . '"  title="' . $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.rename') . '">' . t3lib_iconWorks::getSpriteIcon('actions-edit-rename') . '</a>';
+			$cells['rename'] = '<a href="#" onclick="' . $renameOnClick . '"  title="' . $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.rename') . '">' . t3lib_iconWorks::getSpriteIcon('actions-edit-rename') . '</a>';
+		} else {
+			$cells['rename'] = t3lib_iconWorks::getSpriteIcon('empty-empty');
+		}
 
 			//info
 		$infoOnClick = 'top.launchView(\'' . $fullIdentifier . '\', \'\');return false;';
