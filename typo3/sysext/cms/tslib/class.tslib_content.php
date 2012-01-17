@@ -5372,8 +5372,13 @@ class tslib_cObj {
 					$fileObject = $fileFactory->getFileObject($linkHandlerValue);
 				} else {
 					$fileObject = $fileFactory->getObjectFromCombinedIdentifier($linkHandlerValue);
+					// @todo: the folder object needs to implement getPublicUrl();
 				}
-				$link_paramA[0] = $fileObject->getPublicUrl();
+				if (is_a($fileObject, 't3lib_file_File')) {
+					$link_paramA[0] = $fileObject->getPublicUrl();
+				} else {
+					$link_paramA[0] = $fileObject->getIdentifier();
+				}
 			}
 
 
