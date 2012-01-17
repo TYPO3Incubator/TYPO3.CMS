@@ -192,7 +192,7 @@ class SC_t3lib_thumbs {
 				// Check file extension:
 			if ($this->image->getExtension() == 'ttf') {
 				$this->fontGif($this->image);	// Make font preview... (will not return)
-			} elseif($this->image->getType() != t3lib_file_File::FILETYPE_IMAGE) {
+			} else if(($this->image->getType() != t3lib_file_File::FILETYPE_IMAGE) && !t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'], $this->image->getExtension())) {
 				$this->errorGif('Not imagefile!', 'No ext!', $this->image->getName());
 			}
 
