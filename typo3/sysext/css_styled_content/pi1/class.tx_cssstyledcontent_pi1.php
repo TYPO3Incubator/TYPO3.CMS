@@ -331,7 +331,7 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 				foreach ($fileArray as $key => $fileId)	{
 					/** @var t3lib_file_FileInterface $fileObject */
 					if (t3lib_utility_Math::canBeInterpretedAsInteger($fileId)) {
-						$fileObject = $fileFactory->getFileUsageObject($fileId);
+						$fileObject = $fileFactory->getFileObject($fileId);
 					} else {
 						$fileObject = $fileFactory->getFileObjectFromCombinedIdentifier($fileId);
 					}
