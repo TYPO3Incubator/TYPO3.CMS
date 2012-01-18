@@ -358,6 +358,11 @@ class tslib_cObj {
 	protected $getImgResourceHookObjects; // Containing hook objects for getImgResource
 
 	/**
+	 * @var tslib_content_fileLinkHook[]
+	 */
+	protected $fileLinkHookObjects = array();
+
+	/**
 	 * @var array with members of tslib_content_abstract
 	 */
 	protected $contentObjects = array();
@@ -407,6 +412,7 @@ class tslib_cObj {
 		$this->table = $table;
 		$this->currentRecord = $table ? $table . ':' . $this->data['uid'] : '';
 		$this->parameters = array();
+		
 		if (is_array($TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_content.php']['cObjTypeAndClass'])) {
 			foreach ($TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_content.php']['cObjTypeAndClass'] as $classArr) {
 				$this->cObjHookObjectsArr[$classArr[0]] = t3lib_div::getUserObj($classArr[1]);
@@ -426,6 +432,22 @@ class tslib_cObj {
 				}
 
 				$this->stdWrapHookObjects[] = $hookObject;
+			}
+		}
+
+		$this->fileLinkHookObjects = array();
+		if (is_array($TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_content.php']['fileLink'])) {
+			foreach ($TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_content.php']['fileLink'] as $classData) {
+				$hookObject = t3lib_div::getUserObj($classData);
+
+				if (!($hookObject instanceof tslib_content_fileLinkHook)) {
+					throw new UnexpectedValueException(
+						$classData . ' must implement interface tslib_content_fileLinkHook',
+						1326900375
+					);
+				}
+
+				$this->fileLinkHookObjects[] = $hookObject;
 			}
 		}
 
@@ -3927,7 +3949,7 @@ class tslib_cObj {
 		$conf['path'] = isset($conf['path.'])
 			? $this->stdWrap($conf['path'], $conf['path.'])
 			: $conf['path'];
-		if (strpos($theValue, ':') == FALSE && $conf['path']) {
+		if (strpos($fileId, ':') == FALSE && $conf['path']) {
 			$theFile = $this->fileFactory->getFileObjectFromCombinedIdentifier($conf['path'] . $fileId);
 		} else {
 			$theFile = $this->fileFactory->getFileObjectFromCombinedIdentifier($fileId);
@@ -3996,7 +4018,14 @@ class tslib_cObj {
 					? $this->stdWrap($conf['icon_image_ext_list'], $conf['icon_image_ext_list.'])
 					: $conf['icon_image_ext_list'];
 				$image_ext_list = str_replace(' ', '', strtolower($IEList));
-				if ($theFile->getExtension() && t3lib_div::inList($image_ext_list, $theFile->getExtension())) {
+				$previewImageFile = $theFile;
+
+				foreach ($this->fileLinkHookObjects AS $hookObject) {
+					$alternativePreviewImageFile = $hookObject->getPreviewImage($previewImageFile);
+					$previewImageFile = $alternativePreviewImageFile != null ? $alternativePreviewImageFile : $previewImageFile;
+				}
+				$this->data['previewImageFileId'] = $previewImageFile->getUid();
+				if ($previewImageFile->getExtension() && t3lib_div::inList($image_ext_list, strtolower($previewImageFile->getExtension()))) {
 					if ($conf['iconCObject']) {
 						$icon = $this->cObjGetSingle($conf['iconCObject'], $conf['iconCObject.'], 'iconCObject');
 					} else {
@@ -4007,10 +4036,8 @@ class tslib_cObj {
 									? $this->stdWrap($conf['icon_thumbSize'], $conf['icon_thumbSize.'])
 									: $conf['icon_thumbSize']);
 							}
-							$check = basename($theFile) . ':' . filemtime($theFile) . ':' . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
-							$md5sum = '&md5sum=' . t3lib_div::shortMD5($check);
 							$icon = 't3lib/thumbs.php?dummy=' . $GLOBALS['EXEC_TIME'] . '&file=' .
-								rawurlencode('../' . $theFile->getForLocalProcessing()) . $thumbSize . $md5sum;
+								$previewImageFile->getUid() . $thumbSize ;
 						} else {
 							$icon = t3lib_extMgm::siteRelPath('cms') . 'tslib/media/miscicons/notfound_thumb.gif';
 						}

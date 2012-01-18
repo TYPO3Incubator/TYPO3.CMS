@@ -63,6 +63,9 @@ class t3lib_file_Service_ImageProcessingService {
 				$file = $fileConfiguration['import'] . $ifile;
 			}
 		}
+		if (t3lib_utility_Math::canBeInterpretedAsInteger($file)) {
+			$file = t3lib_div::makeInstance('t3lib_file_Factory')->getFileObject($file);
+		}
 
 		if ($file instanceof t3lib_file_FileInterface) {
 			$theImage = $file->getForLocalProcessing(FALSE);

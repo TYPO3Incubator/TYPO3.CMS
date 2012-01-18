@@ -1289,7 +1289,7 @@ tt_content.uploads {
 			iconCObject = IMAGE
 			iconCObject {
 				file {
-					import.data = register : ICON_REL_PATH
+					import.data = field : previewImageFileId
 					width = 150
 				}
 			}

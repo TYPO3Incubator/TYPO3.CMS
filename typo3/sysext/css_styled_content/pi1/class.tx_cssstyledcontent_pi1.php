@@ -278,6 +278,9 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 				// set sorting property
 			$sorting = trim($this->cObj->data['filelink_sorting']);
 
+			$oldTitles = t3lib_div::trimExplode("\n", $currentCObjData['titleText'], FALSE);
+			$oldDescriptionTexts = t3lib_div::trimExplode("\n", $currentCObjData['imagecaption'], FALSE);
+
 				// see if the file path variable is set, this takes precedence
 			$filePathConf = $this->cObj->stdWrap($conf['filePath'], $conf['filePath.']);
 			if ($filePathConf) {
@@ -343,10 +346,18 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 					if ($fileObject) {
 						$filesData[$key] = $fileObject->toArray();
 
+						if (isset($oldDescriptionTexts[$key]) && trim($oldDescriptionTexts[$key]) != '') {
+							$filesData[$key]['description'] = $oldDescriptionTexts[$key];
+						}
+
 						if ($fileObject->hasProperty('title')) {
 							$conf['linkProc.']['title'] = trim($fileObject->getProperty('title'));
 						} else {
 							unset($conf['linkProc.']['title']);
+						}
+
+						if (isset($oldTitles[$key]) && trim($oldTitles[$key]) != '') {
+							$conf['linkProc.']['title'] = $oldTitles[$key];
 						}
 
 
@@ -355,6 +366,7 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 						} else {
 							$altText = sprintf($this->pi_getLL('uploads.icon'), $fileObject->getName());
 						}
+
 						$conf['linkProc.']['altText'] = $conf['linkProc.']['iconCObject.']['altText'] = $altText;
 
 						$this->cObj->setCurrentVal($path);
