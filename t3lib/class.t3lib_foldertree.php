@@ -46,10 +46,15 @@
 class t3lib_folderTree extends t3lib_treeView {
 
 	/**
-	 * @var t3lib_file_storage
+	 * @var t3lib_file_storage[]
 	 * the users' file Storages
 	 */
 	protected $storages = NULL;
+
+	/**
+	 * @var array
+	 */
+	protected $storageHashNumbers;
 
 	protected $ajaxStatus = FALSE; // Indicates, whether the ajax call was successful, i.e. the requested page has been found
 
@@ -627,7 +632,7 @@ class t3lib_folderTree extends t3lib_treeView {
 					}
 				} else {
 					$folder = $storage->getRootLevelFolder();
-					$nkey = hexdec(substr(t3lib_div::md5int($folder>getCombinedIdentifier()), 0, 4));
+					$nkey = hexdec(substr(t3lib_div::md5int($folder->getCombinedIdentifier()), 0, 4));
 					$this->storageHashNumbers[$storageUid . $folder->getCombinedIdentifier()] = $nkey;
 				}
 			}
