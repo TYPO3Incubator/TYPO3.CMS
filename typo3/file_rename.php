@@ -64,11 +64,11 @@ class SC_file_rename {
 	 */
 	var $basicff;
 	var $icon;			// Will be set to the proper icon for the $target value.
-	var $shortPath;		// Relative path to current found filemount
 	var $title;			// Name of the filemount
 
 		// Internal, static (GPVar):
 	var $target;		// Set with the target path inputted in &target
+	var $fileOrFolderObject;
 	var $returnUrl;		// Return URL of list module.
 
 		// Internal, dynamic:
@@ -90,18 +90,18 @@ class SC_file_rename {
 		$this->basicff->init($GLOBALS['FILEMOUNTS'],$GLOBALS['TYPO3_CONF_VARS']['BE']['fileExtensions']);
 
 			// Cleaning and checking target
-		if (file_exists($this->target))	{
-			$this->target=$this->basicff->cleanDirectoryName($this->target);		// Cleaning and checking target (file or dir)
-		} else {
-			$this->target='';
+		if ($this->target) {
+			$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+			$this->fileOrFolderObject = $fileFactory->getObjectFromCombinedIdentifier($this->target);
 		}
-		$key=$this->basicff->checkPathAgainstMounts($this->target.'/');
-		if (!$this->target || !$key) {
+
+		if (!$this->fileOrFolderObject) {
 			$title = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_mod_file_list.xml:paramError', TRUE);
 			$message = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_mod_file_list.xml:targetNoDir', TRUE);
 			throw new RuntimeException($title . ': ' . $message, 1294586844);
 		}
 
+			// @todo: fix the icon generatino
 			// Finding the icon
 		switch($GLOBALS['FILEMOUNTS'][$key]['type']) {
 			case 'user':
@@ -116,11 +116,8 @@ class SC_file_rename {
 
 		$this->icon = '<img'.t3lib_iconWorks::skinImg($this->backPath,$this->icon,'width="18" height="16"').' title="" alt="" />';
 
-			// Relative path to filemount, $key:
-		$this->shortPath = substr($this->target,strlen($GLOBALS['FILEMOUNTS'][$key]['path']));
-
 			// Setting title:
-		$this->title = $this->icon . htmlspecialchars($GLOBALS['FILEMOUNTS'][$key]['name']) . ': ' . $this->shortPath;
+		$this->title = $this->icon . htmlspecialchars($this->fileOrFolderObject->getStorage()->getName()) . ': ' . $this->fileOrFolderObject->getIdentifier();
 
 			// Setting template object
 		$this->doc = t3lib_div::makeInstance('template');
@@ -154,8 +151,8 @@ class SC_file_rename {
 		$code .= '
 
 			<div id="c-rename">
-				<input type="text" name="file[rename][0][data]" value="'.htmlspecialchars(basename($this->shortPath)).'"'.$GLOBALS['TBE_TEMPLATE']->formWidth(20).' />
-				<input type="hidden" name="file[rename][0][target]" value="'.htmlspecialchars($this->target).'" />
+				<input type="text" name="file[rename][0][target]" value="'.htmlspecialchars($this->fileOrFolderObject->getName()).'"'.$GLOBALS['TBE_TEMPLATE']->formWidth(20).' />
+				<input type="hidden" name="file[rename][0][data]" value="'.htmlspecialchars($this->fileOrFolderObject->getCombinedIdentifier()).'" />
 			</div>
 		';
 
