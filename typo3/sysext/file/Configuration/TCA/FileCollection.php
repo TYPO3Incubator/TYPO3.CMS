@@ -6,7 +6,7 @@ if (!defined ('TYPO3_MODE')) {
 $TCA['sys_file_collection'] = array (
 	'ctrl' => $TCA['sys_file_collection']['ctrl'],
 	'interface' => array (
-		'showRecordFieldList' => 'sys_language_uid,l10n_parent,l10n_diffsource,hidden,starttime,endtime,fe_group,files,title'
+		'showRecordFieldList' => 'sys_language_uid,l10n_parent,l10n_diffsource,hidden,starttime,endtime,files,title'
 	),
 	'feInterface' => $TCA['sys_file_collection']['feInterface'],
 	'columns' => array (
@@ -85,20 +85,6 @@ $TCA['sys_file_collection'] = array (
 				)
 			)
 		),
-		'fe_group' => array (
-			'exclude' => 1,
-			'label'   => 'LLL:EXT:lang/locallang_general.xml:LGL.fe_group',
-			'config'  => array (
-				'type'  => 'select',
-				'items' => array (
-					array('', 0),
-					array('LLL:EXT:lang/locallang_general.xml:LGL.hide_at_login', -1),
-					array('LLL:EXT:lang/locallang_general.xml:LGL.any_login', -2),
-					array('LLL:EXT:lang/locallang_general.xml:LGL.usergroups', '--div--')
-				),
-				'foreign_table' => 'fe_groups'
-			)
-		),
 		'type' => array (
 			'exclude' => 0,
 			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_collection.type',
@@ -163,7 +149,7 @@ $TCA['sys_file_collection'] = array (
 		'folder' => array('showitem' => 'sys_language_uid;;;;1-1-1, l10n_parent, l10n_diffsource, title;;1, type, storage, folder'),
 	),
 	'palettes' => array (
-		'1' => array('showitem' => 'hidden, starttime, endtime, fe_group')
+		'1' => array('showitem' => 'hidden, starttime, endtime')
 	)
 );
 

@@ -323,7 +323,6 @@ CREATE TABLE sys_file (
 	hidden tinyint(4) DEFAULT '0' NOT NULL,
 	starttime int(11) DEFAULT '0' NOT NULL,
 	endtime int(11) DEFAULT '0' NOT NULL,
-	fe_group int(11) DEFAULT '0' NOT NULL,
 
 	type varchar(10) DEFAULT '' NOT NULL,
 	storage int(11) DEFAULT '0' NOT NULL,
@@ -402,7 +401,6 @@ CREATE TABLE sys_file_collection (
 	hidden tinyint(4) DEFAULT '0' NOT NULL,
 	starttime int(11) DEFAULT '0' NOT NULL,
 	endtime int(11) DEFAULT '0' NOT NULL,
-	fe_group int(11) DEFAULT '0' NOT NULL,
 
 	# Actual fields
 	title tinytext,
