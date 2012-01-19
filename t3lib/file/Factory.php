@@ -130,7 +130,7 @@ class t3lib_file_Factory implements t3lib_Singleton {
 	 * @param string $flexFormData
 	 * @return array	Array with key => value pairs of the field data in the FlexForm
 	 */
-	protected function convertFlexFormDataToConfigurationArray($flexFormData) {
+	public function convertFlexFormDataToConfigurationArray($flexFormData) {
 
 		$configuration = array();
 
