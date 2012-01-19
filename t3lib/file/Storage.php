@@ -68,7 +68,6 @@ class t3lib_file_Storage {
 
 	const SIGNAL_PreProcessConfiguration = 'preProcessConfiguration';
 	const SIGNAL_PostProcessConfiguration = 'postProcessConfiguration';
-	const SIGNAL_PostGetPublicUrlForFile = 'postGetPublicUrlForFile';
 	const SIGNAL_PreFileCopy = 'preFileCopy';
 	const SIGNAL_PostFileCopy = 'postFileCopy';
 	const SIGNAL_PreFileMove = 'preFileMove';
@@ -660,11 +659,7 @@ class t3lib_file_Storage {
 	 * @return string
 	 */
 	public function getPublicUrlForFile(t3lib_file_File $fileObject) {
-		$publicUrlForFile = $this->driver->getPublicUrl($fileObject);
-
-		$this->emitPostGetPublicUrlForFile($publicUrlForFile);
-
-		return $publicUrlForFile;
+		return $this->driver->getPublicUrl($fileObject);
 	}
 
 	/**
@@ -1363,14 +1358,6 @@ class t3lib_file_Storage {
 			't3lib_file_Storage',
 			self::SIGNAL_PostProcessConfiguration,
 			array($this)
-		);
-	}
-
-	protected function emitPostGetPublicUrlForFile(&$publicUrlForFile) {
-		$this->getSignalSlotDispatcher()->dispatch(
-			't3lib_file_Storage',
-			self::SIGNAL_PostGetPublicUrlForFile,
-			array($this, &$publicUrlForFile)
 		);
 	}
 
