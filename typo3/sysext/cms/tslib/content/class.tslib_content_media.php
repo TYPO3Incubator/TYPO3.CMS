@@ -329,7 +329,7 @@ class tslib_content_Media extends tslib_content_Abstract {
 		}
 
 		if ($fileObject !== NULL) {
-			$returnValue = $fileObject->getPublicUrl();
+			$returnValue = $this->cObj->getPublicUrlForFile($fileObject);
 		} else {
 				// Use media wizard to extract file from URL
 			$mediaWizard = tslib_mediaWizardManager::getValidMediaWizardProvider($identifier);
