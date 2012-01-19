@@ -22,6 +22,7 @@ $TCA['sys_file_storage'] = array(
 		'enablecolumns' => array(
 			'disabled' => 'hidden',
 		),
+		'dividers2tabs'     => TRUE,
 		'dynamicConfigFile' => t3lib_extMgm::extPath($_EXTKEY) . 'Configuration/TCA/FileStorage.php',
 		'iconfile'          => t3lib_extMgm::extRelPath($_EXTKEY) . 'Resources/Public/Icons/FileStorage.gif',
 	),
