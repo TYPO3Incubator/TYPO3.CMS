@@ -662,7 +662,7 @@ class t3lib_file_Storage {
 	public function getPublicUrlForFile(t3lib_file_File $fileObject) {
 		$publicUrlForFile = $this->driver->getPublicUrl($fileObject);
 
-		$this->emitPostGetPublicUrlForFile($publicUrlForFile);
+		$this->emitPostGetPublicUrlForFile($fileObject, $publicUrlForFile);
 
 		return $publicUrlForFile;
 	}
@@ -1366,11 +1366,11 @@ class t3lib_file_Storage {
 		);
 	}
 
-	protected function emitPostGetPublicUrlForFile(&$publicUrlForFile) {
+	protected function emitPostGetPublicUrlForFile(t3lib_file_File $fileObject, &$publicUrlForFile) {
 		$this->getSignalSlotDispatcher()->dispatch(
 			't3lib_file_Storage',
 			self::SIGNAL_PostGetPublicUrlForFile,
-			array($this, &$publicUrlForFile)
+			array($fileObject, &$publicUrlForFile)
 		);
 	}
 
