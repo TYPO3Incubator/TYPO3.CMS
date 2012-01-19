@@ -44,6 +44,15 @@ class t3lib_SignalSlot_Dispatcher implements t3lib_Singleton {
 	protected $slots = array();
 
 	/**
+	 * Gets a singleton instance of this class.
+	 *
+	 * @return t3lib_SignalSlot_Dispatcher
+	 */
+	public static function getInstance() {
+		return t3lib_div::makeInstance('t3lib_SignalSlot_Dispatcher');
+	}
+
+	/**
 	 * Connects a signal with a slot.
 	 * One slot can be connected with multiple signals by calling this method multiple times.
 	 *
