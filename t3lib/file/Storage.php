@@ -66,6 +66,8 @@
  */
 class t3lib_file_Storage {
 
+	const SIGNAL_PreProcessConfiguration = 'preProcessConfiguration';
+	const SIGNAL_PostProcessConfiguration = 'postProcessConfiguration';
 	const SIGNAL_PreFileCopy = 'preFileCopy';
 	const SIGNAL_PostFileCopy = 'postFileCopy';
 	const SIGNAL_PreFileMove = 'preFileMove';
@@ -171,6 +173,33 @@ class t3lib_file_Storage {
 		return $this->publisher;
 	}
 
+	/**
+	 * Gets the configuration
+	 *
+	 * @return array
+	 */
+	public function getConfiguration() {
+		return $this->configuration;
+	}
+
+	/**
+	 * Sets the configuration.
+	 *
+	 * @param array $configuration
+	 */
+	public function setConfiguration(array $configuration) {
+		$this->configuration = $configuration;
+	}
+
+	/**
+	 * Gets the storage record.
+	 *
+	 * @return array
+	 */
+	public function getStorageRecord() {
+		return $this->storageRecord;
+	}
+
 
 	/**
 	 * Processes the configuration of this storage.
@@ -179,9 +208,13 @@ class t3lib_file_Storage {
 	 * @return void
 	 */
 	protected function processConfiguration() {
+		$this->emitPreProcessConfigurationSignal();
+
 		if (isset($this->configuration['baseUri'])) {
 			$this->baseUri = rtrim($this->configuration['baseUri'], '/') . '/';
 		}
+
+		$this->emitPostProcessConfigurationSignal();
 	}
 
 	/**
@@ -1310,6 +1343,22 @@ class t3lib_file_Storage {
 		} else {
 			return $this->driver->getRootLevelFolder();
 		}
+	}
+
+	protected function emitPreProcessConfigurationSignal() {
+		$this->getSignalSlotDispatcher()->dispatch(
+			't3lib_file_Storage',
+			self::SIGNAL_PreProcessConfiguration,
+			array($this)
+		);
+	}
+
+	protected function emitPostProcessConfigurationSignal() {
+		$this->getSignalSlotDispatcher()->dispatch(
+			't3lib_file_Storage',
+			self::SIGNAL_PostProcessConfiguration,
+			array($this)
+		);
 	}
 
 	protected function emitPreFileCopySignal(t3lib_file_File $file, $targetFolder) {
