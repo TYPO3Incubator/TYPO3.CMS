@@ -104,6 +104,7 @@ class tslib_content_Content extends tslib_content_Abstract {
 				} else {
 					$this->cObj->currentRecordTotal = $GLOBALS['TYPO3_DB']->sql_num_rows($res);
 					$GLOBALS['TT']->setTSlogMessage('NUMROWS: ' . $GLOBALS['TYPO3_DB']->sql_num_rows($res));
+					/** @var $cObj tslib_cObj */
 					$cObj = t3lib_div::makeInstance('tslib_cObj');
 					$cObj->setParent($this->cObj->data, $this->cObj->currentRecord);
 					$this->cObj->currentRecordNumber = 0;

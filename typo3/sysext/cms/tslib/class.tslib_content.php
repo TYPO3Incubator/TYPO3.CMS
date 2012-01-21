@@ -331,6 +331,7 @@ class tslib_cObj {
 	 * @see init()
 	 */
 	var $data = array();
+	protected $originalData = array();
 	protected $table = '';
 	var $oldData = array(); // Used for backup...
 	var $alternativeData = ''; // If this is set with an array before stdWrap, it's used instead of $this->data in the data-property in stdWrap
@@ -403,6 +404,16 @@ class tslib_cObj {
 	}
 
 	/**
+	 * Gets the original data of the tt_content record.
+	 *
+	 * @todo FAL: Currently required due css_styled_contend overwriting $this->data
+	 * @return array
+	 */
+	public function getOriginalData() {
+		return $this->originalData;
+	}
+
+	/**
 	 * Class constructor.
 	 * Well, it has to be called manually since it is not a real constructor function.
 	 * So after making an instance of the class, call this function and pass to it a database record and the tablename from where the record is from. That will then become the "current" record loaded into memory and accessed by the .fields property found in eg. stdWrap.
@@ -414,6 +425,7 @@ class tslib_cObj {
 	function start($data, $table = '') {
 		global $TYPO3_CONF_VARS;
 		$this->data = $data;
+		$this->originalData = $data;
 		$this->table = $table;
 		$this->currentRecord = $table ? $table . ':' . $this->data['uid'] : '';
 		$this->parameters = array();
