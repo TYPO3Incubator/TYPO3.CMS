@@ -1,0 +1,196 @@
+<?php
+/***************************************************************
+ *  Copyright notice
+ *
+ *  (c) 2011 Steffen Ritter <steffen.ritter@typo3.org>
+ *  All rights reserved
+ *
+ *  This script is part of the TYPO3 project. The TYPO3 project is
+ *  free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  The GNU General Public License can be found at
+ *  http://www.gnu.org/copyleft/gpl.html.
+ *
+ *  This script is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  This copyright notice MUST APPEAR in all copies of the script!
+ ***************************************************************/
+
+/**
+ * Upgrade wizard which goes through all files referenced in the tt_content.media filed
+ * and creates sys_file records as well as sys_file_reference records for the individual usages.
+ *
+ * @package     TYPO3
+ * @author Steffen Ritter <steffen.ritter@typo3.org>
+ * @license     http://www.gnu.org/copyleft/gpl.html
+ */
+class Tx_File_UpgradeWizard_TtContentUploadsUpgradeWizard extends Tx_Install_Updates_Base {
+
+	protected $title = 'Migrate file relations of tt_content "uploads"';
+
+	protected $targetDirectory;
+
+	/**
+	 * @var t3lib_file_Factory
+	 */
+	protected $fileFactory;
+
+	/**
+	 * @var t3lib_file_Repository_FileRepository
+	 */
+	protected $fileRepository;
+
+	/**
+	 * @var t3lib_file_Storage
+	 */
+	protected $storage;
+
+	public function __construct() {
+		/** @var $storageRepository t3lib_file_Repository_StorageRepository */
+		$storageRepository = t3lib_div::makeInstance('t3lib_file_Repository_StorageRepository');
+		$storages = $storageRepository->findAll();
+		foreach ($storages as $storage) {
+			if (stripos($storage->getRootLevelFolder()->getIdentifier(), $GLOBALS['TYPO3_CONF_VARS']['BE']['fileadminDir']) !== FALSE) {
+				$this->storage = $storage;
+			}
+		}
+
+		$this->fileFactory =t3lib_div::makeInstance("t3lib_file_Factory");
+		$this->fileRepository= t3lib_div::makeInstance('t3lib_file_Repository_FileRepository');
+		
+		$this->targetDirectory = PATH_site . $GLOBALS['TYPO3_CONF_VARS']['BE']['fileadminDir'] . 'content_uploads';
+	}
+
+	/**
+	 * Checks if an update is needed
+	 *
+	 * @param	string		&$description: The description for the update
+	 * @return	boolean		TRUE if an update is needed, FALSE otherwise
+	 */
+	public function checkForUpdate(&$description) {
+		$updateNeeded = FALSE;
+
+		$notMigratedRowsCount = $GLOBALS['TYPO3_DB']->exec_SELECTcountRows(
+			'uid',
+			'tt_content',
+			"media LIKE '%,%' OR media LIKE '%.%'"	// include also deleted, as they might be undeleted
+		);
+		if ($notMigratedRowsCount > 0) {
+			$description = 'There are Content Elements of type "upload" which are referencing files,' .
+			   ' not using FAL. The Wizard will move the files to fileadmin/content_uploads/ and index them.';
+			$updateNeeded = TRUE;
+		}
+		return $updateNeeded;
+	}
+
+	/**
+	 * Performs the database update.
+	 *
+	 * @param	array		&$dbQueries: queries done in this update
+	 * @param	mixed		&$customMessages: custom messages
+	 * @return	boolean		TRUE on success, FALSE on error
+	 */
+	public function performUpdate(&$dbQueries, &$customMessages) {
+		$records = $this->getRecordsFromTable('tt_content');
+		$this->checkPrerequisites();
+
+		foreach ($records AS $singleRecord) {
+			$this->migrateRecord($singleRecord);
+		}
+		return TRUE;
+	}
+
+	protected function checkPrerequisites() {
+		if (!file_exists($this->targetDirectory)) {
+			t3lib_div::mkdir($this->targetDirectory);
+		}
+	}
+
+	/**
+	 * Processes the actual transformation from CSV to sys_file_references
+	 *
+	 * @param array $record
+	 * @return void
+	 */
+	protected function migrateRecord(array $record) {
+		$files = t3lib_div::trimExplode(',', $record['media'], TRUE);
+		$descriptions = t3lib_div::trimExplode("\n", $record['imagecaption']);
+		$titleText = t3lib_div::trimExplode("\n", $record['titleText']);
+
+		$i = 0;
+		foreach ($files AS $file) {
+			if (file_exists(PATH_site . 'uploads/media/' . $file)) {
+				t3lib_div::upload_copy_move(PATH_site . 'uploads/media/' . $file, $this->targetDirectory . $file);
+
+				$file = $this->storage->getFile('content_uploads/' . $file);
+				$this->fileRepository->addToIndex($file);
+				
+				$dataArray = array(
+					'uid_local' => $file->getUid(),
+					'tablenames' => 'tt_content',
+					'uid_foreign' => $record['uid'],
+					'fieldname' => 'media',
+					'sorting_foreign' => $i
+				);
+
+				if (isset($descriptions[$i])) {
+					$dataArray['description'] = $descriptions[$i];
+				}
+
+				if (isset($titleText[$i])) {
+					$dataArray['alternative'] = $titleText[$i];
+				}
+
+				$GLOBALS['TYPO3_DB']->exec_INSERTquery('sys_file_reference', $dataArray);
+
+				unlink(PATH_site . 'uploads/media/' . $file);
+			}
+
+			$i++;
+		}
+
+		$this->cleanRecord($record, $i);
+	}
+
+	/**
+	 * Removes the old fields from the database-record
+	 *
+	 * @param array $record
+	 * @param int $fileCount
+	 * @return void
+	 */
+	protected function cleanRecord(array $record, $fileCount) {
+		$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
+			'tt_content',
+			'uid = ' . $record['uid'],
+			array(
+				'media' => $fileCount,
+				'imagecaption' => '',
+				'titleText' => '',
+				'altText' => ''
+			)
+		);
+	}
+
+	/**
+	 * Retrieve every record which needs to be processed
+	 *
+	 * @param $table
+	 * @return array
+	 */
+	protected function getRecordsFromTable($table) {
+		$fields = implode(',', array('uid', 'pid', 'media', 'imagecaption', 'titleText'));
+
+		$records = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows($fields, $table, "media LIKE '%,%' OR media LIKE '%,%'");
+
+		return $records;
+	}
+}
+
+?>

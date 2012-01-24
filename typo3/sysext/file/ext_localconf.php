@@ -18,5 +18,6 @@ $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['scheduler']['tasks']['Tx_File_Tasks_I
 
 // migrations of tt_content.image DB fields and captions, alt texts, etc. into sys_file_reference records.
 $TYPO3_CONF_VARS['SC_OPTIONS']['ext/install']['update']['sysext_file_images'] = 'Tx_File_UpgradeWizard_TtContentUpgradeWizard';
+$TYPO3_CONF_VARS['SC_OPTIONS']['ext/install']['update']['sysext_file_uploads'] = 'Tx_File_UpgradeWizard_TtContentUploadsUpgradeWizard';
 
 ?>
