@@ -1427,7 +1427,7 @@ $TCA['tt_content'] = array(
 				'default' => 0,
 			),
 		),
-		'media' => array(
+		/*'media' => array(
 			'label' => 'LLL:EXT:cms/locallang_ttc.xml:media',
 			'config' => array(
 				'type' => 'group',
@@ -1440,6 +1440,22 @@ $TCA['tt_content'] = array(
 				'size' => '3',
 				'maxitems' => '10',
 				'minitems' => '0',
+			),
+		),*/
+		'media' => array(
+			'label' => 'LLL:EXT:cms/locallang_ttc.xml:media',
+			'config' => t3lib_extMgm::getFileFieldTCAConfig('media',
+					array(
+						 'foreign_selector_fieldTcaOverride' => array(
+							 'config' => array(
+								 'filter' => array(
+									 'fileType' =>  array(
+										 'disallowed' => PHP_EXTENSIONS_DEFAULT
+									 )
+								 )
+							)
+						)
+					)
 			),
 		),
 		'multimedia' => array(
@@ -2133,7 +2149,7 @@ $TCA['tt_content'] = array(
 			'canNotCollapse' => 1,
 		),
 		'uploads' => array(
-			'showitem' => 'select_key;LLL:EXT:cms/locallang_ttc.xml:select_key.ALT.uploads_formlabel, --linebreak--, media;LLL:EXT:cms/locallang_ttc.xml:media.ALT.uploads_formlabel,filelink_sorting, --linebreak--, target, --linebreak--, imagecaption;LLL:EXT:cms/locallang_ttc.xml:imagecaption.ALT.uploads_formlabel, titleText;LLL:EXT:cms/locallang_ttc.xml:titleText_formlabel, --linebreak--, altText;LLL:EXT:cms/locallang_ttc.xml:altText_formlabel',
+			'showitem' => 'select_key;LLL:EXT:cms/locallang_ttc.xml:select_key.ALT.uploads_formlabel, --linebreak--, media;LLL:EXT:cms/locallang_ttc.xml:media.ALT.uploads_formlabel, --linebreak--, filelink_sorting, --linebreak--, target',
 			'canNotCollapse' => 1,
 		),
 		'mailform' => array(

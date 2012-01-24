@@ -299,12 +299,30 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 			}
 			$path = trim($path);
 
+			$legacy = FALSE;
+
 				// Explode into an array:
-			$fileArray = t3lib_div::trimExplode(',', $fileList ,1);
+			if (t3lib_utility_Math::canBeInterpretedAsInteger($fileList)) {
+				/** @var t3lib_file_Repository_fileRepository $fileRepository */
+				$fileRepository = t3lib_div::makeInstance('t3lib_file_Repository_fileRepository');
+				$fileArray = $fileRepository->findByRelation('tt_content', 'media',$currentCObjData['uid']);
+			} else {
+				$legacy = TRUE;
+				$fileArray = array();
+				$files = t3lib_div::trimExplode(',', $fileList , 1);
+				foreach ($files AS $fileId)	{
+					$fileObject = $fileFactory->getFileObjectFromCombinedIdentifier($fileId);
+
+							// backwards compatibility - if old files are present
+					if ($fileObject == NULL) {
+						$fileObject = $fileFactory->getFileObjectFromCombinedIdentifier($path . $fileId);
+					}
+					$fileArray[] = $fileObject;
+				}
+			}
 
 				// If there were files to list...:
 			if (count($fileArray))	{
-
 					// Add the target to linkProc when explicitly set
 				if ($this->cObj->data['target']) {
 					$conf['linkProc.']['target'] = $this->cObj->data['target'];
@@ -331,68 +349,54 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 
 					// Traverse the files found:
 				$filesData = array();
-				foreach ($fileArray as $key => $fileId)	{
-					/** @var t3lib_file_FileInterface $fileObject */
-					if (t3lib_utility_Math::canBeInterpretedAsInteger($fileId)) {
-						$fileObject = $fileFactory->getFileObject($fileId);
+				foreach ($fileArray AS $key => $fileObject) {
+					$filesData[$key] = $fileObject->toArray();
+
+					if ($legacy && isset($oldDescriptionTexts[$key]) && trim($oldDescriptionTexts[$key]) != '') {
+						$filesData[$key]['description'] = $oldDescriptionTexts[$key];
+					}
+
+					if ($fileObject->hasProperty('title')) {
+						$conf['linkProc.']['title'] = trim($fileObject->getProperty('title'));
 					} else {
-						$fileObject = $fileFactory->getFileObjectFromCombinedIdentifier($fileId);
-					}
-						// backwards compatibility - if old files are present
-					if ($fileObject == NULL) {
-						$fileObject = $fileFactory->getFileObjectFromCombinedIdentifier($path . $fileId);
+						unset($conf['linkProc.']['title']);
 					}
 
-					if ($fileObject) {
-						$filesData[$key] = $fileObject->toArray();
-
-						if (isset($oldDescriptionTexts[$key]) && trim($oldDescriptionTexts[$key]) != '') {
-							$filesData[$key]['description'] = $oldDescriptionTexts[$key];
-						}
-
-						if ($fileObject->hasProperty('title')) {
-							$conf['linkProc.']['title'] = trim($fileObject->getProperty('title'));
-						} else {
-							unset($conf['linkProc.']['title']);
-						}
-
-						if (isset($oldTitles[$key]) && trim($oldTitles[$key]) != '') {
-							$conf['linkProc.']['title'] = $oldTitles[$key];
-						}
-
-
-						if ($fileObject->hasProperty('alternative')) {
-							$altText = trim($fileObject->getProperty('alternative'));
-						} else {
-							$altText = sprintf($this->pi_getLL('uploads.icon'), $fileObject->getName());
-						}
-
-						$conf['linkProc.']['altText'] = $conf['linkProc.']['iconCObject.']['altText'] = $altText;
-
-						$this->cObj->setCurrentVal($path);
-						$this->cObj->data = $fileObject->toArray();
-						$GLOBALS['TSFE']->register['ICON_REL_PATH'] = $path . $fileObject->getName();
-						$GLOBALS['TSFE']->register['filename'] = $filesData[$key]['filename'];
-						$GLOBALS['TSFE']->register['path'] = $filesData[$key]['path'];
-						$GLOBALS['TSFE']->register['fileSize'] = $filesData[$key]['filesize'];
-						$GLOBALS['TSFE']->register['fileExtension'] = $filesData[$key]['fileextension'];
-						$GLOBALS['TSFE']->register['description'] = $filesData[$key]['description'];
-
-						$fileNameParts	= $this->beautifyFileLink(
-							explode(
-								'//**//',
-								$this->cObj->filelink(
-									$fileObject->getCombinedIdentifier(), $conf['linkProc.']
-								)
-							),
-							$fileObject->getName(),
-							$conf['useSpacesInLinkText'],
-							$conf['stripFileExtensionFromLinkText']
-						);
-						$filesData[$key]['linkedIcon'] = $fileNameParts[0];
-						$filesData[$key]['linkedLabel'] = $fileNameParts[1];
+					if ($legacy && isset($oldTitles[$key]) && trim($oldTitles[$key]) != '') {
+						$conf['linkProc.']['title'] = $oldTitles[$key];
 					}
 
+
+					if ($fileObject->hasProperty('alternative')) {
+						$altText = trim($fileObject->getProperty('alternative'));
+					} else {
+						$altText = sprintf($this->pi_getLL('uploads.icon'), $fileObject->getName());
+					}
+
+					$conf['linkProc.']['altText'] = $conf['linkProc.']['iconCObject.']['altText'] = $altText;
+
+					$this->cObj->setCurrentVal($path);
+					$this->cObj->data = $fileObject->toArray();
+					$GLOBALS['TSFE']->register['ICON_REL_PATH'] = $path . $fileObject->getName();
+					$GLOBALS['TSFE']->register['filename'] = $filesData[$key]['filename'];
+					$GLOBALS['TSFE']->register['path'] = $filesData[$key]['path'];
+					$GLOBALS['TSFE']->register['fileSize'] = $filesData[$key]['filesize'];
+					$GLOBALS['TSFE']->register['fileExtension'] = $filesData[$key]['fileextension'];
+					$GLOBALS['TSFE']->register['description'] = $filesData[$key]['description'];
+
+					$fileNameParts	= $this->beautifyFileLink(
+						explode(
+							'//**//',
+							$this->cObj->filelink(
+								$fileObject->getCombinedIdentifier(), $conf['linkProc.']
+							)
+						),
+						$fileObject->getName(),
+						$conf['useSpacesInLinkText'],
+						$conf['stripFileExtensionFromLinkText']
+					);
+					$filesData[$key]['linkedIcon'] = $fileNameParts[0];
+					$filesData[$key]['linkedLabel'] = $fileNameParts[1];
 				}
 
 					// sort the files
