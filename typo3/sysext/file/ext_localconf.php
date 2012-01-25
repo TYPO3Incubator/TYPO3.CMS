@@ -13,7 +13,7 @@ $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['scheduler']['tasks']['Tx_File_Tasks_I
     'extension'        => $_EXTKEY,
     'title'            => 'LLL:EXT:' . $_EXTKEY . '/Resources/Private/Language/locallang_file.xlf:tasks.indexing.name',
     'description'      => 'LLL:EXT:' . $_EXTKEY . '/Resources/Private/Language/locallang_file.xlf:tasks.indexing.description',
-    'additionalFields' => 'Tx_File_Tasks_IndexingAdditionalFieldProvider'
+//    'additionalFields' => 'Tx_File_Tasks_IndexingAdditionalFieldProvider'
 );
 
 // migrations of tt_content.image DB fields and captions, alt texts, etc. into sys_file_reference records.

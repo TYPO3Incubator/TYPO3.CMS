@@ -77,7 +77,7 @@ class Tx_File_Tasks_Indexing extends tx_scheduler_Task {
 	public function execute() {
 		$successfullyExecuted = TRUE;
 		$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
-		$indexerService = t3lib_div::makeInstance('t3lib_file_Service');
+		$indexerService = t3lib_div::makeInstance('t3lib_file_Service_IndexerService');
 		$indexerService->setFactory($fileFactory);
 
 			// run indexing of every storage
