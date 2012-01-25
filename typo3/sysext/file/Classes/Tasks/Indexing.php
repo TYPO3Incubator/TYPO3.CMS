@@ -76,8 +76,21 @@ class Tx_File_Tasks_Indexing extends tx_scheduler_Task {
 	 */
 	public function execute() {
 		$successfullyExecuted = TRUE;
+		$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+		$indexerService = t3lib_div::makeInstance('t3lib_file_Service');
+		$indexerService->setFactory($fileFactory);
 
-			// Todo run indexing
+			// run indexing of every storage
+		$storageRecords = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+			'*',
+			'sys_file_storage',
+			'deleted = 0'
+		);
+		foreach ($storageRecords as $storageRecord) {
+			$storageObject = $fileFactory->getStorageObject($storageRecord['uid'], $storageRecord);
+			$folder = $storageObject->getRootLevelFolder();
+			$indexerService->indexFilesInFolder($folder);
+		}
 
 		return $successfullyExecuted;
 	}
