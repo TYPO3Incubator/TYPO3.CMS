@@ -498,6 +498,10 @@
 			<trans-unit id="image_longdescURL" xml:space="preserve">
 				<source>Long Description URL:</source>
 			</trans-unit>
+			<trans-unit id="images.addFileReference" xml:space="preserve">
+				<source>Add new file</source>
+			</trans-unit>
+
 			<trans-unit id="longdescURL_formlabel" xml:space="preserve">
 				<source>Long Description URLs (one per line)</source>
 			</trans-unit>

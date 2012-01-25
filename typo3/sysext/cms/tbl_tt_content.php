@@ -709,7 +709,7 @@ $TCA['tt_content'] = array(
 		*/
 		'image' => array(
 			'label' => 'LLL:EXT:lang/locallang_general.xml:LGL.images',
-			'config' => t3lib_extMgm::getFileFieldTCAConfig('image'),
+			'config' => t3lib_extMgm::getFileFieldTCAConfig('image', array('appearance' => array('createNewRelationLinkTitle' => 'LLL:EXT:cms/locallang_ttc.xlf:images.addFileReference'))),
 		),
 		'imagewidth' => array(
 			'exclude' => 1,

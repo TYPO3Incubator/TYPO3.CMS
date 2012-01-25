@@ -869,7 +869,13 @@ class t3lib_TCEforms_inline {
 				// this is neccessary, if the size of the selector is "1" or if
 				// there is only one record item in the select-box, that is selected by default
 				// the selector-box creates a new relation on using a onChange event (see some line above)
-			$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation', 1);
+			if (isset($conf['appearance']['createNewRelationLinkTitle'])) {
+				$createNewRelationText  = $GLOBALS['LANG']->sL($conf['appearance']['createNewRelationLinkTitle'], TRUE);
+			}
+			if (!$createNewRelationText) {
+				$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation', 1);
+			}
+
 			$item .=
 					'<a href="#" onclick="' . htmlspecialchars($onChange) . '" align="abstop">' .
 					t3lib_iconWorks::getSpriteIcon('actions-document-new', array('title' => $createNewRelationText)) . $createNewRelationText .
@@ -896,7 +902,12 @@ class t3lib_TCEforms_inline {
 		$allowed = $config['allowed'];
 		$objectPrefix = $this->inlineNames['object'] . self::Structure_Separator . $foreign_table;
 
-		$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation', 1);
+		if (isset($conf['appearance']['createNewRelationLinkTitle'])) {
+			$createNewRelationText  = $GLOBALS['LANG']->sL($conf['appearance']['createNewRelationLinkTitle'], TRUE);
+		}
+		if (!$createNewRelationText) {
+			$createNewRelationText = $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.php:cm.createNewRelation', 1);
+		}
 		$browserParams = ('|||' . $allowed . '|' . $objectPrefix . '|inline.checkUniqueElement||inline.importElement');
 
 		$onClick = "setFormValueOpenBrowser('db','" . $browserParams . "'); return false;";
