@@ -38,9 +38,10 @@ interface tslib_content_getPublicUrlForFileHook {
 	 * Post-processes a public URL.
 	 *
 	 * @param tslib_cObj $parent The current content object (context)
+	 * @param array $configuration TypoScript configuration
 	 * @param t3lib_file_File $file The file object to be used
 	 * @param string $pubicUrl Reference to the public URL
 	 */
-	public function postProcess(tslib_cObj $parent, t3lib_file_File $file, &$pubicUrl);
+	public function postProcess(tslib_cObj $parent, array $configuration, t3lib_file_File $file, &$pubicUrl);
 }
 ?>

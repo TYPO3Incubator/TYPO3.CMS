@@ -1432,11 +1432,11 @@ class tslib_cObj {
 	 * @param t3lib_file_File $file
 	 * @return string
 	 */
-	public function getPublicUrlForFile(t3lib_file_File $file) {
+	public function getPublicUrlForFile(t3lib_file_File $file, array $configuration = array()) {
 		$publicUrlForFile = $file->getPublicUrl();
 
 		foreach ($this->getPublicUrlForFileHookObjects as $hookObject) {
-			$hookObject->postProcess($this, $file, $publicUrlForFile);
+			$hookObject->postProcess($this, $configuration, $file, $publicUrlForFile);
 		}
 
 		return $publicUrlForFile;
@@ -4025,11 +4025,11 @@ class tslib_cObj {
 					'fileTarget' => $target,
 					'title' => $title,
 					'ATagParams' => $this->getATagParams($conf),
-					'additionalParams' => '&jumpurl=' . rawurlencode($this->getPublicUrlForFile($theFile)) . $this->locDataJU($theFile, $conf['jumpurl.']['secure.']) . $GLOBALS['TSFE']->getMethodUrlIdToken
+					'additionalParams' => '&jumpurl=' . rawurlencode($this->getPublicUrlForFile($theFile, $conf)) . $this->locDataJU($theFile, $conf['jumpurl.']['secure.']) . $GLOBALS['TSFE']->getMethodUrlIdToken
 				);
 			} else {
 				$typoLinkConf = array(
-					'parameter' => $this->getPublicUrlForFile($theFile),
+					'parameter' => $this->getPublicUrlForFile($theFile, $conf),
 					'fileTarget' => $target,
 					'title' => $title,
 					'ATagParams' => $this->getATagParams($conf)
@@ -4192,7 +4192,7 @@ class tslib_cObj {
 		$locationData = $GLOBALS['TSFE']->id . ':' . $this->currentRecord;
 		$rec = '&locationData=' . rawurlencode($locationData);
 		$hArr = array(
-			$this->getPublicUrlForFile($file), $locationData, $mimetypeValue
+			$this->getPublicUrlForFile($file, $conf), $locationData, $mimetypeValue
 		);
 		$juHash = '&juHash=' . t3lib_div::hmac(serialize($hArr));
 		return '&juSecure=1' . $mimetype . $rec . $juHash;
@@ -5451,9 +5451,9 @@ class tslib_cObj {
 					// @todo: the folder object needs to implement getPublicUrl();
 				}
 				if (is_a($fileObject, 't3lib_file_FileInterface')) {
-					$link_paramA[0] = $this->getPublicUrlForFile($fileObject);
+					$link_paramA[0] = $this->getPublicUrlForFile($fileObject, $conf);
 				} elseif ($fileObject) {
-					$link_paramA[0] = $this->getPublicUrlForFile($fileObject);
+					$link_paramA[0] = $this->getPublicUrlForFile($fileObject, $conf);
 				}
 			}
 
@@ -5579,7 +5579,7 @@ class tslib_cObj {
 						if ($GLOBALS['TSFE']->config['config']['jumpurl_enable'] || $conf['jumpurl']) {
 							$this->lastTypoLinkUrl = $GLOBALS['TSFE']->absRefPrefix .
 								$GLOBALS['TSFE']->config['mainScript'] . $initP .
-								'&jumpurl=' . rawurlencode($this->getPublicUrlForFile($theFile)) .
+								'&jumpurl=' . rawurlencode($this->getPublicUrlForFile($theFile, $conf)) .
 								($conf['jumpurl.']['secure'] ? $this->locDataJU($theFile, $conf['jumpurl.']['secure.']) : '') .
 								$GLOBALS['TSFE']->getMethodUrlIdToken;
 						} else {
