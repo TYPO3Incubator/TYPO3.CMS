@@ -108,6 +108,7 @@ $TCA['sys_file_collection'] = array (
 			'config' => array (
 				'type' => 'input',
 				'size' => '30',
+				'eval' => 'required'
 			)
 		),
 		'criteria' => array (
