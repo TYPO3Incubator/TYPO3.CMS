@@ -54,6 +54,7 @@ return array(
 	'tslib_content_content' => PATH_tslib . 'content/class.tslib_content_content.php',
 	'tslib_content_contenttable' => PATH_tslib . 'content/class.tslib_content_contenttable.php',
 	'tslib_content_file' => PATH_tslib . 'content/class.tslib_content_file.php',
+	'tslib_content_files' => PATH_tslib . 'content/class.tslib_content_files.php',
 	'tslib_content_fluidtemplate' => PATH_tslib . 'content/class.tslib_content_fluidtemplate.php',
 	'tslib_content_form' => PATH_tslib . 'content/class.tslib_content_form.php',
 	'tslib_content_hierarchicalmenu' => PATH_tslib . 'content/class.tslib_content_hierarchicalmenu.php',

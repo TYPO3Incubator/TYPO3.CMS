@@ -374,6 +374,11 @@ class tslib_cObj {
 	protected $contentObjects = array();
 
 	/**
+	 * @var t3lib_file_File Current file objects (during iterations over files)
+	 */
+	protected $currentFile = NULL;
+
+	/**
 	 * Set to TRUE by doConvertToUserIntObject() if USER object wants to become USER_INT
 	 */
 	public $doConvertToUserIntObject = FALSE;
@@ -498,6 +503,15 @@ class tslib_cObj {
 				$postInitializationProcessor->postProcessContentObjectInitialization($this);
 			}
 		}
+	}
+
+	/**
+	 * Returns the current table
+	 *
+	 * @return string
+	 */
+	public function getCurrentTable() {
+		return $this->table;
 	}
 
 	/**
@@ -711,6 +725,7 @@ class tslib_cObj {
 			'USER' => 'User',
 			'USER_INT' => 'UserInternal',
 			'FILE' => 'File',
+			'FILES' => 'Files',
 			'IMAGE' => 'Image',
 			'IMG_RESOURCE' => 'ImageResource',
 			'IMGTEXT' => 'ImageText',
@@ -860,6 +875,16 @@ class tslib_cObj {
 	 */
 	function FILE($conf) {
 		return $this->getContentObject('FILE')->render($conf);
+	}
+
+	/**
+	 * Rendering the cObject, FILES
+	 *
+	 * @param	array		array of TypoScript properties
+	 * @return	string		Output
+	 */
+	function FILES($conf) {
+		return $this->getContentObject('FILES')->render($conf);
 	}
 
 	/**
@@ -1872,6 +1897,25 @@ class tslib_cObj {
 		}
 
 		return $markContentArray;
+	}
+
+	/**
+	 * Sets the current file object during iterations over files.
+	 *
+	 * @param   t3lib_file_File   The file object.
+	 */
+	public function setCurrentFile($fileObject) {
+		$this->currentFile = $fileObject;
+	}
+
+
+	/**
+	 * Gets the current file object during iterations over files.
+	 *
+	 * @return   t3lib_file_File   The current file object.
+	 */
+	public function getCurrentFile() {
+		return $this->currentFile;
 	}
 
 	/***********************************************
@@ -5169,6 +5213,9 @@ class tslib_cObj {
 					case 'field' :
 						$retVal = $fieldArray[$key];
 					break;
+					case 'file' :
+						$retVal = $this->getFileDataKey($key);
+					break;
 					case 'parameters' :
 						$retVal = $this->parameters[$key];
 					break;
@@ -5267,6 +5314,66 @@ class tslib_cObj {
 		}
 
 		return $retVal;
+	}
+
+	/**
+	 * Gets file information. This is a helper function for the getData() method above, which resolves e.g.
+	 * page.10.data = file:current:title
+	 * or
+	 * page.10.data = file:17:title
+	 *
+	 * @param	string		A colon-separated key, e.g. 17:name or current:sha1, with the first part being a sys_file uid or the keyword "current" and the second part being the key of information to get from file (e.g. "title", "size", "description", etc.)
+	 * @return  The value as retrieved from the file object.
+	 */
+	protected function getFileDataKey($key) {
+		$parts = explode(':', $key);
+		$fileUidOrCurrentKeyword = $parts[0];
+		$requestedFileInformationKey = $parts[1];
+
+		if ($fileUidOrCurrentKeyword === 'current') {
+			$fileObject = $this->getCurrentFile();
+		} elseif(t3lib_utility_Math::canBeInterpretedAsInteger($fileUidOrCurrentKeyword)) {
+			/** @var t3lib_file_Factory $fileFactory */
+			$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+			$fileObject = $fileFactory->getFileObject($fileUidOrCurrentKeyword);
+		} else {
+			$fileObject == NULL;
+		}
+
+		if($fileObject instanceof t3lib_file_FileInterface) {
+			// All properties of the t3lib_file_FileInterface are available here:
+			switch ($requestedFileInformationKey) {
+				case 'name':
+					return $fileObject->getName();
+					break;
+				case 'size':
+					return $fileObject->getSize();
+					break;
+				case 'sha1':
+					return $fileObject->getSha1();
+					break;
+				case 'extension':
+					return $fileObject->getExtension();
+					break;
+				case 'mimetype':
+					return $fileObject->getMimeType();
+					break;
+				case 'contents':
+					return $fileObject->getContents();
+					break;
+				case 'publicUrl':
+					return $fileObject->getPublicUrl();
+					break;
+				case 'localPath':
+					return $fileObject->getForLocalProcessing();
+					break;
+				default: // generic alternative here
+					return $fileObject->getProperty($requestedFileInformationKey);
+					break;
+			}
+		} else {
+			return 'Error: no file object'; // TODO: fail silently as is common in tslib_content
+		}
 	}
 
 	/**
