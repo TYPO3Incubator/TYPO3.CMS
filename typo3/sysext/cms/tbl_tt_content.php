@@ -1458,6 +1458,14 @@ $TCA['tt_content'] = array(
 					)
 			),
 		),
+		'file_collections' => array(
+			'label' => 'LLL:EXT:cms/locallang_ttc.xlf:file_collections',
+			'config' => array(
+				'type' => 'group',
+				'internal_type' => 'db',
+				'allowed' => 'sys_file_collection',
+			)
+		),
 		'multimedia' => array(
 			'label' => 'LLL:EXT:cms/locallang_ttc.xml:multimedia',
 			'config' => array(
@@ -2149,7 +2157,7 @@ $TCA['tt_content'] = array(
 			'canNotCollapse' => 1,
 		),
 		'uploads' => array(
-			'showitem' => 'select_key;LLL:EXT:cms/locallang_ttc.xml:select_key.ALT.uploads_formlabel, --linebreak--, media;LLL:EXT:cms/locallang_ttc.xml:media.ALT.uploads_formlabel, --linebreak--, filelink_sorting, --linebreak--, target',
+			'showitem' => 'file_collections, --linebreak--, media;LLL:EXT:cms/locallang_ttc.xml:media.ALT.uploads_formlabel, --linebreak--, filelink_sorting, target',
 			'canNotCollapse' => 1,
 		),
 		'mailform' => array(

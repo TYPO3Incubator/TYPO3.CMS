@@ -39,6 +39,10 @@
  */
 class tx_cssstyledcontent_pi1 extends tslib_pibase {
 
+	const UPLOADS_TYPOSCRIPT = 1;
+	const UPLOADS_LEGACY = 2;
+	const UPLOADS_FAL = 0;
+	
 		// Default plugin variables:
 	var $prefixId = 'tx_cssstyledcontent_pi1';		// Same as class name
 	var $scriptRelPath = 'pi1/class.tx_cssstyledcontent_pi1.php';	// Path to this script relative to the extension dir.
@@ -248,18 +252,48 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 	}
 
 	/**
+	 * Retrieves an Array of FileObjects based upon an comma separated list of file names
+	 * and a given folder
+	 *
+	 * @param $csFiles comma separated list of files
+	 * @param $folder the folder (relative to PATH_site)
+	 * @return t3lib_file_Interface[]
+	 */
+	protected function getFileObjectsFromStaticList($csFiles, $folder) {
+		$files = t3lib_div::trimExplode(',', $csFiles , 1);
+		$fileArray = array();
+
+		/** @var t3lib_file_Factory $fileFactory */
+		$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+
+		foreach ($files AS $fileId)	{
+			$fileObject = $fileFactory->getFileObjectFromCombinedIdentifier($fileId);
+
+					// backwards compatibility - if old files are present
+			if ($fileObject == NULL) {
+				$fileObject = $fileFactory->getFileObjectFromCombinedIdentifier($folder . $fileId);
+			}
+
+			if ($fileObject != NULL) {
+				$fileArray[] = $fileObject;
+			}
+		}
+		return $fileArray;
+	}
+
+	/**
 	 * Rendering the "Filelinks" type content element, called from TypoScript (tt_content.uploads.20)
 	 *
-	 * @param	string		Content input. Not used, ignore.
-	 * @param	array		TypoScript configuration
-	 * @return	string		HTML output.
+	 * @param string $content Content input. Not used, ignore.
+	 * @param array	$conf TypoScript configuration
+	 * @return string HTML output.
 	 * @access private
 	 */
 	function render_uploads($content,$conf)	{
 
 			// Look for hook before running default code for function
 		if ($hookObj = $this->hookRequest('render_uploads')) {
-			return $hookObj->render_uploads($content,$conf);
+			return $hookObj->render_uploads($content, $conf);
 		} else {
 
 				// Loading language-labels
@@ -269,56 +303,72 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 
 			$out = '';
 
-			/** @var t3lib_file_Factory $fileFactory */
-			$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+			/** @var t3lib_file_FileInterface[] $fileArray */
+			$fileArray = array();
+
+				// the field data is stored in
+			$field = (trim($conf['field']) ? trim($conf['field']) : 'media');
 
 				// Set layout type:
-			$type = intval($this->cObj->data['layout']);
+			$type = intval($currentCObjData['layout']);
 
 				// set sorting property
-			$sorting = trim($this->cObj->data['filelink_sorting']);
+			$sorting = trim($currentCObjData['filelink_sorting']);
 
-			$oldTitles = t3lib_div::trimExplode("\n", $currentCObjData['titleText'], FALSE);
-			$oldDescriptionTexts = t3lib_div::trimExplode("\n", $currentCObjData['imagecaption'], FALSE);
-
-				// see if the file path variable is set, this takes precedence
-			$filePathConf = $this->cObj->stdWrap($conf['filePath'], $conf['filePath.']);
-			if ($filePathConf) {
-				$fileList = $this->cObj->filelist($filePathConf);
-				list($path) = explode('|', $filePathConf);
-			} else {
-					// Get the list of files from the field
-				$field = (trim($conf['field']) ? trim($conf['field']) : 'media');
-				$fileList = $this->cObj->data[$field];
+			$sourceType = self::UPLOADS_FAL;
+				// Detect source Type
+			$folderPath = '';
+			if ($folderPath = $this->cObj->stdWrap($conf['filePath'], $conf['filePath.'])) {
+				$sourceType = self::UPLOADS_TYPOSCRIPT;
+			} elseif(trim($currentCObjData['select_key'])) {
+				$sourceType = self::UPLOADS_LEGACY;
+				$folderPath = $currentCObjData['select_key'];
+				list($path) = explode('|', $folderPath);
+			} elseif(!t3lib_utility_Math::canBeInterpretedAsInteger($currentCObjData[$field])) {
+				$sourceType = self::UPLOADS_LEGACY;
 				t3lib_div::loadTCA('tt_content');
 				$path = 'uploads/media/';
 				if (is_array($GLOBALS['TCA']['tt_content']['columns'][$field]) && !empty($GLOBALS['TCA']['tt_content']['columns'][$field]['config']['uploadfolder'])) {
-					// in TCA-Array folders are saved without trailing slash, so $path.$fileName won't work
-				    $path = $GLOBALS['TCA']['tt_content']['columns'][$field]['config']['uploadfolder'] .'/';
+						// in TCA-Array folders are saved without trailing slash, so $path.$fileName won't work
+					$path = $GLOBALS['TCA']['tt_content']['columns'][$field]['config']['uploadfolder'] .'/';
 				}
 			}
-			$path = trim($path);
 
-			$legacy = FALSE;
 
-				// Explode into an array:
-			if (t3lib_utility_Math::canBeInterpretedAsInteger($fileList)) {
-				/** @var t3lib_file_Repository_fileRepository $fileRepository */
-				$fileRepository = t3lib_div::makeInstance('t3lib_file_Repository_fileRepository');
-				$fileArray = $fileRepository->findByRelation('tt_content', 'media',$currentCObjData['uid']);
-			} else {
-				$legacy = TRUE;
-				$fileArray = array();
-				$files = t3lib_div::trimExplode(',', $fileList , 1);
-				foreach ($files AS $fileId)	{
-					$fileObject = $fileFactory->getFileObjectFromCombinedIdentifier($fileId);
 
-							// backwards compatibility - if old files are present
-					if ($fileObject == NULL) {
-						$fileObject = $fileFactory->getFileObjectFromCombinedIdentifier($path . $fileId);
+					// get FileObject Array
+			switch ($sourceType) {
+				case self::UPLOADS_FAL:
+					if (trim($currentCObjData['file_collections'])) {
+						/** @var t3lib_file_Repository_FileCollectionRepository $collectionRepository */
+						$collectionRepository = t3lib_div::makeInstance('t3lib_file_Repository_FileCollectionRepository');
+
+						$collections = t3lib_div::intExplode(',', $currentCObjData['file_collections'], TRUE);
+						foreach($collections as $collectionUid) {
+							/** @var t3lib_file_Collection_AbstractFileCollection $singleCollection */
+							$singleCollection = $collectionRepository->findByUid($collectionUid);
+							$singleCollection->loadContents();
+
+							$fileArray += $singleCollection->getItems();
+						}
+					} else {
+						/** @var t3lib_file_Repository_fileRepository $fileRepository */
+						$fileRepository = t3lib_div::makeInstance('t3lib_file_Repository_fileRepository');
+						$fileArray = $fileRepository->findByRelation('tt_content', 'media', $currentCObjData['uid']);
 					}
-					$fileArray[] = $fileObject;
-				}
+					break;
+				case self::UPLOADS_TYPOSCRIPT:
+				case self::UPLOADS_LEGACY:
+					$oldTitles = t3lib_div::trimExplode("\n", $currentCObjData['titleText'], FALSE);
+					$oldDescriptionTexts = t3lib_div::trimExplode("\n", $currentCObjData['imagecaption'], FALSE);
+					
+					if ($folderPath) {
+						$fileList = $this->cObj->filelist($folderPath);
+					} else {
+						$fileList = $this->cObj->data[$field];
+					}
+					$fileArray = $this->getFileObjectsFromStaticList($fileList, $path);
+					break;
 			}
 
 				// If there were files to list...:
@@ -352,7 +402,8 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 				foreach ($fileArray AS $key => $fileObject) {
 					$filesData[$key] = $fileObject->toArray();
 
-					if ($legacy && isset($oldDescriptionTexts[$key]) && trim($oldDescriptionTexts[$key]) != '') {
+						// @deprecated will be Removed with 4.9
+					if (isset($oldDescriptionTexts[$key]) && trim($oldDescriptionTexts[$key]) != '') {
 						$filesData[$key]['description'] = $oldDescriptionTexts[$key];
 					}
 
@@ -362,7 +413,8 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 						unset($conf['linkProc.']['title']);
 					}
 
-					if ($legacy && isset($oldTitles[$key]) && trim($oldTitles[$key]) != '') {
+						// @deprecated will be Removed with 4.9
+					if (isset($oldTitles[$key]) && trim($oldTitles[$key]) != '') {
 						$conf['linkProc.']['title'] = $oldTitles[$key];
 					}
 
@@ -375,9 +427,8 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 
 					$conf['linkProc.']['altText'] = $conf['linkProc.']['iconCObject.']['altText'] = $altText;
 
-					$this->cObj->setCurrentVal($path);
-					$this->cObj->data = $fileObject->toArray();
-					$GLOBALS['TSFE']->register['ICON_REL_PATH'] = $path . $fileObject->getName();
+					$this->cObj->data = $filesData[$key];
+					$GLOBALS['TSFE']->register['ICON_REL_PATH'] = $filesData[$key]['path'] . $fileObject->getName();
 					$GLOBALS['TSFE']->register['filename'] = $filesData[$key]['filename'];
 					$GLOBALS['TSFE']->register['path'] = $filesData[$key]['path'];
 					$GLOBALS['TSFE']->register['fileSize'] = $filesData[$key]['filesize'];
@@ -468,6 +519,7 @@ class tx_cssstyledcontent_pi1 extends tslib_pibase {
 			return $out;
 		}
 	}
+
 
 	/**
 	 * returns an array containing width relations for $colCount columns.

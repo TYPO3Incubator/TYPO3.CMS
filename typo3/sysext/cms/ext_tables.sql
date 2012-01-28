@@ -331,6 +331,7 @@ CREATE TABLE tt_content (
   select_key varchar(80) DEFAULT '' NOT NULL,
   sectionIndex tinyint(3) unsigned DEFAULT '0' NOT NULL,
   linkToTop tinyint(3) unsigned DEFAULT '0' NOT NULL,
+  file_collections text,
   filelink_size tinyint(3) unsigned DEFAULT '0' NOT NULL,
   filelink_sorting tinytext NOT NULL,
   target varchar(30) DEFAULT '' NOT NULL,

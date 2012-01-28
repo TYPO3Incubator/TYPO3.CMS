@@ -501,7 +501,6 @@
 			<trans-unit id="images.addFileReference" xml:space="preserve">
 				<source>Add new file</source>
 			</trans-unit>
-
 			<trans-unit id="longdescURL_formlabel" xml:space="preserve">
 				<source>Long Description URLs (one per line)</source>
 			</trans-unit>
@@ -633,6 +632,9 @@
 			</trans-unit>
 			<trans-unit id="multimedia_formlabel" xml:space="preserve">
 				<source>Selected Media File</source>
+			</trans-unit>
+			<trans-unit id="file_collections" xml:space="preserve">
+				<source>File collections</source>
 			</trans-unit>
 			<trans-unit id="filelink_size" xml:space="preserve">
 				<source>Show File Size:</source>
