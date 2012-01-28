@@ -61,7 +61,7 @@ class Tx_File_UpgradeWizard_TtContentUploadsUpgradeWizard extends Tx_Install_Upd
 			}
 		}
 
-		$this->fileFactory =t3lib_div::makeInstance("t3lib_file_Factory");
+		$this->fileFactory = t3lib_div::makeInstance("t3lib_file_Factory");
 		$this->fileRepository= t3lib_div::makeInstance('t3lib_file_Repository_FileRepository');
 		
 		$this->targetDirectory = PATH_site . $GLOBALS['TYPO3_CONF_VARS']['BE']['fileadminDir'] . 'content_uploads';
@@ -79,7 +79,7 @@ class Tx_File_UpgradeWizard_TtContentUploadsUpgradeWizard extends Tx_Install_Upd
 		$notMigratedRowsCount = $GLOBALS['TYPO3_DB']->exec_SELECTcountRows(
 			'uid',
 			'tt_content',
-			"media LIKE '%,%' OR media LIKE '%.%'"	// include also deleted, as they might be undeleted
+			"media LIKE '%,%' OR media LIKE '%.%' OR (CType = 'uploads' AND select_key != '')"	// include also deleted, as they might be undeleted
 		);
 		if ($notMigratedRowsCount > 0) {
 			$description = 'There are Content Elements of type "upload" which are referencing files,' .
@@ -119,6 +119,20 @@ class Tx_File_UpgradeWizard_TtContentUploadsUpgradeWizard extends Tx_Install_Upd
 	 * @return void
 	 */
 	protected function migrateRecord(array $record) {
+		$collections = array();
+		if (trim($record['select_key'])) {
+			$GLOBALS['TYPO3_DB']->exec_INSERTquery(
+				'sys_file_collection',
+				array(
+					'pid' => $record['pid'],
+					'title' => $record['select_key'],
+					'storage' => $this->storage->getUid(),
+					'folder' => ltrim("fileadmin/", $record['select_key'])
+				)
+			);
+			$collections[] = $GLOBALS['TYPO3_DB']->sql_insert_id();
+		}
+
 		$files = t3lib_div::trimExplode(',', $record['media'], TRUE);
 		$descriptions = t3lib_div::trimExplode("\n", $record['imagecaption']);
 		$titleText = t3lib_div::trimExplode("\n", $record['titleText']);
@@ -155,7 +169,7 @@ class Tx_File_UpgradeWizard_TtContentUploadsUpgradeWizard extends Tx_Install_Upd
 			$i++;
 		}
 
-		$this->cleanRecord($record, $i);
+		$this->cleanRecord($record, $i, $collections);
 	}
 
 	/**
@@ -165,7 +179,7 @@ class Tx_File_UpgradeWizard_TtContentUploadsUpgradeWizard extends Tx_Install_Upd
 	 * @param int $fileCount
 	 * @return void
 	 */
-	protected function cleanRecord(array $record, $fileCount) {
+	protected function cleanRecord(array $record, $fileCount, array $collectionUids) {
 		$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
 			'tt_content',
 			'uid = ' . $record['uid'],
@@ -173,7 +187,9 @@ class Tx_File_UpgradeWizard_TtContentUploadsUpgradeWizard extends Tx_Install_Upd
 				'media' => $fileCount,
 				'imagecaption' => '',
 				'titleText' => '',
-				'altText' => ''
+				'altText' => '',
+				'select_key' => '',
+				'file_collections' => implode(',', $collectionUids)
 			)
 		);
 	}
@@ -184,10 +200,10 @@ class Tx_File_UpgradeWizard_TtContentUploadsUpgradeWizard extends Tx_Install_Upd
 	 * @param $table
 	 * @return array
 	 */
-	protected function getRecordsFromTable($table) {
-		$fields = implode(',', array('uid', 'pid', 'media', 'imagecaption', 'titleText'));
+	protected function getRecordsFromTable() {
+		$fields = implode(',', array('uid', 'pid', 'select_key', 'media', 'imagecaption', 'titleText'));
 
-		$records = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows($fields, $table, "media LIKE '%,%' OR media LIKE '%,%'");
+		$records = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows($fields, 'tt_content', "media LIKE '%,%' OR media LIKE '%,% OR (CType = 'uploads' AND select_key != '')'");
 
 		return $records;
 	}
