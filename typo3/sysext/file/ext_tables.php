@@ -86,6 +86,7 @@ $TCA['sys_file_reference'] = array(
 		'crdate'    => 'crdate',
 		'cruser_id' => 'cruser_id',
 		'type' => 'uid_local:type',
+		'hideTable' => TRUE,
 		'sortby' => 'sorting',	
 		'delete' => 'deleted',	
 		'enablecolumns' => array(		
