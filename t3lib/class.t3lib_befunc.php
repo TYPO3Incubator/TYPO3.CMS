@@ -1510,12 +1510,6 @@ final class t3lib_BEfunc {
 			'width' => $width,
 			'height' => $height,
 		));
-		$thumbScript = 'thumbs.php';
-		$check = md5($file->getCombinedIdentifier() . '|' . $file->getMimeType() . '|' . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']);;
-		$params = '&file=' . intval($file->getUid());
-		$params.= '&md5sum=' . $check;
-		$params.= '&size=' . $width . 'x' . $height;
-		return $thumbScript . '?&dummy=' . $GLOBALS['EXEC_TIME'] . $params;
 	}
 
 
