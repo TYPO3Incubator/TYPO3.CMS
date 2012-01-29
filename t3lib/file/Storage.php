@@ -676,7 +676,7 @@ class t3lib_file_Storage {
 	 * @param t3lib_file_File $fileObject The file object
 	 * @return string
 	 */
-	public function getProcessedUrlForFile(t3lib_file_File $fileObject, $context, $configuration) {
+	public function getProcessedUrlForFile(t3lib_file_File $fileObject, $context, array $configuration) {
 		return $this->fileProcessingService->process($fileObject, $context, $configuration);
 	}
 

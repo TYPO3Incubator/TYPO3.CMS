@@ -671,7 +671,7 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 	 * @param array $configuration the processing configuration, see manual for that
 	 * @return string the URL ready to output
 	 */
-	public function getProcessedUrl($context, $configuration) {
+	public function getProcessedUrl($context, array $configuration) {
 		return $this->getStorage()->getProcessedUrlForFile($this, $context, $configuration);
 	}
 
