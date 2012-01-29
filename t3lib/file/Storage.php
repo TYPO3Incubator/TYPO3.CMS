@@ -102,6 +102,11 @@ class t3lib_file_Storage {
 	protected $baseUri;
 
 	/**
+	 * @var t3lib_file_Service_AbstractFileProcessingService
+	 */
+	protected $fileProcessingService;
+
+	/**
 	 * @var t3lib_file_Service_Publishing_Publisher
 	 */
 	protected $publisher;
@@ -162,6 +167,9 @@ class t3lib_file_Storage {
 			+ ($this->storageRecord['is_public'] && $this->driver->hasCapability(self::CAPABILITY_PUBLIC) ? self::CAPABILITY_PUBLIC : 0)
 			+ ($this->storageRecord['is_writable'] && $this->driver->hasCapability(self::CAPABILITY_WRITABLE) ? self::CAPABILITY_WRITABLE : 0);
 		$this->processConfiguration();
+
+		// @todo: make this configurable for each storage
+		$this->fileProcessingService = t3lib_div::makeInstance('t3lib_file_Service_LocalFileProcessingService', $this, $this->driver);
 	}
 
 	public function setPublisher(t3lib_file_Service_Publishing_Publisher $publisher) {
@@ -660,6 +668,16 @@ class t3lib_file_Storage {
 	 */
 	public function getPublicUrlForFile(t3lib_file_File $fileObject) {
 		return $this->driver->getPublicUrl($fileObject);
+	}
+
+	/**
+	 * Returns a publicly accessible URL for a file.
+	 *
+	 * @param t3lib_file_File $fileObject The file object
+	 * @return string
+	 */
+	public function getProcessedUrlForFile(t3lib_file_File $fileObject, $context, $configuration) {
+		return $this->fileProcessingService->process($fileObject, $context, $configuration);
 	}
 
 	/**

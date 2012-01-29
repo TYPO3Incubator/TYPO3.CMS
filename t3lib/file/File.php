@@ -134,6 +134,15 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 	 */
 	const FILETYPE_SOFTWARE = 5;
 
+	/*********************************************
+	 * FILE PROCESSING CONTEXTS
+	 *********************************************/
+
+	/**
+	 * basic processing context to get a processed
+	 * image with smaller width/height
+	 */
+	const PROCESSINGCONTEXT_IMAGEPREVIEW = 'image.preview';
 
 	/**
 	 * Constructor for a file object. Should normally not be used directly, use the corresponding factory methods instead.
@@ -653,6 +662,17 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 	 */
 	public function getPublicUrl() {
 		return $this->getStorage()->getPublicUrlForFile($this);
+	}
+
+	/**
+	 * Returns a modified version of the file.
+	 *
+	 * @param string $context the context of the configuration (see above)
+	 * @param array $configuration the processing configuration, see manual for that
+	 * @return string the URL ready to output
+	 */
+	public function getProcessedUrl($context, $configuration) {
+		return $this->getStorage()->getProcessedUrlForFile($this, $context, $configuration);
 	}
 
 	/**
