@@ -522,8 +522,9 @@ class t3lib_TCEforms_inline {
 					$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
 					$fileObject = $fileFactory->getFileObject($fileUid);
 					if ($fileObject) {
+						$imageUrl = $fileObject->getProcessedUrl($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => 64, 'height' => 64));
 						$thumbnail = '<span class="nobr">' .
-							'<img src="' . $this->backPath . t3lib_BEfunc::getThumbnailUrlForFile($fileObject, 64, 64) . '" alt="' . $recTitle . '" />' .
+							'<img src="' . $imageUrl . '" alt="' . $recTitle . '" />' .
 							'</span>';
 					}
 				}

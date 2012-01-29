@@ -1495,6 +1495,8 @@ final class t3lib_BEfunc {
 
 
 	/**
+	 * @todo: remove this function again, as this is now done directly on the file via $getProcessedUrl
+	 *
 	 * Get a URL for thumbanil
 	 * Note: this is not a public API yet, it might be moved to a separate class handling thumbnail generation for both BE and FE.
 	 *
@@ -1504,6 +1506,10 @@ final class t3lib_BEfunc {
 	 * @return string
 	 */
 	public static function getThumbnailUrlForFile(t3lib_file_FileInterface $file, $width = 64, $height = 64) {
+		return $file->getProcessedUrl($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array(
+			'width' => $width,
+			'height' => $height,
+		));
 		$thumbScript = 'thumbs.php';
 		$check = md5($file->getCombinedIdentifier() . '|' . $file->getMimeType() . '|' . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']);;
 		$params = '&file=' . intval($file->getUid());
@@ -1570,7 +1576,10 @@ final class t3lib_BEfunc {
 
 					// web image
 				if (t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'], $fileReferenceObject->getExtension())) {
-					$imageUrl = $backPath . self::getThumbnailUrlForFile($fileObject, $sizeParts[0], $sizeParts[1]);
+					$imageUrl = $fileObject->getProcessedUrl($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array(
+						'width'  => $sizeParts[0],
+						'height' => $sizeParts[1],
+					));
 					$imgTag = '<img src="' . $imageUrl . '" alt="' . htmlspecialchars($fileReferenceObject->getName()) . '" />';
 
 				} else {

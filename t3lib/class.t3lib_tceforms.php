@@ -2162,10 +2162,10 @@ class t3lib_TCEforms {
 							// FAL icon production
 						if (t3lib_utility_Math::canBeInterpretedAsInteger($imgP[0])) {
 							$fileObject = $fileFactory->getFileObject($imgP[0]);
-							if (t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'], $fileObject->getExtension())) {
-								$imageUrl = t3lib_BEfunc::getThumbnailUrlForFile($fileObject);
-								$imgTag = '<img src="' . $imageUrl . '" alt="' . htmlspecialchars($fileObject->getName()) . '" />';
 
+							if (t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'], $fileObject->getExtension())) {
+								$imageUrl = $fileObject->getProcessedUrl($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array());
+								$imgTag = '<img src="' . $imageUrl . '" alt="' . htmlspecialchars($fileObject->getName()) . '" />';
 							} else {
 									// Icon
 								$imgTag = t3lib_iconWorks::getSpriteIconForFile(

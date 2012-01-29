@@ -323,17 +323,19 @@ class SC_show_item {
 		$this->content .= $this->doc->divider(2);
 			// If the file was an image...:
 		if ($file->getType() == 'Image') {
+			$thumbUrl = $file->getProcessedUrl($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => '150m', 'height' => '150m'));
 			// @TODO adapt the accessing of image width
 			$code.= '<div class="fileInfoContainer fileDimensions">'
 				. '<strong>' . $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.dimensions') . ':</strong> '
 				/*. $file->getProperty('width')*/ . '0x0' /*. $file->getProperty('height')*/ . ' '
 				. $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.pixels') . '</div>';
 			$code = '<br />
-				<div align="center">' . $returnLinkTag . '<img src="' . t3lib_BEfunc::getThumbnailUrlForFile($file, '150m', '150m'). '" alt="' . $file->getName() . '" title="' . $file->getName() . '" /></a></div>';
+				<div align="center">' . $returnLinkTag . '<img src="' . $thumbUrl . '" alt="' . htmlspecialchars(trim($file->getName())) . '" title="' . htmlspecialchars(trim($file->getName())) . '" /></a></div>';
 			$this->content.= $this->doc->section('', $code);
 		} elseif ($file->getExtension() == 'ttf') {
+			$thumbUrl = $file->getProcessedUrl($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => '530m', 'height' => '600m'));
 			$thumb = '<br />
-				<div align="center">' . $returnLinkTag . '<img src="'.htmlspecialchars(t3lib_BEfunc::getThumbnailUrlForFile($file, '530m', '600m')) . '" border="0" title="' . htmlspecialchars(trim($file->getName())) . '" alt="" /></a></div>';
+				<div align="center">' . $returnLinkTag . '<img src="' . $thumbUrl . '" border="0" title="' . htmlspecialchars(trim($file->getName())) . '" alt="" /></a></div>';
 			$this->content.= $this->doc->section('',$thumb);
 		}
 

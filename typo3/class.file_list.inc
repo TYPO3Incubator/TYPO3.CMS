@@ -491,8 +491,8 @@ class fileList extends t3lib_recordList {
 
 								// Thumbnails?
 							if ($this->thumbs && $this->isImage($ext)) {
-								$thumbUrl = $GLOBALS['BACK_PATH'] . t3lib_BEfunc::getThumbnailUrlForFile($fileObject);
-								$theData[$field] .= '<br /><img src="' . htmlspecialchars($thumbUrl) . '" hspace="2" title="' . htmlspecialchars($fileName) . '" alt="" />';
+								$thumbUrl = $fileObject->getProcessedUrl($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array());
+								$theData[$field] .= '<br /><img src="' . $thumbUrl . '" hspace="2" title="' . htmlspecialchars($fileName) . '" alt="" />';
 							}
 						break;
 						default:
