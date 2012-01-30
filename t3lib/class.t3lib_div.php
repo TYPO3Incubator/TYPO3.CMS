@@ -3182,28 +3182,31 @@ final class t3lib_div {
 	public static function getRelativePathTo($targetPath) {
 		$relativePath = NULL;
 
-		$currentPath = rtrim(dirname(self::getIndpEnv('SCRIPT_FILENAME')), DIRECTORY_SEPARATOR);
+		// $currentPath = rtrim(dirname(self::getIndpEnv('SCRIPT_FILENAME')), DIRECTORY_SEPARATOR);
+		$currentPath = rtrim(dirname(PATH_thisScript), DIRECTORY_SEPARATOR);
 		$targetPath = rtrim($targetPath, DIRECTORY_SEPARATOR);
 
-		$commonPathPrefix = self::getCommonPathPrefix(array($currentPath, $targetPath));
 
-		if ($commonPathPrefix !== NULL && self::isAllowedAbsPath($commonPathPrefix)) {
-			$commonPathPrefixLength = strlen($commonPathPrefix);
-			$resolvedCurrentPath = '';
-			$resolvedTargetPath = '';
+		if ($currentPath !== $targetPath) {
+			$commonPathPrefix = self::getCommonPathPrefix(array($currentPath, $targetPath));
 
-			if (strlen($currentPath) > $commonPathPrefixLength) {
-				$resolvedCurrentPath = (string) substr($currentPath, $commonPathPrefixLength);
+			if ($commonPathPrefix !== NULL && self::isAllowedAbsPath($commonPathPrefix)) {
+				$commonPathPrefixLength = strlen($commonPathPrefix);
+				$resolvedCurrentPath = '';
+				$resolvedTargetPath = '';
+
+				if (strlen($currentPath) > $commonPathPrefixLength) {
+					$resolvedCurrentPath = (string) substr($currentPath, $commonPathPrefixLength);
+				}
+				if (strlen($targetPath) > $commonPathPrefix) {
+					$resolvedTargetPath = (string) substr($targetPath, $commonPathPrefixLength);
+				}
+
+				$currentSteps = count(explode(DIRECTORY_SEPARATOR, $resolvedCurrentPath));
+				$relativePath = str_repeat('../', $currentSteps) . str_replace(DIRECTORY_SEPARATOR, '/', $resolvedTargetPath);
+				$relativePath = rtrim($relativePath, '/') . '/';
 			}
-			if (strlen($targetPath) > $commonPathPrefix) {
-				$resolvedTargetPath = (string) substr($targetPath, $commonPathPrefixLength);
-			}
-
-			$currentSteps = count(explode(DIRECTORY_SEPARATOR, $resolvedCurrentPath));
-			$relativePath = str_repeat('../', $currentSteps) . str_replace(DIRECTORY_SEPARATOR, '/', $resolvedTargetPath);
-			$relativePath = rtrim($relativePath, '/') . '/';
 		}
-
 		return $relativePath;
 	}
 
