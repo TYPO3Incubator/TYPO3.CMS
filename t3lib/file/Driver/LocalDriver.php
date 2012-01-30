@@ -457,7 +457,8 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 
 		$entries = array();
 		while (false !== ($entry = readdir($dirHandle))) {
-			if ((!is_file($path . $entry) && !is_dir($path . $entry)) || $entry == '') {
+				// skip nonfiles/nonfolders, hidden files and empty entries
+			if ((!is_file($path . $entry) && !is_dir($path . $entry)) || $entry == '' || t3lib_div::isFirstPartOfStr('.', $entry) !== FALSE) {
 				continue;
 			}
 
