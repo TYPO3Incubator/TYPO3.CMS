@@ -267,6 +267,7 @@ CREATE TABLE sys_file_storage (
 	is_browsable tinyint(4) DEFAULT '0' NOT NULL,
 	is_public tinyint(4) DEFAULT '0' NOT NULL,
 	is_writable tinyint(4) DEFAULT '0' NOT NULL,
+	processingfolder tinytext,
 
 	PRIMARY KEY (uid),
 	KEY parent (pid)

@@ -150,6 +150,12 @@ class t3lib_file_Storage {
 	 */
 	const CAPABILITY_WRITABLE = 4;
 
+	/**
+	 * the folder where all processed files
+	 *
+	 * @var string
+	 */
+	protected $processingfolder = '_temp_';
 
 	/**
 	 * Constructor for a storage object.
@@ -170,6 +176,11 @@ class t3lib_file_Storage {
 
 		// @todo: make this configurable for each storage
 		$this->fileProcessingService = t3lib_div::makeInstance('t3lib_file_Service_LocalFileProcessingService', $this, $this->driver);
+
+		if ($this->storageRecord['processingfolder']) {
+			$this->processingfolder = $this->storageRecord['processingfolder'];
+		}
+		$this->processingfolder = trim($this->processingfolder, '/');
 	}
 
 	public function setPublisher(t3lib_file_Service_Publishing_Publisher $publisher) {
@@ -1285,10 +1296,14 @@ class t3lib_file_Storage {
 	 * @param string $pattern The pattern the files have to match
 	 * @param integer $start The position to start the listing; if not set or 0, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
-	 * @return array Information about the files found.
+	 * @return array Information about the folders found.
 	 */
 	public function getFolderList($path, $pattern = '', $start = 0, $numberOfItems = 0) {
 		$items = $this->driver->getFolderList($path, $pattern, $start, $numberOfItems);
+			// exclude the _temp_ folder, so it won't get indexed etc
+		if ($path == '/' && isset($items[$this->processingfolder])) {
+			unset($items[$this->processingfolder]);
+		}
 		uksort($items, 'strnatcasecmp');
 
 		return $items;
@@ -1467,6 +1482,15 @@ class t3lib_file_Storage {
 			$this->signalSlotDispatcher = t3lib_div::makeInstance('t3lib_SignalSlot_Dispatcher');
 		}
 		return $this->signalSlotDispatcher;
+	}
+
+	/**
+	 * getter function to return the folder where the files can
+	 * be processed
+	 * @return string the processing folder, can be empty as well, if the storage doesn't have a processing folder
+	 */
+	public function getProcessingFolder() {
+		return $this->processingfolder;
 	}
 }
 

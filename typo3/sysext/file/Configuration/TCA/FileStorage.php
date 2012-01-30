@@ -9,7 +9,7 @@ if (!defined ('TYPO3_MODE')) {
 $TCA['sys_file_storage'] = array (
 	'ctrl' => $TCA['sys_file_storage']['ctrl'],
 	'interface' => array (
-		'showRecordFieldList' => 'hidden,name,description,driver,configuration'
+		'showRecordFieldList' => 'hidden,name,description,driver,processingfolder,configuration'
 	),
 	'feInterface' => $TCA['sys_file_storage']['feInterface'],
 	'columns' => array (
@@ -62,13 +62,21 @@ $TCA['sys_file_storage'] = array (
 				'default' => 1
 			)
 		),
+		'processingfolder' => array(
+			'exclude' => 0,
+			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.processingfolder',
+			'config' => array (
+				'type' => 'input',
+				'placeholder' => '_temp_',
+				'size' => '20',
+			)
+		),
 		'driver' => array (
 			'exclude' => 0,
 			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.driver',
 			'config' => array (
 				'type' => 'select',
-				'items' => array (
-				),
+				'items' => array(),
 				'default' => '',
 			)
 		),
@@ -78,13 +86,12 @@ $TCA['sys_file_storage'] = array (
 			'config' => array (
 				'type' => 'flex',
 				'ds_pointerField' => 'driver',
-				'ds' => array (
-				),
+				'ds' => array(),
 			)
 		),
 	),
 	'types' => array(
-		'0' => array('showitem' => 'hidden;;1;;1-1-1, name, --palette--;Capabilities;capabilities, description, driver, configuration'),
+		'0' => array('showitem' => 'hidden;;1;;1-1-1, name, --palette--;Capabilities;capabilities, description, processingfolder, driver, configuration'),
 	),
 	'palettes' => array(
 		'capabilities' => array('showitem' => 'is_browsable, is_public, is_writable', 'canNotCollapse' => TRUE)

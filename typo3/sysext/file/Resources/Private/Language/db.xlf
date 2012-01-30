@@ -31,17 +31,21 @@
 				<source>Is writable?</source>
 				<target>Is writable?</target>
 			</trans-unit>
+			<trans-unit id="sys_file_storage.processingfolder" approved="yes">
+				<source>Folder for manipulated and temporary images etc.</source>
+				<target>Folder for manipulated and temporary images etc.</target>
+			</trans-unit>
 			<trans-unit id="sys_file_storage.driver" approved="yes">
-				<source>Storage</source>
-				<target>Storage</target>
+				<source>Driver</source>
+				<target>Driver</target>
 			</trans-unit>
 			<trans-unit id="sys_file_storage.driver.local" approved="yes">
 				<source>Local Filesystem</source>
 				<target>Local Filesystem</target>
 			</trans-unit>
 			<trans-unit id="sys_file_storage.configuration" approved="yes">
-				<source>Configuration</source>
-				<target>Configuration</target>
+				<source>Driver Configuration</source>
+				<target>Driver Configuration</target>
 			</trans-unit>
 			<trans-unit id="sys_file" approved="yes">
 				<source>File</source>
