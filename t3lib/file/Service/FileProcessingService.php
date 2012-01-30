@@ -27,14 +27,55 @@
 
 
 /**
- * Abstract file processing service
+ * File processing service
  *
  * @author Oliver Hader <oliver.hader@typo3.org>
  * @package TYPO3
  * @subpackage t3lib
  */
-class t3lib_file_Service_LocalFileProcessingService extends t3lib_file_Service_AbstractFileProcessingService {
+class t3lib_file_Service_FileProcessingService {
+	const SIGNAL_PreProcess = 'preProcess';
+	const SIGNAL_PostProcess = 'postProcess';
+
 	/**
+	 * @var t3lib_file_Storage
+	 */
+	protected $storage;
+
+	/**
+	 * @var t3lib_file_Driver_AbstractDriver
+	 */
+	protected $driver;
+
+	/**
+	 * Creates this object.
+	 *
+	 * @param t3lib_file_Storage $storage
+	 * @param t3lib_file_Driver_AbstractDriver $driver
+	 */
+	public function __construct(t3lib_file_Storage $storage, t3lib_file_Driver_AbstractDriver $driver) {
+		$this->storage = $storage;
+		$this->driver = $driver;
+	}
+
+	/**
+	 * Emits pre-processing signal.
+	 *
+	 * @param t3lib_file_File $file
+	 * @param string $context
+	 * @param array $configuration
+	 */
+	protected function emitPreProcess(t3lib_file_File $file, $context, array $configuration = array()) {
+		t3lib_SignalSlot_Dispatcher::getInstance()->dispatch(
+			't3lib_file_Service_FileProcessingService',
+			self::SIGNAL_PreProcess,
+			array($this->storage, $this->driver, $file, $context, $configuration)
+		);
+	}
+
+	/**
+	 * Processes the file.
+	 *
 	 * @param t3lib_file_File $file
 	 * @param string $context
 	 * @param array $configuration
@@ -53,6 +94,23 @@ class t3lib_file_Service_LocalFileProcessingService extends t3lib_file_Service_A
 	}
 
 	/**
+	 * Emits post-processing signal.
+	 *
+	 * @param t3lib_file_File $file
+	 * @param $context
+	 * @param array $configuration
+	 */
+	protected function emitPostProcess(t3lib_file_File $file, $context, array $configuration = array()) {
+		t3lib_SignalSlot_Dispatcher::getInstance()->dispatch(
+			't3lib_file_Service_FileProcessingService',
+			self::SIGNAL_PostProcess,
+			array($this->storage, $this->driver, $file, $context, $configuration)
+		);
+	}
+
+	/**
+	 * Gets the preview URL.
+	 *
 	 * @param t3lib_file_File $file
 	 * @param array $configuration
 	 * @return string

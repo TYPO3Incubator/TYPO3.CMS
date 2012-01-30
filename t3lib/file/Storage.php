@@ -102,7 +102,7 @@ class t3lib_file_Storage {
 	protected $baseUri;
 
 	/**
-	 * @var t3lib_file_Service_AbstractFileProcessingService
+	 * @var t3lib_file_Service_FileProcessingService
 	 */
 	protected $fileProcessingService;
 
@@ -175,7 +175,7 @@ class t3lib_file_Storage {
 		$this->processConfiguration();
 
 		// @todo: make this configurable for each storage
-		$this->fileProcessingService = t3lib_div::makeInstance('t3lib_file_Service_LocalFileProcessingService', $this, $this->driver);
+		$this->fileProcessingService = t3lib_div::makeInstance('t3lib_file_Service_FileProcessingService', $this, $this->driver);
 
 		if ($this->storageRecord['processingfolder']) {
 			$this->processingfolder = $this->storageRecord['processingfolder'];
