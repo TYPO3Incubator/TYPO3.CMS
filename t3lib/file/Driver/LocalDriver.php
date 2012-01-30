@@ -411,7 +411,9 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 */
 	protected function getFileList_itemCallback($fileName, $path) {
 		$filePath = $this->getAbsolutePath($path . $fileName);
-		if (!is_file($filePath)) {
+
+			// also don't show hidden files
+		if (!is_file($filePath) || t3lib_div::isFirstPartOfStr($fileName, '.') === TRUE) {
 			return array('', array());
 		}
 		$fileInfo = new SplFileInfo($filePath);
@@ -431,7 +433,8 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 		if (!is_dir($filePath)) {
 			return array('', array());
 		}
-		if ($fileName == '..' || $fileName == '.' || $fileName == '') {
+			// also don't show hidden files
+		if ($fileName == '..' || $fileName == '.' || $fileName == '' || t3lib_div::isFirstPartOfStr($fileName, '.') === TRUE) {
 			return array('', array());
 		}
 		$fileInfo = new SplFileInfo($filePath);
@@ -458,7 +461,7 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 		$entries = array();
 		while (false !== ($entry = readdir($dirHandle))) {
 				// skip nonfiles/nonfolders, hidden files and empty entries
-			if ((!is_file($path . $entry) && !is_dir($path . $entry)) || $entry == '' || t3lib_div::isFirstPartOfStr('.', $entry) !== FALSE) {
+			if ((!is_file($path . $entry) && !is_dir($path . $entry)) || $entry == '' || t3lib_div::isFirstPartOfStr($entry, '.') === TRUE) {
 				continue;
 			}
 
