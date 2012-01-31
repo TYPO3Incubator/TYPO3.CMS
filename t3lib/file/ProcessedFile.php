@@ -250,6 +250,33 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 		return $this->properties['identifier'];
 	}
 
+	/**
+	 * Deletes this file from its storage. This also means that this object becomes useless.
+	 *
+	 * @return bool TRUE if deletion succeeded
+	 */
+	public function delete() {
+		$this->getStorage->deleteFile($this);
+	}
+
+	/**
+	 * Renames this file.
+	 *
+	 * @param $newName The new file name
+	 * @return t3lib_file_File
+	 */
+	public function rename($newName) {
+		return $this;
+	}
+
+	/**
+	 * Returns TRUE if this file is indexed
+	 *
+	 * @return bool
+	 */
+	public function isIndexed() {
+		return FALSE;
+	}
 
 	/*****************
 	 * SPECIAL METHODS
@@ -303,6 +330,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @param array $properties
 	 */
 	public function updateProperties(array $properties) {
+		// @todo: define what is allowed to update
 		$this->properties = array_merge($this->properties, $properties);
 	}
 
@@ -325,6 +353,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return array
 	 */
 	public function toArray() {
+		// @todo: define what we need here
 		return array(
 			'storage' => $this->getStorage()->getUid(),
 			'identifier' => $this->getIdentifier(),
