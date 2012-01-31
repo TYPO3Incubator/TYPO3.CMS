@@ -174,11 +174,19 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 		// end inserted by ingmar
 
 		if (isset($this->baseUri)) {
-			return $this->baseUri . ltrim($file->getIdentifier(), '/');
+			$publicUrl = $this->baseUri . ltrim($file->getIdentifier(), '/');
 		} else {
 			// TODO check if publisher is available, if not, throw exception
-			return $this->resourcePublisher->publishFile($file);
+			$publicUrl = $this->resourcePublisher->publishFile($file);
 		}
+
+			// make the path relative to the current script in order to make it possible
+			// to use the relative file
+		if ($this->configuration['pathType']==='relative' && !t3lib_div::isAbsPath($publicUrl)) {
+			$publicUrl = t3lib_div::getRelativePathTo(dirname(PATH_site . $publicUrl)) . basename($publicUrl);
+		}
+		return $publicUrl;
+
 	}
 
 	/**
