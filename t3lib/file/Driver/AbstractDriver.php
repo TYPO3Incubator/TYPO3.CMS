@@ -263,9 +263,10 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @param string $localFilePath
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $fileName The name to add the file under
+	 * @param t3lib_file_FileInterface $updateFileObject Optional file object to update (instead of creating a new object). With this parameter, this function can be used to "populate" a dummy file object with a real file underneath.
 	 * @return t3lib_file_FileInterface
 	 */
-	abstract public function addFile($localFilePath, t3lib_file_Folder $targetFolder, $fileName);
+	abstract public function addFile($localFilePath, t3lib_file_Folder $targetFolder, $fileName, t3lib_file_FileInterface $updateFileObject = NULL);
 
 	/**
 	 * Checks if a file exists.

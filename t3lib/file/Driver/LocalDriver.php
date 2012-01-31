@@ -588,9 +588,10 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * @param string $localFilePath
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $fileName The name to add the file under
+	 * @param t3lib_file_FileInterface $updateFileObject File object to update (instead of creating a new object). With this parameter, this function can be used to "populate" a dummy file object with a real file underneath.
 	 * @return t3lib_file_FileInterface
 	 */
-	public function addFile($localFilePath, t3lib_file_Folder $targetFolder, $fileName) {
+	public function addFile($localFilePath, t3lib_file_Folder $targetFolder, $fileName, t3lib_file_FileInterface $updateFileObject =NULL) {
 		if (t3lib_div::isFirstPartOfStr($localFilePath, $this->absoluteBasePath)) {
 			throw new InvalidArgumentException("Cannot add a file that is already part of this storage.", 1314778269);
 		}
@@ -614,9 +615,14 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 		t3lib_div::fixPermissions($targetPath); // Change the permissions of the file
 
 		$fileInfo = $this->getFileInfoByIdentifier($relativeTargetPath);
-		$fileObject = $this->getFileObject($fileInfo);
 
-		return $fileObject;
+		if($updateFileObject) {
+			$updateFileObject->updateFileInfo($fileInfo);
+			return $updateFileObject;
+		} else {
+			$fileObject = $this->getFileObject($fileInfo);
+			return $fileObject;
+		}
 	}
 
 	/**
