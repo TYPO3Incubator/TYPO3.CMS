@@ -54,6 +54,13 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	protected $context;
 
 	/**
+	 * check if the file is processed
+	 *
+	 * @var boolean
+	 */
+	protected $isProcessed;
+
+	/**
 	 * Processing configuration
 	 *
 	 * @var array
@@ -95,7 +102,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return bool
 	 */
 	public function hasProperty($key) {
-		return $this->originalFile->hasProperty($key);
+		return isset($this->properties[$key]);
 	}
 
 	/**
@@ -105,11 +112,11 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return bool
 	 */
 	public function getProperty($key) {
-		return $this->originalFile->getProperty($key);
+		return $this->properties[$key];
 	}
 
 	public function getProperties() {
-		return $this->originalFile->getProperties();
+		return $this->properties;
 	}
 
 	/**
@@ -118,44 +125,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return string
 	 */
 	public function getName() {
-		return $this->originalFile->getName();
-	}
-
-	/**
-	 * Returns the title text to this image
-	 *
-	 * @return string
-	 */
-	public function getTitle() {
-		return $this->originalFile->getTitle();
-	}
-
-
-	/**
-	 * Returns the alternative text to this image
-	 *
-	 * @return string
-	 */
-	public function getAlternative() {
-		return $this->originalFile->getAlternative();
-	}
-
-	/**
-	 * Returns the description text to this file
-	 *
-	 * @return string
-	 */
-	public function getDescription() {
-		return $this->originalFile->getDescription();
-	}
-
-	/**
-	 * Returns the link that should be active when clicking on this image
-	 *
-	 * @return string
-	 */
-	public function getLink() {
-		return $this->originalFile->getLink();
+		return $this->properties['name'];
 	}
 
 	/**
@@ -164,7 +134,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return int
 	 */
 	public function getUid() {
-		return $this->originalFile->getUid();
+		return $this->properties['uid'];
 	}
 
 	/**
@@ -173,10 +143,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return int
 	 */
 	public function getSize() {
-
-		// TODO: Make this return size of processed file
-
-		return $this->originalFile->getSize();
+		return $this->properties['size'];
 	}
 
 	/**
@@ -185,8 +152,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return string
 	 */
 	public function getSha1() {
-		// TODO: Make this return sha1 of processed file
-		return $this->originalFile->getSha1();
+		return $this->getStorage()->hashFile($this, 'sha1');
 	}
 
 	/**
@@ -196,7 +162,6 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 */
 	public function calculateChecksum() {
 		return t3lib_div::shortMD5($this->originalFile->getUid() . $this->context . serialize($this->configuration));
-		return t3lib_div::shortMD5($this->originalFile->getUid() . $this->originalFile->getProperty('mtime') . $this->context . serialize($this->configuration));
 	}
 
 
@@ -206,10 +171,8 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return string The file extension
 	 */
 	public function getExtension() {
-
-		// TODO: Make this return extension of processed file
-
-		return $this->originalFile->getExtension();
+		// @todo: check how this gets fetched
+		return $this->properites['extension'];
 	}
 
 	/**
@@ -218,10 +181,8 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return array file information
 	 */
 	public function getMimeType() {
-
-		// TODO: Make this return mime type of processed file
-
-		return $this->originalFile->getMimeType();
+		// @todo: check how this gets fetched
+		return $this->properties['mimetype'];
 	}
 
 	/**
@@ -230,6 +191,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return int $fileType
 	 */
 	public function getType() {
+		// @todo: check how this gets fetched
 		return $this->originalFile->getType();
 	}
 
@@ -247,9 +209,8 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return string File contents
 	 */
 	public function getContents() {
-
+		// @todo: check how this gets fetched
 		// TODO: Make this return contents of processed file
-
 		return $this->originalFile->getContents();
 	}
 
@@ -270,16 +231,13 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * STORAGE AND MANAGEMENT RELATED METHDOS
 	 ****************************************/
 
-
 	/**
 	 * Get the storage the original file is located in
 	 *
 	 * @return t3lib_file_Storage
 	 */
 	public function getStorage() {
-
 		// TODO: Make this return storage of processed file
-
 		return $this->originalFile->getStorage();
 	}
 
@@ -289,41 +247,8 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return string
 	 */
 	public function getIdentifier() {
-		return $this->originalFile->getIdentifier();
+		return $this->properties['identifier'];
 	}
-
-
-	/**
-	 * Returns a combined identifier of the underlying original file
-	 *
-	 * @return string Combined storage and file identifier, e.g. StorageUID:path/and/fileName.png
-	 */
-	public function getCombinedIdentifier() {
-		// @todo what to do here?
-		return $this->originalFile->getCombinedIdentifier();
-	}
-
-	/**
-	 * Deletes only this particular FileReference from the persistence layer (database table sys_file_reference)
-	 * but leaves the original file untouched.
-	 *
-	 * @return bool TRUE if deletion succeeded
-	 */
-	public function delete() {
-		return $this->delete();
-	}
-
-	/**
-	 * Renames the fileName in this particular usage.
-	 *
-	 * @param $newName The new name
-	 * @return t3lib_file_FileReference
-	 */
-	public function rename($newName) {
-		return $this->getStorage()->renameFile($this, $newName);
-	}
-
-
 
 
 	/*****************
@@ -343,22 +268,12 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	}
 
 	/**
-	 * Returns TRUE if this file is indexed.
-	 * This is always false for ProcessedFile objects, as they are only generated on the fly.
-	 *
-	 * @return bool
-	 */
-	public function isIndexed() {
-		return false;
-	}
-
-	/**
 	 * Returns TRUE if this file is already processed.
 	 *
 	 * @return bool
 	 */
 	public function isProcessed() {
-		return FALSE;
+		return $this->isProcessed;
 	}
 
 	/**
@@ -370,20 +285,8 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return string
 	 */
 	public function getForLocalProcessing($writable = TRUE) {
-
 		// TODO: Make this return local processing path of processed file
-
 		// return $this->getForLocalProcessing($writable);
-	}
-
-	/**
-	 * Returns an array representation of the file.
-	 * (This is used by the generic listing module vidi when displaying file records.)
-	 *
-	 * @return array Array of main data of the file. Don't rely on all data to be present here, it's just a selection of the most relevant information.
-	 */
-	public function toArray() {
-		return $this->originalFile->toArray();
 	}
 
 	/**
@@ -391,6 +294,47 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 */
 	public function getOriginalFile() {
 		return $this->originalFile;
+	}
+
+	/**
+	 * called right after the object is instantiated and additionally populated with
+	 * data from the DB
+	 *
+	 * @param array $properties
+	 */
+	public function updateProperties(array $properties) {
+		$this->properties = array_merge($this->properties, $properties);
+	}
+
+	/**
+	 * called when the processed file is processed
+	 *
+	 * @param boolean $isProcessed
+	 * @return void
+	 */
+	public function setIsProcessed(boolean $isProcessed) {
+		$this->isProcessed = $isProcessed;
+
+			// DB-query to insert the info
+		$processedFileRepository = t3lib_div::makeInstance('t3lib_file_Repository_ProcessedFileRepository');
+		$processedFileRepository->add($this);
+	}
+
+	/**
+	 * basic array function for the DB update
+	 * @return array
+	 */
+	public function toArray() {
+		return array(
+			'storage' => $this->getStorage()->getUid(),
+			'identifier' => $this->getIdentifier(),
+			'name' => $this->getName(),
+			'is_processed' => $this->isProcessed,
+			'checksum' => $this->calculateChecksum(),
+			'context' => $this->context,
+			'configuration' => serialize($this->processingConfiguration),
+			'original' => $this->originalFile->getUid(),
+		);
 	}
 }
 

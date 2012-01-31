@@ -159,11 +159,12 @@ class t3lib_file_Service_FileProcessingService {
 		} else {
 			$targetFileExtension = '.png';
 		}
+
 		$targetFolder = $this->storage->getProcessingFolder();
-		$targetFilename = 'preview_' . $processedFile->calculateChecksum() . $targetFileExtension;
+		$targetFileName = 'preview_' . $processedFile->calculateChecksum() . $targetFileExtension;
 
 			// do the actual processing
-		if (!$targetFolder->hasFile($targetFilename)) {
+		if (!$targetFolder->hasFile($targetFileName)) {
 				// create the thumb filename in typo3temp/preview_....jpg
 			$temporaryFileName = t3lib_div::tempnam('preview_') . $targetFileExtension;
 
@@ -185,17 +186,20 @@ class t3lib_file_Service_FileProcessingService {
 
 			}
 
-
+				// everything worked out fine
 			if (file_exists($temporaryFileName)) {
 				t3lib_div::fixPermissions($temporaryFileName);
 
 					// copy the temporary file to the processedFolder
-				$this->driver->addFileRaw($temporaryFileName, $targetFolder, $targetFilename);
+					// this is done here, as the driver can do this without worrying about existing ProcessedFile objects
+					// or permissions in the storage
 
-					// @todo: update the DB properties and the object properties
+					// for "remote" storages this means "uploading" the file to the storage again
+				$this->driver->addFile($temporaryFileName, $targetFolder, $targetFileName, $processedFile);
+				$processedFile->setIsProcessed(TRUE);
 
 					// remove the temporary file as it's not necessary anymore
-				//t3lib_div::unlink_tempfile($temporaryFileName);
+				t3lib_div::unlink_tempfile($temporaryFileName);
 			}
 		}
 	}
@@ -207,21 +211,24 @@ class t3lib_file_Service_FileProcessingService {
 		// if other => icon
 	}
 
+
+
 	/**
 	 * Escapes a file name so it can safely be used on the command line.
 	 *
 	 * @param string $inputName filename to safeguard, must not be empty
-	 *
 	 * @return string $inputName escaped as needed
 	 */
 	protected function wrapFileName($inputName) {
 		if ($GLOBALS['TYPO3_CONF_VARS']['SYS']['UTF8filesystem']) {
 			$currentLocale = setlocale(LC_CTYPE, 0);
 			setlocale(LC_CTYPE, $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemLocale']);
-		}
-		$escapedInputName = escapeshellarg($inputName);
-		if ($GLOBALS['TYPO3_CONF_VARS']['SYS']['UTF8filesystem']) {
+
+			$escapedInputName = escapeshellarg($inputName);
+
 			setlocale(LC_CTYPE, $currentLocale);
+		} else {
+			$escapedInputName = escapeshellarg($inputName);
 		}
 		return $escapedInputName;
 	}
