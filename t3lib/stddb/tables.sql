@@ -342,6 +342,31 @@ CREATE TABLE sys_file (
 );
 
 #
+# Table structure for table 'sys_file_processedfile'.
+# This table does not have a TCA representation, as it's only written do using direct SQL queries in the code
+#
+CREATE TABLE sys_file_processedfile (
+	uid int(11) NOT NULL auto_increment,
+	pid int(11) DEFAULT '0' NOT NULL,
+	tstamp int(11) DEFAULT '0' NOT NULL,
+	crdate int(11) DEFAULT '0' NOT NULL,
+	cruser_id int(11) DEFAULT '0' NOT NULL,
+	deleted tinyint(4) DEFAULT '0' NOT NULL,
+
+	storage int(11) DEFAULT '0' NOT NULL,
+	original int(11) DEFAULT '0' NOT NULL,
+	identifier varchar(200) DEFAULT '' NOT NULL,
+	is_processed varchar(200) DEFAULT '' NOT NULL,
+	extension varchar(255) DEFAULT '' NOT NULL,
+	mime_type varchar(255) DEFAULT '' NOT NULL,
+	sha1 tinytext,
+	size int(11) DEFAULT '0' NOT NULL,
+
+	PRIMARY KEY (uid),
+	KEY parent (pid)
+);
+
+#
 # Table structure for table 'sys_file_reference'
 #
 CREATE TABLE sys_file_reference (
