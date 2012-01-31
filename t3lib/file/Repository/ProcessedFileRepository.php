@@ -94,7 +94,7 @@ class t3lib_file_Repository_ProcessedFileRepository extends t3lib_file_Repositor
 	 * @param t3lib_file_ProcessedFile $processedFile
 	 * @return void
 	 */
-	public function add(t3lib_file_ProcessedFile $processedFile) {
+	public function add($processedFile) {
 		$insertFields = $processedFile->toArray();
 		// @todo: make sure that the toArray method only contains fields that are in the table
 		$GLOBALS['TYPO3_DB']->exec_INSERTquery($this->table, $insertFields);
