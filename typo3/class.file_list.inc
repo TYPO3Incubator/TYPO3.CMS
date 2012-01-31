@@ -328,7 +328,7 @@ class fileList extends t3lib_recordList {
 							$theData[$field] = '-';
 						break;
 						case 'tstamp':
-							// @todo: FAL: how to get the mtime info -- $theData[$field] = date($GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy'], $theFile['tstamp']);
+							// @todo: FAL: how to get the mtime info -- $theData[$field] = t3lib_BEfunc::date($theFile['tstamp']);
 							$theData[$field] = '-';
 						break;
 						case 'file':
@@ -473,7 +473,7 @@ class fileList extends t3lib_recordList {
 							$theData[$field] = strtoupper($ext);
 						break;
 						case 'tstamp':
-							$theData[$field] = date($GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy'], $fileInfo['mtime']);
+							$theData[$field] = t3lib_BEfunc::date($fileInfo['mtime']);
 						break;
 						case '_CLIPBOARD_':
 							$temp = '';

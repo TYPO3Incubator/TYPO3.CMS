@@ -621,12 +621,8 @@ class t3lib_TCEforms {
 
 				$collapsed = $this->isPalettesCollapsed($table, $palette);
 
-
-				// check if the palette is a hidden palette
-				$isHiddenPalette = false;
-				if(is_array($GLOBALS['TCA'][$table]['palettes'][$palette]) && $GLOBALS['TCA'][$table]['palettes'][$palette]['isHiddenPalette']) {
-					$isHiddenPalette = true;
-				}
+					// check if the palette is a hidden palette
+				$isHiddenPalette = !empty($GLOBALS['TCA'][$table]['palettes'][$palette]['isHiddenPalette']);
 
 				$thePalIcon = '';
 				if ($collapsed && $collapsedHeader !== NULL && !$isHiddenPalette) {
@@ -720,9 +716,15 @@ class t3lib_TCEforms {
 					$PA['itemFormElValue'] = $this->defaultLanguageData[$table . ':' . $row['uid']][$field];
 				}
 
+				if(strpos($GLOBALS['TCA'][$table]['ctrl']['type'], ':') === FALSE) {
+					$typeField = $GLOBALS['TCA'][$table]['ctrl']['type'];
+				} else {
+					$typeField = substr($GLOBALS['TCA'][$table]['ctrl']['type'], 0, strpos($GLOBALS['TCA'][$table]['ctrl']['type'],':'));
+				}
+
 					// Create a JavaScript code line which will ask the user to save/update the form due to changing the element. This is used for eg. "type" fields and others configured with "requestUpdate"
 				if (
-					($GLOBALS['TCA'][$table]['ctrl']['type'] && !strcmp($field, $GLOBALS['TCA'][$table]['ctrl']['type']))
+					($GLOBALS['TCA'][$table]['ctrl']['type'] && !strcmp($field, $typeField))
 					|| ($GLOBALS['TCA'][$table]['ctrl']['requestUpdate']
 						&& t3lib_div::inList($GLOBALS['TCA'][$table]['ctrl']['requestUpdate'], $field))) {
 					if ($GLOBALS['BE_USER']->jsConfirmation(1)) {
@@ -2526,6 +2528,38 @@ class t3lib_TCEforms {
 				foreach ($tabsToTraverse as $sheet) {
 					list ($dataStruct, $sheet) = t3lib_div::resolveSheetDefInDS($dataStructArray, $sheet);
 
+						// If sheet has displayCond
+					if ($dataStruct['ROOT']['TCEforms']['displayCond']) {
+						$splittedCondition = t3lib_div::trimExplode(':', $dataStruct['ROOT']['TCEforms']['displayCond']);
+						$skipCondition = FALSE;
+						switch ($splittedCondition[0]) {
+							case 'FIELD':
+								list($sheetName, $fieldName) = t3lib_div::trimExplode('.', $splittedCondition[1]);
+								$fieldValue = $editData['data'][$sheetName][$lang][$fieldName];
+								$splittedCondition[1] = $fieldName;
+								$dataStruct['ROOT']['TCEforms']['displayCond'] = join(':', $splittedCondition);
+								$fakeRow = array($fieldName => $fieldValue);
+								break;
+							case 'HIDE_FOR_NON_ADMINS':
+							case 'VERSION':
+							case 'HIDE_L10N_SIBLINGS':
+							case 'EXT':
+								break;
+							case 'REC':
+								$fakeRow = array('uid' => $row['uid']);
+								break;
+							default:
+								$skipCondition = TRUE;
+								break;
+						}
+
+							// If sheets displayCond leads to false
+						if (!$skipCondition && !$this->isDisplayCondition($dataStruct['ROOT']['TCEforms']['displayCond'], $fakeRow, 'vDEF')) {
+								// don't create this sheet
+							continue;
+						}
+					}
+
 						// Render sheet:
 					if (is_array($dataStruct['ROOT']) && is_array($dataStruct['ROOT']['el'])) {
 						$lang = 'l' . $lKey; // Default language, other options are "lUK" or whatever country code (independant of system!!!)
@@ -2755,11 +2789,13 @@ class t3lib_TCEforms {
 									// Makes a "Add new" link:
 								$var = uniqid('idvar');
 								$replace = 'replace(/' . $idTagPrefix . '-/g,"' . $idTagPrefix . '-"+' . $var . '+"-")';
+								$replace .= '.replace(/(tceforms-(datetime|date)field-)/g,"$1" + (new Date()).getTime())';
 								$onClickInsert = 'var ' . $var . ' = "' . 'idx"+(new Date()).getTime();';
 									// Do not replace $isTagPrefix in setActionStatus() because it needs section id!
 								$onClickInsert .= 'new Insertion.Bottom($("' . $idTagPrefix . '"), unescape(decodeURIComponent("' . rawurlencode($newElementTemplate) . '")).' . $replace . '); setActionStatus("' . $idTagPrefix . '");';
 								$onClickInsert .= 'eval(unescape("' . rawurlencode(implode(';', $this->additionalJS_post)) . '").' . $replace . ');';
 								$onClickInsert .= 'TBE_EDITOR.addActionChecks("submit", unescape("' . rawurlencode(implode(';', $this->additionalJS_submit)) . '").' . $replace . ');';
+								$onClickInsert .= 'TYPO3.TCEFORMS.update();';
 								$onClickInsert .= 'return false;';
 									// Kasper's comment (kept for history): Maybe there is a better way to do this than store the HTML for the new element in rawurlencoded format - maybe it even breaks with certain charsets? But for now this works...
 								$this->additionalJS_post = $additionalJS_post_saved;
@@ -3105,47 +3141,55 @@ class t3lib_TCEforms {
 	 * @return	string		Return the "type" value for this record, ready to pick a "types" configuration from the $GLOBALS['TCA'] array.
 	 */
 	function getRTypeNum($table, $row) {
-			// If there is a "type" field configured...
-		if ($GLOBALS['TCA'][$table]['ctrl']['type']) {
-			if(strstr($GLOBALS['TCA'][$table]['ctrl']['type'], ':') !== FALSE) {
-				list($foreignPointerField, $foreignTableTypeField) = explode(':', $GLOBALS['TCA'][$table]['ctrl']['type']);
 
-				$values = $this->extractValuesOnlyFromValueLabelList($row[$foreignPointerField]);
+		$typeNum = 0;
 
-				list(,$foreignUid) = t3lib_div::revExplode('_', $values[0], 2);
+		$field = $GLOBALS['TCA'][$table]['ctrl']['type'];
+		if ($field) {
+			if (strpos($field, ':') !== FALSE) {
+				list($pointerField, $foreignTypeField) = explode(':', $field);
 
-				$fieldConfig = $GLOBALS['TCA'][$table]['columns'][$foreignPointerField]['config'];
+				$fieldConfig = $GLOBALS['TCA'][$table]['columns'][$pointerField]['config'];
 				$relationType = $fieldConfig['type'];
-				if($relationType === 'group') {
-					$foreignTable = $fieldConfig['allowed'];
-				} elseif($relationType === 'select') {
+				if ($relationType === 'select') {
+					$foreignUid = $row[$pointerField];
 					$foreignTable = $fieldConfig['foreign_table'];
-				} else{
+				} elseif ($relationType === 'group') {
+					$values = $this->extractValuesOnlyFromValueLabelList($row[$pointerField]);
+					list(,$foreignUid) = t3lib_div::revExplode('_', $values[0], 2);
+					$allowedTables = explode(',', $fieldConfig['allowed']);
+					$foreignTable = $allowedTables[0]; // Always take the first configured table.
+				} else {
 					throw new RuntimeException('TCA Foreign field pointer fields are only allowed to be used with group or select field types.', 1325861239);
 				}
 
-				$foreignRow = t3lib_BEfunc::getRecord($foreignTable, $foreignUid, $foreignTableTypeField);
+				if($foreignUid) {
+					$foreignRow = t3lib_BEfunc::getRecord($foreignTable, $foreignUid, $foreignTypeField);
 
-				if($foreignRow[$foreignTableTypeField]) {
-					$typeNum = $foreignRow[$foreignTableTypeField];
+					t3lib_div::loadTCA($foreignTable);
+					$this->registerDefaultLanguageData($foreignTable, $foreignRow);
+
+					if($foreignRow[$foreignTypeField]) {
+						$foreignTypeFieldConfig = $GLOBALS['TCA'][$table]['columns'][$field];
+						$typeNum = $this->getLanguageOverlayRawValue($foreignTable, $foreignRow, $foreignTypeField, $foreignTypeFieldConfig);
+					}
 				}
 			} else {
-				$typeFieldName = $GLOBALS['TCA'][$table]['ctrl']['type'];
-				$typeFieldConfig = $GLOBALS['TCA'][$table]['columns'][$typeFieldName];
-				$typeNum = $this->getLanguageOverlayRawValue($table, $row, $typeFieldName, $typeFieldConfig);
-				if (!strcmp($typeNum, '')) {
-					$typeNum = 0;
-				} // If that value is an empty string, set it to "0" (zero)
+				$typeFieldConfig = $GLOBALS['TCA'][$table]['columns'][$field];
+				$typeNum = $this->getLanguageOverlayRawValue($table, $row, $field, $typeFieldConfig);
 			}
-		} else {
-			$typeNum = 0; // If no "type" field, then set to "0" (zero)
 		}
 
-		$typeNum = (string) $typeNum; // Force to string. Necessary for eg '-1' to be recognized as a type value.
-		if (!$GLOBALS['TCA'][$table]['types'][$typeNum]) {
-				// However, if the type "0" is not found in the "types" array, then default to "1" (for historical reasons)
-			$typeNum = 1;
+		if (!strcmp($typeNum, '')) {  // If that value is an empty string, set it to "0" (zero)
+			$typeNum = 0;
 		}
+
+		// If current typeNum doesn't exist, set it to 0 (or to 1 for historical reasons, if 0 doesn't exist)
+		if (!$GLOBALS['TCA'][$table]['types'][$typeNum]) {
+			$typeNum = $GLOBALS['TCA'][$table]['types']["0"] ? 0 : 1;
+		}
+
+		$typeNum = (string)$typeNum; // Force to string. Necessary for eg '-1' to be recognized as a type value.
 
 		return $typeNum;
 	}
@@ -6008,19 +6052,19 @@ class t3lib_TCEforms {
 	/**
 	 * Returns TRUE, if the palette, $palette, is collapsed (not shown, but found in top-frame) for the table.
 	 *
-	 * @param	string		The table name
-	 * @param	integer		The palette pointer/number
-	 * @return	boolean
+	 * @param string The table name
+	 * @param integer The palette pointer/number
+	 * @return boolean
 	 */
 	function isPalettesCollapsed($table, $palette) {
 		if (is_array($GLOBALS['TCA'][$table]['palettes'][$palette]) && $GLOBALS['TCA'][$table]['palettes'][$palette]['isHiddenPalette']) {
-			return true;
+			return TRUE;
 		}
 		if ($GLOBALS['TCA'][$table]['ctrl']['canNotCollapse']) {
-			return false;
+			return FALSE;
 		}
 		if (is_array($GLOBALS['TCA'][$table]['palettes'][$palette]) && $GLOBALS['TCA'][$table]['palettes'][$palette]['canNotCollapse']) {
-			return false;
+			return FALSE;
 		}
 		return $this->palettesCollapsed;
 	}

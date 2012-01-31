@@ -372,8 +372,7 @@ class SC_mod_user_setup_index {
 		$this->loadModules->observeWorkspaces = TRUE;
 		$this->loadModules->load($GLOBALS['TBE_MODULES']);
 
-		$this->content .= $this->doc->header($LANG->getLL('UserSettings') . ' - '.$GLOBALS['BE_USER']->user['realName'] .
-			' ['.$GLOBALS['BE_USER']->user['username'] . ']');
+		$this->content .= $this->doc->header($LANG->getLL('UserSettings'));
 
 			// show if setup was saved
 		if ($this->setupIsUpdated && !$this->tempDataIsCleared && !$this->settingsAreResetToDefault) {
@@ -402,6 +401,18 @@ class SC_mod_user_setup_index {
 			);
 			$this->content .= $flashMessage->render();
 		}
+
+			// Notice
+		if ($this->setupIsUpdated || $this->settingsAreResetToDefault) {
+			$flashMessage = t3lib_div::makeInstance(
+				't3lib_FlashMessage',
+				$LANG->getLL('activateChanges'),
+				'',
+				t3lib_FlashMessage::INFO
+			);
+			$this->content .= $flashMessage->render();
+		}
+
 			// If password is updated, output whether it failed or was OK.
 		if ($this->passwordIsSubmitted) {
 			if ($this->passwordIsUpdated) {
@@ -425,7 +436,7 @@ class SC_mod_user_setup_index {
 			// render the menu items
 		$menuItems = $this->renderUserSetup();
 
-		$this->content .= $this->doc->spacer(20) . $this->doc->getDynTabMenu($menuItems, 'user-setup', FALSE, FALSE, 1, FALSE, 1, $this->dividers2tabs);
+		$this->content .= $this->doc->getDynTabMenu($menuItems, 'user-setup', FALSE, FALSE, 0, 1, FALSE, 1, $this->dividers2tabs);
 
 		$formToken = $this->formProtection->generateToken('BE user setup', 'edit');
 
@@ -444,15 +455,6 @@ class SC_mod_user_setup_index {
 			<input type="hidden" name="data[clearSessionVars]" value="0" id="clearSessionVars" />'
 		);
 
-			// Notice
-		$this->content .= $this->doc->spacer(30);
-		$flashMessage = t3lib_div::makeInstance(
-			't3lib_FlashMessage',
-			$LANG->getLL('activateChanges'),
-			'',
-			t3lib_FlashMessage::INFO
-		);
-		$this->content .= $flashMessage->render();
 			// end of wrapper div
 		$this->content .= '</div>';
 
@@ -737,7 +739,9 @@ class SC_mod_user_setup_index {
 
 			// compile the languages dropdown
 		$langDefault = $GLOBALS['LANG']->getLL('lang_default', 1);
-		$languageOptions[$langDefault] = '<option value="">' . $langDefault . '</option>';
+		$languageOptions[$langDefault] = '<option value=""' .
+			($GLOBALS['BE_USER']->uc['lang'] === '' ? ' selected="selected"' : '') .
+			'>' . $langDefault . '</option>';
 
 			// traverse the number of languages
 		/** @var $locales t3lib_l10n_Locales */

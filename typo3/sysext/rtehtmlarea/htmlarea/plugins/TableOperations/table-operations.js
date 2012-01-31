@@ -3,7 +3,7 @@
 *
 *  (c) 2002 interactivetools.com, inc. Authored by Mihai Bazon, sponsored by http://www.bloki.com.
 *  (c) 2005 Xinha, http://xinha.gogo.co.nz/ for the original toggle borders function.
-*  (c) 2004-2011 Stanislas Rolland <typo3(arobas)sjbr.ca>
+*  (c) 2004-2012 Stanislas Rolland <typo3(arobas)sjbr.ca>
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -68,7 +68,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		 * Registering plugin "About" information
 		 */
 		var pluginInformation = {
-			version		: '5.2',
+			version		: '5.3',
 			developer	: 'Mihai Bazon & Stanislas Rolland',
 			developerUrl	: 'http://www.sjbr.ca/',
 			copyrightOwner	: 'Mihai Bazon & Stanislas Rolland',
@@ -142,21 +142,6 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		}
 	},
 	/*
-	 * Retrieve the closest element having the specified nodeName in the list of
-	 * ancestors of the current selection/caret.
-	 */
-	getClosest: function (nodeName) {
-		var ancestors = this.editor.getAllAncestors();
-		var element = null;
-		Ext.each(ancestors, function (ancestor) {
-			if (ancestor.nodeName.toLowerCase() === nodeName) {
-				element = ancestor;
-				return false;
-			}
-		});
-		return element;
-	},
-	/*
 	 * Get the integer value of a string or '' if the string is not a number
 	 *
 	 * @param	string		string: the input value
@@ -183,21 +168,18 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		switch (type) {
 			case 'cell':
 			case 'column':
-				var element = this.getClosest('td');
-				if (!element) {
-					var element = this.getClosest('th');
-				}
+				var element = this.editor.getSelection().getFirstAncestorOfType(['td', 'th']);
 				this.properties = (this.buttonsConfiguration.cellproperties && this.buttonsConfiguration.cellproperties.properties) ? this.buttonsConfiguration.cellproperties.properties : {};
 				var title = (type == 'column') ? 'Column Properties' : 'Cell Properties';
 				break;
 			case 'row':
-				var element = this.getClosest('tr');
+				var element = this.editor.getSelection().getFirstAncestorOfType('tr');
 				this.properties = (this.buttonsConfiguration.rowproperties && this.buttonsConfiguration.rowproperties.properties) ? this.buttonsConfiguration.rowproperties.properties : {};
 				var title = 'Row Properties';
 				break;
 			case 'table':
 				var insert = (buttonId === 'InsertTable');
-				var element = insert ? null : this.getClosest('table');
+				var element = insert ? null : this.editor.getSelection().getFirstAncestorOfType('table');
 				this.properties = (this.buttonsConfiguration.table && this.buttonsConfiguration.table.properties) ? this.buttonsConfiguration.table.properties : {};
 				var title = insert ? 'Insert Table' : 'Table Properties';
 				break;
@@ -329,7 +311,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			this.dialog.close();
 		}
 		this.dialog = new Ext.Window({
-			title: this.localize(title),
+			title: this.getHelpTip(arguments.buttonId, title),
 			arguments: arguments,
 			cls: 'htmlarea-window',
 				// As of ExtJS 3.1, JS error with IE when the window is resizable
@@ -421,7 +403,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 				}
 			}
 		}
-		var doc = this.editor._doc;
+		var doc = this.editor.document;
 		if (this.dialog.arguments.buttonId === 'InsertTable') {
 			var required = {
 				f_rows: 'You must enter a number of rows',
@@ -555,14 +537,14 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		}, this);
 		if (this.dialog.arguments.buttonId === "InsertTable") {
 			if (!Ext.isIE) {
-				this.editor.insertNodeAtSelection(table);
+				this.editor.getSelection().insertNode(table);
 			} else {
 				table.id = "htmlarea_table_insert";
-				this.editor.insertNodeAtSelection(table);
-				table = this.editor._doc.getElementById(table.id);
+				this.editor.getSelection().insertNode(table);
+				table = this.editor.document.getElementById(table.id);
 				table.removeAttribute("id");
 			}
-			this.editor.selectNodeContents(table.rows[0].cells[0], true);
+			this.editor.getSelection().selectNodeContents(table.rows[0].cells[0], true);
 			if (this.buttonsConfiguration.toggleborders && this.buttonsConfiguration.toggleborders.setOnTableCreation) {
 				this.toggleBorders(true);
 			}
@@ -602,7 +584,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 				    case "f_cell_type":
 					if (val.substring(0,2) != element.nodeName.toLowerCase()) {
 						element = this.remapCell(element, val.substring(0,2));
-						this.editor.selectNodeContents(element, true);
+						this.editor.getSelection().selectNodeContents(element, true);
 					}
 					if (val.substring(2,10) != element.scope) {
 						element.scope = val.substring(2,10);
@@ -617,7 +599,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 					var nodeName = section.nodeName.toLowerCase();
 					if (val != nodeName) {
 						var newSection = table.getElementsByTagName(val)[0];
-						if (!newSection) var newSection = table.insertBefore(this.editor._doc.createElement(val), table.getElementsByTagName("tbody")[0]);
+						if (!newSection) var newSection = table.insertBefore(this.editor.document.createElement(val), table.getElementsByTagName("tbody")[0]);
 						if (nodeName == "thead" && val == "tbody") var newElement = newSection.insertBefore(element, newSection.firstChild);
 							else var newElement = newSection.appendChild(element);
 						if (!section.hasChildNodes()) table.removeChild(section);
@@ -680,7 +662,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 					break;
 				case 'TO-cell-merge':
 					if (Ext.isGecko) {
-						var selection = this.editor._getSelection();
+						var selection = this.editor.getSelection().get().selection;
 						button.setDisabled(button.disabled || selection.rangeCount < 2);
 					}
 					break;
@@ -732,8 +714,8 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			while (--n > 0) {
 				tr = rows[++sectionRowIndex];
 					// Last row
-				if (!tr) tr = td.parentNode.parentNode.appendChild(editor._doc.createElement("tr"));
-				var otd = editor._doc.createElement(nodeName);
+				if (!tr) tr = td.parentNode.parentNode.appendChild(editor.document.createElement("tr"));
+				var otd = editor.document.createElement(nodeName);
 				otd.colSpan = colSpan;
 				otd.innerHTML = mozbr;
 				tr.insertBefore(otd, tr.cells[index]);
@@ -747,7 +729,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			var tr = td.parentNode;
 			var ref = td.nextSibling;
 			while (--nc > 0) {
-				var otd = editor._doc.createElement(nodeName);
+				var otd = editor.document.createElement(nodeName);
 				otd.rowSpan = td.rowSpan;
 				otd.innerHTML = mozbr;
 				tr.insertBefore(otd, ref);
@@ -776,7 +758,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 				}
 			}
 			if (!node) node = el.parentNode;
-			editor.selectNodeContents(node);
+			editor.getSelection().selectNodeContents(node);
 		};
 		
 		function getSelectedCells(sel) {
@@ -852,16 +834,16 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			// ROWS
 		    case "TO-row-insert-above":
 		    case "TO-row-insert-under":
-			var tr = this.getClosest("tr");
+			var tr = this.editor.getSelection().getFirstAncestorOfType("tr");
 			if (!tr) break;
 			var otr = tr.cloneNode(true);
 			clearRow(otr);
 			otr = tr.parentNode.insertBefore(otr, (/under/.test(buttonId) ? tr.nextSibling : tr));
-			this.editor.selectNodeContents(otr.firstChild, true);
+			this.editor.getSelection().selectNodeContents(otr.firstChild, true);
 			this.reStyleTable(tr.parentNode.parentNode);
 			break;
 		    case "TO-row-delete":
-			var tr = this.getClosest("tr");
+			var tr = this.editor.getSelection().getFirstAncestorOfType("tr");
 			if (!tr) break;
 			var part = tr.parentNode;
 			var table = part.parentNode;
@@ -877,13 +859,14 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			this.reStyleTable(table);
 			break;
 		    case "TO-row-split":
-			var cell = this.getClosest("td");
-			if (!cell) var cell = this.getClosest("th");
+			var cell = this.editor.getSelection().getFirstAncestorOfType(['td', 'th']);
 			if (!cell) break;
-			var sel = editor._getSelection();
+			var sel = editor.getSelection().get().selection;
 			if (Ext.isGecko && !sel.isCollapsed) {
 				var cells = getSelectedCells(sel);
-				for (i = 0; i < cells.length; ++i) splitRow(cells[i]);
+				for (i = 0; i < cells.length; ++i) {
+					splitRow(cells[i]);
+				}
 			} else {
 				splitRow(cell);
 			}
@@ -892,8 +875,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			// COLUMNS
 		    case "TO-col-insert-before":
 		    case "TO-col-insert-after":
-			var cell = this.getClosest("td");
-			if (!cell) var cell = this.getClosest("th");
+			var cell = this.editor.getSelection().getFirstAncestorOfType(['td', 'th']);
 			if (!cell) break;
 			var index = cell.cellIndex;
 			var table = cell.parentNode.parentNode.parentNode;
@@ -905,11 +887,11 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 						var tr = rows[i];
 						var ref = tr.cells[index + (/after/.test(buttonId) ? 1 : 0)];
 						if (!ref) {
-							var otd = editor._doc.createElement(tr.lastChild.nodeName.toLowerCase());
+							var otd = editor.document.createElement(tr.lastChild.nodeName.toLowerCase());
 							otd.innerHTML = mozbr;
 							tr.appendChild(otd);
 						} else {
-							var otd = editor._doc.createElement(ref.nodeName.toLowerCase());
+							var otd = editor.document.createElement(ref.nodeName.toLowerCase());
 							otd.innerHTML = mozbr;
 							tr.insertBefore(otd, ref);
 						}
@@ -919,21 +901,21 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			this.reStyleTable(table);
 			break;
 		    case "TO-col-split":
-			var cell = this.getClosest("td");
-			if (!cell) var cell = this.getClosest("th");
+		    	var cell = this.editor.getSelection().getFirstAncestorOfType(['td', 'th']);
 			if (!cell) break;
-			var sel = editor._getSelection();
+			var sel = this.editor.getSelection().get().selection;
 			if (Ext.isGecko && !sel.isCollapsed) {
 				var cells = getSelectedCells(sel);
-				for (i = 0; i < cells.length; ++i) splitCol(cells[i]);
+				for (i = 0; i < cells.length; ++i) {
+					splitCol(cells[i]);
+				}
 			} else {
 				splitCol(cell);
 			}
 			this.reStyleTable(table);
 			break;
 		    case "TO-col-delete":
-			var cell = this.getClosest("td");
-			if (!cell) var cell = this.getClosest("th");
+			var cell = this.editor.getSelection().getFirstAncestorOfType(['td', 'th']);
 			if (!cell) break;
 			var index = cell.cellIndex;
 			var part = cell.parentNode.parentNode;
@@ -973,13 +955,14 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 	
 			// CELLS
 		    case "TO-cell-split":
-			var cell = this.getClosest("td");
-			if (!cell) var cell = this.getClosest("th");
+			var cell = this.editor.getSelection().getFirstAncestorOfType(['td', 'th']);
 			if (!cell) break;
-			var sel = editor._getSelection();
+			var sel = this.editor.getSelection().get().selection;
 			if (Ext.isGecko && !sel.isCollapsed) {
 				var cells = getSelectedCells(sel);
-				for (i = 0; i < cells.length; ++i) splitCell(cells[i]);
+				for (i = 0; i < cells.length; ++i) {
+					splitCell(cells[i]);
+				}
 			} else {
 				splitCell(cell);
 			}
@@ -987,18 +970,16 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			break;
 		    case "TO-cell-insert-before":
 		    case "TO-cell-insert-after":
-			var cell = this.getClosest("td");
-			if (!cell) var cell = this.getClosest("th");
+			var cell = this.editor.getSelection().getFirstAncestorOfType(['td', 'th']);
 			if (!cell) break;
 			var tr = cell.parentNode;
-			var otd = editor._doc.createElement(cell.nodeName.toLowerCase());
+			var otd = editor.document.createElement(cell.nodeName.toLowerCase());
 			otd.innerHTML = mozbr;
 			tr.insertBefore(otd, (/after/.test(buttonId) ? cell.nextSibling : cell));
 			this.reStyleTable(tr.parentNode.parentNode);
 			break;
 		    case "TO-cell-delete":
-			var cell = this.getClosest("td");
-			if (!cell) var cell = this.getClosest("th");
+			var cell = this.editor.getSelection().getFirstAncestorOfType(['td', 'th']);
 			if (!cell) break;
 			var row = cell.parentNode;
 			if(row.cells.length == 1) {  // this is the only cell in the row, delete the row
@@ -1020,7 +1001,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			this.reStyleTable(table);
 			break;
 		    case "TO-cell-merge":
-			var sel = editor._getSelection();
+			var sel = this.editor.getSelection().get().selection;
 			var range, i = 0;
 			var rows = new Array();
 			for (var k = tableParts.length; --k >= 0;) rows[k] = [];
@@ -1042,9 +1023,8 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 				}
 				try { rows[tablePartsIndex[row.parentNode.nodeName.toLowerCase()]].push(cells); } catch(e) { }
 			} else {
-				// Internet Explorer, Safari and Opera
-				var cell = this.getClosest("td");
-				if (!cell) var cell = this.getClosest("th");
+				// Internet Explorer, WebKit and Opera
+				var cell = this.editor.getSelection().getFirstAncestorOfType(['td', 'th']);
 				if (!cell) {
 					TYPO3.Dialog.InformationDialog({
 						title: this.getButton('TO-cell-merge').tooltip.title,
@@ -1118,7 +1098,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 					td.innerHTML = cellHTML;
 					td.rowSpan = cellRowSpan;
 					td.colSpan = maxCellColSpan;
-					editor.selectNodeContents(td);
+					editor.getSelection().selectNodeContents(td);
 				}
 			}
 			this.reStyleTable(table);
@@ -1130,7 +1110,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		    	this.openPropertiesDialogue('table', buttonId);
 			break;
 		    case "TO-table-restyle":
-			this.reStyleTable(this.getClosest('table'));
+			this.reStyleTable(this.editor.getSelection().getFirstAncestorOfType('table'));
 			break;
 		    case "TO-row-prop":
 		    	this.openPropertiesDialogue('row', buttonId);
@@ -1180,7 +1160,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 	 * @return	void
 	 */
 	toggleBorders : function (forceBorders) {
-		var body = this.editor._doc.body;
+		var body = this.editor.document.body;
 		if (!HTMLArea.DOM.hasClass(body, 'htmlarea-showtableborders')) {
 			HTMLArea.DOM.addClass(body,'htmlarea-showtableborders');
 		} else if (!forceBorders) {
@@ -1500,7 +1480,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 	 */
 	setHeaders: function (table, params) {
 		var headers = params.f_headers;
-		var doc = this.editor._doc;
+		var doc = this.editor.document;
 		var tbody = table.tBodies[0];
 		var thead = table.tHead;
 		if (thead && !thead.rows.length && !tbody.rows.length) {
@@ -1574,7 +1554,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 	 * This function remaps the given cell to the specified node name
 	 */
 	remapCell : function(element, nodeName) {
-		var newCell = this.editor.convertNode(element, nodeName);
+		var newCell = HTMLArea.DOM.convertNode(element, nodeName);
 		var attributes = element.attributes, attributeName, attributeValue;
 		for (var i = attributes.length; --i >= 0;) {
 			attributeName = attributes.item(i).nodeName;
@@ -1749,17 +1729,17 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 				helpIcon: true
 			},
 			items: [{
-				fieldLabel: this.localize('Caption:'),
+				fieldLabel: this.getHelpTip('caption', 'Caption:'),
 				itemId: 'f_caption',
 				value: Ext.isDefined(caption) ? caption.innerHTML : '',
 				width: 300,
-				helpTitle: this.localize('Description of the nature of the table')
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Description of the nature of the table')
 			    	},{
-				fieldLabel: this.localize('Summary:'),
+				fieldLabel: this.getHelpTip('summary', 'Summary:'),
 				itemId: 'f_summary',
 				value: !Ext.isEmpty(table) ? table.summary : '',
 				width: 300,
-				helpTitle: this.localize('Summary of the table purpose and structure')
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Summary of the table purpose and structure')
 			}]
 		};
 	},
@@ -1774,22 +1754,22 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		var itemsConfig = [];
 		if (Ext.isEmpty(table)) {
 			itemsConfig.push({
-				fieldLabel: this.localize('Rows:'),
-				labelSeparator: '',
+				fieldLabel: this.getHelpTip('numberOfRows', 'Number of rows'),
+				labelSeparator: ':',
 				itemId: 'f_rows',
 				value: (this.properties.numberOfRows && this.properties.numberOfRows.defaultValue) ? this.properties.numberOfRows.defaultValue : '2',
 				width: 30,
 				minValue: 1,
-				helpTitle: this.localize('Number of rows')
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Number of rows')
 			});
 			itemsConfig.push({
-				fieldLabel: this.localize('Cols:'),
-				labelSeparator: '',
+				fieldLabel: this.getHelpTip('numberOfColumns', 'Number of columns'),
+				labelSeparator: ':',
 				itemId: 'f_cols',
 				value: (this.properties.numberOfColumns && this.properties.numberOfColumns.defaultValue) ? this.properties.numberOfColumns.defaultValue : '4',
 				width: 30,
 				minValue: 1,
-				helpTitle: this.localize('Number of columns')
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Number of columns')
 			});
 		}
 		if (this.removedProperties.indexOf('headers') == -1) {
@@ -1823,10 +1803,10 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			}
 			itemsConfig.push(Ext.apply({
 				xtype: 'combo',
-				fieldLabel: this.localize('Headers:'),
+				fieldLabel: this.getHelpTip('tableHeaders', 'Headers:'),
 				labelSeparator: '',
 				itemId: 'f_headers',
-				helpTitle: this.localize('Table headers'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Table headers'),
 				store: store,
 				width: (this.properties['headers'] && this.properties['headers'].width) ? this.properties['headers'].width : 200,
 				value: selected
@@ -1882,7 +1862,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			defaults: {
 				labelSeparator: ''
 			},
-			title: this.localize('CSS Style'),
+			title: table ? this.getHelpTip('tableStyle', 'CSS Style') : this.localize('CSS Style'),
 			items: itemsConfig
 		};
 	},
@@ -1899,8 +1879,8 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		return new Ext.form.ComboBox(Ext.apply({
 			xtype: 'combo',
 			itemId: fieldName,
-			fieldLabel: this.localize(fieldLabel),
-			helpTitle: this.localize(fieldTitle),
+			fieldLabel: this.getHelpTip(fieldTitle, fieldLabel),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize(fieldTitle),
 			width: (this.properties['style'] && this.properties['style'].width) ? this.properties['style'].width : 300,
 			store: new Ext.data.ArrayStore({
 				autoDestroy:  true,
@@ -1968,9 +1948,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			});
 			itemsConfig.push(Ext.apply({
 				xtype: 'combo',
-				fieldLabel: this.localize('Language'),
+				fieldLabel: this.getHelpTip('languageCombo', 'Language', 'Language'),
 				itemId: 'f_lang',
-				helpTitle: this.localize('Language'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Language'),
 				store: languageStore,
 				width: (this.properties['language'] && this.properties['language'].width) ? this.properties['language'].width : 200,
 				value: selectedLanguage
@@ -1979,9 +1959,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		if (this.removedProperties.indexOf('direction') == -1 && (this.getButton('LeftToRight') || this.getButton('RightToLeft'))) {
 			itemsConfig.push(Ext.apply({
 				xtype: 'combo',
-				fieldLabel: this.localize('Text direction'),
+				fieldLabel: this.getHelpTip('directionCombo', 'Text direction', 'Language'),
 				itemId: 'f_dir',
-				helpTitle: this.localize('Text direction'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Text direction'),
 				store: new Ext.data.ArrayStore({
 					autoDestroy:  true,
 					fields: [ { name: 'text'}, { name: 'value'}],
@@ -2018,19 +1998,19 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 				helpIcon: true
 			},
 			items: [{
-				fieldLabel: this.localize('Cell spacing:'),
+				fieldLabel: this.getHelpTip('cellSpacing', 'Cell spacing:'),
 				itemId: 'f_spacing',
 				value: !Ext.isEmpty(table) ? table.cellSpacing : '',
 				width: 30,
 				minValue: 0,
-				helpTitle: this.localize('Space between adjacent cells')
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Space between adjacent cells')
 				},{
-				fieldLabel: this.localize('Cell padding:'),
+				fieldLabel: this.getHelpTip('cellPadding', 'Cell padding:'),
 				itemId: 'f_padding',
 				value: !Ext.isEmpty(table) ? table.cellPadding : '',
 				width: 30,
 				minValue: 0,
-				helpTitle: this.localize('Space between content and border in cell')
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Space between content and border in cell')
 			}]
 		};
 	},
@@ -2070,20 +2050,20 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			});
 			this.removeOptions(widthUnitStore, 'widthUnit');
 			itemsConfig.push({
-				fieldLabel: this.localize('Width:'),
+				fieldLabel: this.getHelpTip(widthTitle, 'Width:'),
 				labelSeparator: '',
 				itemId: 'f_st_width',
 				value: element ? this.getLength(element.style.width) : ((this.properties.width && this.properties.width.defaultValue) ? this.properties.width.defaultValue : ''),
 				width: 30,
-				helpTitle: this.localize(widthTitle)
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize(widthTitle)
 			});
 			itemsConfig.push(Ext.apply({
 				xtype: 'combo',
-				fieldLabel: this.localize('Width unit'),
+				fieldLabel: this.getHelpTip('Width unit', 'Width unit'),
 				itemId: 'f_st_widthUnit',
-				helpTitle: this.localize('Width unit'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Width unit'),
 				store: widthUnitStore,
-				width: (this.properties['widthUnit'] && this.properties['widthUnit'].width) ? this.properties['widthUnit'].width : 60,
+				width: (this.properties['widthUnit'] && this.properties['widthUnit'].width) ? this.properties['widthUnit'].width : 70,
 				value: element ? (/%/.test(element.style.width) ? '%' : (/px/.test(element.style.width) ? 'px' : 'em')) : ((this.properties.widthUnit && this.properties.widthUnit.defaultValue) ? this.properties.widthUnit.defaultValue : '%')
 			}, this.configDefaults['combo']));
 		}
@@ -2099,20 +2079,20 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			});
 			this.removeOptions(heightUnitStore, 'heightUnit');
 			itemsConfig.push({
-				fieldLabel: this.localize('Height:'),
+				fieldLabel: this.getHelpTip(heightTitle, 'Height:'),
 				labelSeparator: '',
 				itemId: 'f_st_height',
 				value: element ? this.getLength(element.style.height) : ((this.properties.height && this.properties.height.defaultValue) ? this.properties.height.defaultValue : ''),
 				width: 30,
-				helpTitle: this.localize(heightTitle)
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize(heightTitle)
 			});
 			itemsConfig.push(Ext.apply({
 				xtype: 'combo',
-				fieldLabel: this.localize('Height unit'),
+				fieldLabel: this.getHelpTip('Height unit', 'Height unit'),
 				itemId: 'f_st_heightUnit',
-				helpTitle: this.localize('Height unit'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Height unit'),
 				store: heightUnitStore,
-				width: (this.properties['heightUnit'] && this.properties['heightUnit'].width) ? this.properties['heightUnit'].width : 60,
+				width: (this.properties['heightUnit'] && this.properties['heightUnit'].width) ? this.properties['heightUnit'].width : 70,
 				value: element ? (/%/.test(element.style.height) ? '%' : (/px/.test(element.style.height) ? 'px' : 'em')) : ((this.properties.heightUnit && this.properties.heightUnit.defaultValue) ? this.properties.heightUnit.defaultValue : '%')
 			}, this.configDefaults['combo']));
 		}
@@ -2129,10 +2109,10 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			this.removeOptions(floatStore, 'float');
 			itemsConfig.push(Ext.apply({
 				xtype: 'combo',
-				fieldLabel: this.localize('Float:'),
+				fieldLabel: this.getHelpTip('tableFloat', 'Float:'),
 				labelSeparator: '',
 				itemId: 'f_st_float',
-				helpTitle: this.localize('Specifies where the table should float'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Specifies where the table should float'),
 				store: floatStore,
 				width: (this.properties['float'] && this.properties['float'].width) ? this.properties['float'].width : 120,
 				value: element ? (Ext.get(element).hasClass(this.floatLeft) ? 'left' : (Ext.get(element).hasClass(this.floatRight) ? 'right' : 'not set')) : this.floatDefault
@@ -2173,9 +2153,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		}
 		itemsConfig.push(Ext.apply({
 			xtype: 'combo',
-			fieldLabel: this.localize('Text alignment:'),
+			fieldLabel: this.getHelpTip('textAlignment', 'Text alignment:'),
 			itemId: 'f_st_textAlign',
-			helpTitle: this.localize('Horizontal alignment of text within cell'),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Horizontal alignment of text within cell'),
 			store: new Ext.data.ArrayStore({
 				autoDestroy:  true,
 				fields: [ { name: 'text'}, { name: 'value'}],
@@ -2193,9 +2173,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			// Vertical alignment
 		itemsConfig.push(Ext.apply({
 			xtype: 'combo',
-			fieldLabel: this.localize('Vertical alignment:'),
+			fieldLabel: this.getHelpTip('verticalAlignment', 'Vertical alignment:'),
 			itemId: 'f_st_vertAlign',
-			helpTitle: this.localize('Vertical alignment of content within cell'),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Vertical alignment of content within cell'),
 			store: new Ext.data.ArrayStore({
 				autoDestroy:  true,
 				fields: [ { name: 'text'}, { name: 'value'}],
@@ -2252,9 +2232,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		var selectedBorderStyle = element && element.style.borderStyle ? element.style.borderStyle : ((this.properties.borderWidth) ? ((this.properties.borderStyle && this.properties.borderStyle.defaultValue) ? this.properties.borderStyle.defaultValue : 'solid') : 'not set');
 		itemsConfig.push(Ext.apply({
 			xtype: 'combo',
-			fieldLabel: this.localize('Border style:'),
+			fieldLabel: this.getHelpTip('borderStyle', 'Border style:'),
 			itemId: 'f_st_borderStyle',
-			helpTitle: this.localize('Border style'),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Border style'),
 			store: borderStyleStore,
 			width: (this.properties.borderStyle && this.properties.borderStyle.width) ? this.properties.borderStyle.width : 150,
 			value: selectedBorderStyle,
@@ -2266,34 +2246,33 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		}, this.configDefaults['combo']));
 			// Border width
 		itemsConfig.push({
-			fieldLabel: this.localize('Border width:'),
+			fieldLabel: this.getHelpTip('borderWidth', 'Border width:'),
 			itemId: 'f_st_borderWidth',
 			value: element ? this.getLength(element.style.borderWidth) : ((this.properties.borderWidth && this.properties.borderWidth.defaultValue) ? this.properties.borderWidth.defaultValue : ''),
 			width: 30,
 			minValue: 0,
-			helpTitle: this.localize('Border width'),
-			helpText: this.localize('pixels'),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Border width'),
 			disabled: (selectedBorderStyle === 'none')
 		});
 			// Border color
 		itemsConfig.push({
 			xtype: 'colorpalettefield',
-			fieldLabel: this.localize('Color:'),
+			fieldLabel: this.getHelpTip('borderColor', 'Color:'),
 			itemId: 'f_st_borderColor',
 			colors: this.editorConfiguration.disableColorPicker ? [] : null,
 			colorsConfiguration: this.editorConfiguration.colors,
 			value: HTMLArea.util.Color.colorToHex(element && element.style.borderColor ? element.style.borderColor : ((this.properties.borderColor && this.properties.borderColor.defaultValue) ? this.properties.borderColor.defaultValue : '')).substr(1, 6),
-			helpTitle: this.localize('Border color'),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Border color'),
 			disabled: (selectedBorderStyle === 'none')
 		});
 		if (nodeName === 'table') {
 				// Collapsed borders
 			itemsConfig.push(Ext.apply({
 				xtype: 'combo',
-				fieldLabel: this.localize('Collapsed borders'),
+				fieldLabel: this.getHelpTip('collapsedBorders', 'Collapsed borders'),
 				labelSeparator: ':',
 				itemId: 'f_st_borderCollapse',
-				helpTitle: this.localize('Collapsed borders'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Collapsed borders'),
 				store: new Ext.data.ArrayStore({
 					autoDestroy:  true,
 					fields: [ { name: 'text'}, { name: 'value'}],
@@ -2310,9 +2289,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 				// Frame
 			itemsConfig.push(Ext.apply({
 				xtype: 'combo',
-				fieldLabel: this.localize('Frames:'),
+				fieldLabel: this.getHelpTip('frames', 'Frames:'),
 				itemId: 'f_frames',
-				helpTitle: this.localize('Specifies which sides should have a border'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Specifies which sides should have a border'),
 				store: new Ext.data.ArrayStore({
 					autoDestroy:  true,
 					fields: [ { name: 'text'}, { name: 'value'}],
@@ -2335,9 +2314,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 				// Rules
 			itemsConfig.push(Ext.apply({
 				xtype: 'combo',
-				fieldLabel: this.localize('Rules:'),
+				fieldLabel: this.getHelpTip('rules', 'Rules:'),
 				itemId: 'f_rules',
-				helpTitle: this.localize('Specifies where rules should be displayed'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Specifies where rules should be displayed'),
 				store: new Ext.data.ArrayStore({
 					autoDestroy:  true,
 					fields: [ { name: 'text'}, { name: 'value'}],
@@ -2403,7 +2382,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			// Text color
 		itemsConfig.push({
 			xtype: 'colorpalettefield',
-			fieldLabel: this.localize('FG Color:'),
+			fieldLabel: this.getHelpTip('textColor', 'FG Color:'),
 			itemId: 'f_st_color',
 			colors: this.editorConfiguration.disableColorPicker ? [] : null,
 			colorsConfiguration: this.editorConfiguration.colors,
@@ -2412,7 +2391,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			// Background color
 		itemsConfig.push({
 			xtype: 'colorpalettefield',
-			fieldLabel: this.localize('Background:'),
+			fieldLabel: this.getHelpTip('backgroundColor', 'Background:'),
 			itemId: 'f_st_backgroundColor',
 			colors: this.editorConfiguration.disableColorPicker ? [] : null,
 			colorsConfiguration: this.editorConfiguration.colors,
@@ -2420,11 +2399,11 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		});
 			// Background image
 		itemsConfig.push({
-			fieldLabel: this.localize('Image URL:'),
+			fieldLabel: this.getHelpTip('backgroundImage', 'Image URL:'),
 			itemId: 'f_st_backgroundImage',
 			value: element && element.style.backgroundImage.match(/url\(\s*(.*?)\s*\)/) ? RegExp.$1 : '',
 			width: (this.properties.backgroundImage && this.properties.backgroundImage.width) ? this.properties.backgroundImage.width : 300,
-			helpTitle: this.localize('URL of the background image'),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('URL of the background image'),
 			helpIcon: true
 		});
 		return {
@@ -2482,9 +2461,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		var selected = element.nodeName.toLowerCase() + element.scope.toLowerCase();
 		itemsConfig.push(Ext.apply({
 			xtype: 'combo',
-			fieldLabel: this.localize(column ? 'Type of cells of the column' : 'Type of cell'),
+			fieldLabel: column ? this.getHelpTip('columnCellsType', 'Type of cells of the column') : this.getHelpTip('cellType', 'Type of cell'),
 			itemId: 'f_cell_type',
-			helpTitle: this.localize(column ? 'Specifies the type of cells' : 'Specifies the type of cell'),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize(column ? 'Specifies the type of cells' : 'Specifies the type of cell'),
 			store: new Ext.data.ArrayStore({
 				autoDestroy:  true,
 				fields: [ { name: 'text'}, { name: 'value'}],
@@ -2502,10 +2481,10 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		if (!column) {
 			itemsConfig.push({
 				xtype: 'textfield',
-				fieldLabel: this.localize('Abbreviation'),
+				fieldLabel: this.getHelpTip('cellAbbreviation', 'Abbreviation'),
 				labelSeparator: ':',
 				itemId: 'f_cell_abbr',
-				helpTitle: this.localize('Header abbreviation'),
+				helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Header abbreviation'),
 				width: 300,
 				value: element.abbr,
 				hideMode: 'visibility',
@@ -2553,9 +2532,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 		}
 		itemsConfig.push(Ext.apply({
 			xtype: 'combo',
-			fieldLabel: this.localize('Row group:'),
+			fieldLabel: this.getHelpTip('rowGroup', 'Row group:'),
 			itemId: 'f_rowgroup',
-			helpTitle: this.localize('Table section'),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Table section'),
 			store: new Ext.data.ArrayStore({
 				autoDestroy:  true,
 				fields: [ { name: 'text'}, { name: 'value'}],
@@ -2581,7 +2560,7 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 			fieldLabel: this.localize('Make cells header cells'),
 			labelSeparator: ':',
 			itemId: 'f_convertCells',
-			helpTitle: this.localize('Make cells header cells'),
+			helpTitle: Ext.isDefined(TYPO3.ContextHelp) ? '' : this.localize('Make cells header cells'),
 			value: false,
 			hideMode: 'visibility',
 			hidden: true,
@@ -2623,10 +2602,9 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 	 * @return	boolean		false, if the event was taken care of
 	 */
 	onKey: function (key, event) {
-		var selection = this.editor._getSelection();
-		var range = this.editor._createRange(selection);
-		var parentElement = this.editor.getParentElement(selection, range);
-		while (parentElement && !HTMLArea.isBlockElement(parentElement)) {
+		var range = this.editor.getSelection().createRange();
+		var parentElement = this.editor.getSelection().getParentElement();
+		while (parentElement && !HTMLArea.DOM.isBlockElement(parentElement)) {
 			parentElement = parentElement.parentNode;
 		}
 		if (/^(td|th)$/i.test(parentElement.nodeName)) {
@@ -2634,12 +2612,12 @@ HTMLArea.TableOperations = Ext.extend(HTMLArea.Plugin, {
 				range.pasteHTML('<br />');
 				range.select();
 			} else {
-				var brNode = this.editor._doc.createElement('br');
-				this.editor.insertNodeAtSelection(brNode);
+				var brNode = this.editor.document.createElement('br');
+				this.editor.getSelection().insertNode(brNode);
 				if (brNode.nextSibling) {
-					this.editor.selectNodeContents(brNode.nextSibling, true);
+					this.editor.getSelection().selectNodeContents(brNode.nextSibling, true);
 				} else {
-					this.editor.selectNodeContents(brNode, false);
+					this.editor.getSelection().selectNodeContents(brNode, false);
 				}
 			}
 			event.stopEvent();

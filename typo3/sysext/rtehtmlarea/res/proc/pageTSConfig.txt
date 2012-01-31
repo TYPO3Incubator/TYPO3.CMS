@@ -29,7 +29,7 @@ RTE.default.proc {
 	preserveDIVSections = 1
 
 		## TAGS ALLOWED OUTSIDE P & DIV
-	allowTagsOutside = hr, address
+	allowTagsOutside = address, article, aside, blockquote, footer, header, hr, nav, section
 
 		## TAGS ALLOWED
 		## Added to the default internal list: b,i,u,a,img,br,div,center,pre,font,hr,sub,sup,p,strong,em,li,ul,ol,blockquote,strike,span
@@ -38,8 +38,8 @@ RTE.default.proc {
 		## b and i will be remapped on exit (see below).
 		## Note that the link accessibility feature of htmlArea RTE does insert img tags.
 	allowTags (
-		a, abbr, acronym, address, b, bdo, big, blockquote, br, caption, center, cite, code, col, colgroup, dd, del, dfn, dl, div, dt, em, font,
-		h1, h2, h3, h4, h5, h6, hr, i, img, ins, kbd, label, li, link, meta, ol, p, pre, q, samp, sdfield, small,
+		a, abbr, acronym, address, article, aside, b, bdo, big, blockquote, br, caption, center, cite, code, col, colgroup, dd, del, dfn, dl, div, dt, em, font, footer,
+		header, h1, h2, h3, h4, h5, h6, hr, i, img, ins, kbd, label, li, link, meta, nav, ol, p, pre, q, samp, sdfield, section, small,
 		span, strike, strong, style, sub, sup, table, thead, tbody, tfoot, td, th, tr, title, tt, u, ul, var
 		)
 
@@ -51,7 +51,7 @@ RTE.default.proc {
 		## Attributes class and align are always preserved
 		## Align attribute will be unset on entry (see below)
 		## This is a list of additional attributes to keep
-	keepPDIVattribs = id, title, dir, lang, xml:lang
+	keepPDIVattribs = id, title, dir, lang, xml:lang, itemscope, itemtype, itemprop
 
 		## REMAP BOLD AND ITALIC TO STRONG AND EMPHASIS AND VICE VERSA
 	transformBoldAndItalicTags = 1
@@ -83,35 +83,37 @@ RTE.default.proc {
 
 				## CLEAN ATTRIBUTES ON THE FOLLOWING TAGS
 			span.fixAttrib.style.unset = 1
+			span.allowedAttribs = id, title, dir, lang, xml:lang, class, itemscope, itemtype, itemprop
+			span.rmTagIfNoAttrib = 1
 			p {
-				allowedAttribs = id, title, dir, lang, xml:lang, class
+				allowedAttribs = id, title, dir, lang, xml:lang, class, itemscope, itemtype, itemprop
 				fixAttrib.align.unset = 1
 			}
 			div < .p
 			hr.allowedAttribs = class
-			b.allowedAttribs = id, title, dir, lang, xml:lang, class
-			bdo.allowedAttribs = id, title, dir, lang, xml:lang, class
-			big.allowedAttribs = id, title, dir, lang, xml:lang, class
-			blockquote.allowedAttribs = id, title, dir, lang, xml:lang, class
-			cite.allowedAttribs = id, title, dir, lang, xml:lang, class
-			code.allowedAttribs = id, title, dir, lang, xml:lang, class
-			del.allowedAttribs = id, title, dir, lang, xml:lang, class
-			dfn.allowedAttribs = id, title, dir, lang, xml:lang, class
-			em.allowedAttribs = id, title, dir, lang, xml:lang, class
-			i.allowedAttribs = id, title, dir, lang, xml:lang, class
-			ins.allowedAttribs = id, title, dir, lang, xml:lang, class
-			kbd.allowedAttribs = id, title, dir, lang, xml:lang, class
-			label.allowedAttribs = id, title, dir, lang, xml:lang, class
-			q.allowedAttribs = id, title, dir, lang, xml:lang, class
-			samp.allowedAttribs = id, title, dir, lang, xml:lang, class
-			small.allowedAttribs = id, title, dir, lang, xml:lang, class
-			strike.allowedAttribs = id, title, dir, lang, xml:lang, class
-			strong.allowedAttribs = id, title, dir, lang, xml:lang, class
-			sub.allowedAttribs = id, title, dir, lang, xml:lang, class
-			sup.allowedAttribs = id, title, dir, lang, xml:lang, class
-			tt.allowedAttribs = id, title, dir, lang, xml:lang, class
-			u.allowedAttribs = id, title, dir, lang, xml:lang, class
-			var.allowedAttribs = id, title, dir, lang, xml:lang, class
+			b.allowedAttribs < .span.allowedAttribs
+			bdo.allowedAttribs < .span.allowedAttribs
+			big.allowedAttribs < .span.allowedAttribs
+			blockquote.allowedAttribs < .span.allowedAttribs
+			cite.allowedAttribs < .span.allowedAttribs
+			code.allowedAttribs < .span.allowedAttribs
+			del.allowedAttribs < .span.allowedAttribs
+			dfn.allowedAttribs < .span.allowedAttribs
+			em.allowedAttribs < .span.allowedAttribs
+			i.allowedAttribs < .span.allowedAttribs
+			ins.allowedAttribs < .span.allowedAttribs
+			kbd.allowedAttribs < .span.allowedAttribs
+			label.allowedAttribs < .span.allowedAttribs
+			q.allowedAttribs < .span.allowedAttribs
+			samp.allowedAttribs < .span.allowedAttribs
+			small.allowedAttribs < .span.allowedAttribs
+			strike.allowedAttribs < .span.allowedAttribs
+			strong.allowedAttribs < .span.allowedAttribs
+			sub.allowedAttribs < .span.allowedAttribs
+			sup.allowedAttribs < .span.allowedAttribs
+			tt.allowedAttribs < .span.allowedAttribs
+			u.allowedAttribs < .span.allowedAttribs
+			var.allowedAttribs < .span.allowedAttribs
 		}
 
 			## REMOVE OPEN OFFICE META DATA TAGS, WORD 2003 TAGS, LINK, META, STYLE AND TITLE TAGS, AND DEPRECATED HTML TAGS

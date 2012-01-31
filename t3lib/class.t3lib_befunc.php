@@ -242,17 +242,17 @@ final class t3lib_BEfunc {
 				if ($ctrl['enablecolumns']['disabled']) {
 					$field = $table . '.' . $ctrl['enablecolumns']['disabled'];
 					$query[] = $field . '=0';
-					$invQuery[] = $field . '!=0';
+					$invQuery[] = $field . '<>0';
 				}
 				if ($ctrl['enablecolumns']['starttime']) {
 					$field = $table . '.' . $ctrl['enablecolumns']['starttime'];
 					$query[] = '(' . $field . '<=' . $GLOBALS['SIM_ACCESS_TIME'] . ')';
-					$invQuery[] = '(' . $field . '!=0 AND ' . $field . '>' . $GLOBALS['SIM_ACCESS_TIME'] . ')';
+					$invQuery[] = '(' . $field . '<>0 AND ' . $field . '>' . $GLOBALS['SIM_ACCESS_TIME'] . ')';
 				}
 				if ($ctrl['enablecolumns']['endtime']) {
 					$field = $table . '.' . $ctrl['enablecolumns']['endtime'];
 					$query[] = '(' . $field . '=0 OR ' . $field . '>' . $GLOBALS['SIM_ACCESS_TIME'] . ')';
-					$invQuery[] = '(' . $field . '!=0 AND ' . $field . '<=' . $GLOBALS['SIM_ACCESS_TIME'] . ')';
+					$invQuery[] = '(' . $field . '<>0 AND ' . $field . '<=' . $GLOBALS['SIM_ACCESS_TIME'] . ')';
 				}
 			}
 		}
@@ -765,23 +765,70 @@ final class t3lib_BEfunc {
 	 * If no "type" field is configured in the "ctrl"-section of the $GLOBALS['TCA'] for the table, zero is used.
 	 * If zero is not an index in the "types" section of $GLOBALS['TCA'] for the table, then the $fieldValue returned will default to 1 (no matter if that is an index or not)
 	 *
+	 * Note: This method is very similar to t3lib_TCEforms::getRTypeNum(), however, it has two differences:
+	 *       1) The method in TCEForms also takes care of localization (which is difficult to do here as the whole infrastructure for language overlays is only in TCEforms).
+	 *       2) The $rec array looks different in TCEForms, as in there it's not the raw record but the t3lib_transferdata version of it, which changes e.g. how "select"
+	 *          and "group" field values are stored, which makes different processing of the "foreign pointer field" type field variant necessary.
+	 *
 	 * @param	string		Table name present in TCA
 	 * @param	array		Record from $table
 	 * @return	string		Field value
 	 * @see getTCAtypes()
 	 */
-	public static function getTCAtypeValue($table, $rec) {
+	public static function getTCAtypeValue($table, $row) {
 
-			// If no field-value, set it to zero. If there is no type matching the field-value (which now may be zero...) test field-value '1' as default.
+		$typeNum = 0;
+
 		t3lib_div::loadTCA($table);
 		if ($GLOBALS['TCA'][$table]) {
 			$field = $GLOBALS['TCA'][$table]['ctrl']['type'];
-			$fieldValue = $field ? ($rec[$field] ? $rec[$field] : 0) : 0;
-			if (!is_array($GLOBALS['TCA'][$table]['types'][$fieldValue])) {
-				$fieldValue = 1;
+
+			if (strpos($field, ':') !== FALSE) {
+				list($pointerField, $foreignTableTypeField) = explode(':', $field);
+
+				// Get field value from database if field is not in the $row array
+				if (!isset($row[$pointerField])) {
+					$localRow = t3lib_BEfunc::getRecord($table, $row['uid'], $pointerField);
+					$foreignUid = $localRow[$pointerField];
+				} else {
+					$foreignUid = $row[$pointerField];
+				}
+
+				if ($foreignUid) {
+					$fieldConfig = $GLOBALS['TCA'][$table]['columns'][$pointerField]['config'];
+					$relationType = $fieldConfig['type'];
+					if ($relationType === 'select') {
+						$foreignTable = $fieldConfig['foreign_table'];
+					} elseif ($relationType === 'group') {
+						$allowedTables = explode(',', $fieldConfig['allowed']);
+						$foreignTable = $allowedTables[0]; // Always take the first configured table.
+					} else {
+						throw new RuntimeException('TCA foreign field pointer fields are only allowed to be used with group or select field types.', 1325862240);
+					}
+
+					$foreignRow = t3lib_BEfunc::getRecord($foreignTable, $foreignUid, $foreignTableTypeField);
+
+					if ($foreignRow[$foreignTableTypeField]) {
+						$typeNum = $foreignRow[$foreignTableTypeField];
+					}
+				}
+			} else {
+				$typeNum = $row[$field];
 			}
-			return $fieldValue;
+
+			if (!strcmp($typeNum, '')) {  // If that value is an empty string, set it to "0" (zero)
+				$typeNum = 0;
+			}
 		}
+
+		// If current typeNum doesn't exist, set it to 0 (or to 1 for historical reasons, if 0 doesn't exist)
+		if (!$GLOBALS['TCA'][$table]['types'][$typeNum]) {
+			$typeNum = $GLOBALS['TCA'][$table]['types']["0"] ? 0 : 1;
+		}
+
+		$typeNum = (string)$typeNum; // Force to string. Necessary for eg '-1' to be recognized as a type value.
+
+		return $typeNum;
 	}
 
 	/**
@@ -2699,18 +2746,22 @@ final class t3lib_BEfunc {
 			// checks alternate domains
 		if (count($rootLine) > 0) {
 			$urlParts = parse_url($domain);
-			if (self::getDomainStartPage($urlParts['host'], $urlParts['path'])) {
+
 				/** @var t3lib_pageSelect $sysPage */
-				$sysPage = t3lib_div::makeInstance('t3lib_pageSelect');
+			$sysPage = t3lib_div::makeInstance('t3lib_pageSelect');
 
-				$page = (array)$sysPage->getPage($pageId);
-				$protocol = 'http';
-				if ($page['url_scheme'] == t3lib_utility_Http::SCHEME_HTTPS || ($page['url_scheme'] == 0 && t3lib_div::getIndpEnv('TYPO3_SSL'))) {
-					$protocol = 'https';
-				}
-
-				$domain = $protocol . '://' . self::firstDomainRecord($rootLine);
+			$page = (array)$sysPage->getPage($pageId);
+			$protocol = 'http';
+			if ($page['url_scheme'] == t3lib_utility_Http::SCHEME_HTTPS || ($page['url_scheme'] == 0 && t3lib_div::getIndpEnv('TYPO3_SSL'))) {
+				$protocol = 'https';
 			}
+			$domainRecord = self::getDomainStartPage($urlParts['host'], $urlParts['path']);
+			if ($domainRecord && isset($domainRecord['domainName'])) {
+				$domain = $domainRecord['domainName'];
+			} else {
+				$domain = self::firstDomainRecord($rootLine);
+			}
+			$domain = $protocol . '://' . $domain;
 		}
 
 		return $domain;
@@ -3162,7 +3213,7 @@ final class t3lib_BEfunc {
 			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
 				'*',
 				'sys_lockedrecords',
-					'sys_lockedrecords.userid!=' . intval($GLOBALS['BE_USER']->user['uid']) . '
+					'sys_lockedrecords.userid<>' . intval($GLOBALS['BE_USER']->user['uid']) . '
 								AND sys_lockedrecords.tstamp > ' . ($GLOBALS['EXEC_TIME'] - 2 * 3600)
 			);
 			while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
@@ -3663,7 +3714,7 @@ final class t3lib_BEfunc {
 				!$GLOBALS['TCA'][$table]['ctrl']['transOrigPointerTable']) {
 
 			$where = $GLOBALS['TCA'][$table]['ctrl']['transOrigPointerField'] . '=' . intval($ref) .
-					' AND ' . $GLOBALS['TCA'][$table]['ctrl']['languageField'] . '!=0';
+					' AND ' . $GLOBALS['TCA'][$table]['ctrl']['languageField'] . '<>0';
 
 			if (!empty($GLOBALS['TCA'][$table]['ctrl']['delete'])) {
 				$where .= ' AND ' . $GLOBALS['TCA'][$table]['ctrl']['delete'] . '=0';
@@ -3732,7 +3783,7 @@ final class t3lib_BEfunc {
 			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
 				$fields,
 				$table,
-					'pid=-1 AND uid!=' . intval($uid) . ' AND t3ver_oid=' . intval($uid) . ($workspace != 0 ? ' AND t3ver_wsid=' . intval($workspace) : '') .
+					'pid=-1 AND uid<>' . intval($uid) . ' AND t3ver_oid=' . intval($uid) . ($workspace != 0 ? ' AND t3ver_wsid=' . intval($workspace) : '') .
 							($includeDeletedRecords ? '' : self::deleteClause($table)),
 				'',
 				't3ver_id DESC'
@@ -4117,7 +4168,7 @@ final class t3lib_BEfunc {
 			$row = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow(
 				$fields,
 				$table,
-					'pid!=-1 AND
+					'pid<>-1 AND
 				 t3ver_state=3 AND
 				 t3ver_move_id=' . intval($uid) . ' AND
 				 t3ver_wsid=' . intval($workspace) .
