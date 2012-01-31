@@ -44,7 +44,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 *
 	 * @var array
 	 */
-	protected $properties;
+	protected $properties = array();
 
 	/**
 	 * Processing context
@@ -340,10 +340,11 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @param boolean $isProcessed
 	 * @return void
 	 */
-	public function setIsProcessed(boolean $isProcessed) {
+	public function setIsProcessed($isProcessed) {
 		$this->isProcessed = $isProcessed;
 
 			// DB-query to insert the info
+		/** @var $processedFileRepository t3lib_file_Repository_ProcessedFileRepository */
 		$processedFileRepository = t3lib_div::makeInstance('t3lib_file_Repository_ProcessedFileRepository');
 		$processedFileRepository->add($this);
 	}
@@ -358,7 +359,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 			'storage' => $this->getStorage()->getUid(),
 			'identifier' => $this->getIdentifier(),
 			'name' => $this->getName(),
-			'is_processed' => $this->isProcessed,
+			'is_processed' => intval($this->isProcessed),
 			'checksum' => $this->calculateChecksum(),
 			'context' => $this->context,
 			'configuration' => serialize($this->processingConfiguration),

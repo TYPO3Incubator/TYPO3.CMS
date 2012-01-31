@@ -75,7 +75,7 @@ class t3lib_file_Repository_ProcessedFileRepository extends t3lib_file_Repositor
 		$recordData = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow(
 			'*',
 			$this->table,
-			'originalfile=' . intval($processedFileObject->getOriginalFile()->getUid())
+			'original=' . intval($processedFileObject->getOriginalFile()->getUid())
 				. ' AND checksum=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($processedFileObject->calculateChecksum(), $this->table)
 				. ' AND deleted=0');
 
@@ -96,6 +96,8 @@ class t3lib_file_Repository_ProcessedFileRepository extends t3lib_file_Repositor
 	 */
 	public function add($processedFile) {
 		$insertFields = $processedFile->toArray();
+		$insertFields['crdate'] = $insertFields['tstamp'] = time();
+
 		// @todo: make sure that the toArray method only contains fields that are in the table
 		$GLOBALS['TYPO3_DB']->exec_INSERTquery($this->table, $insertFields);
 	}
