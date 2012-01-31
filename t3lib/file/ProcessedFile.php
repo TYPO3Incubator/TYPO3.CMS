@@ -36,6 +36,24 @@
 class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 
 	/**
+	 * Various file properties
+	 *
+	 * Note that all properties, which only the persisted (indexed) files have are stored in this
+	 * overall properties array only. The only properties which really exist as object properties of
+	 * the file object are the storage, the identifier, the fileName and the indexing status.
+	 *
+	 * @var array
+	 */
+	protected $properties;
+
+	/**
+	 * Processing context
+	 *
+	 * @var string
+	 */
+	protected $context;
+
+	/**
 	 * Processing configuration
 	 *
 	 * @var array
@@ -50,17 +68,17 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	protected $originalFile;
 
 
-
-
 	/**
 	 * Constructor for a file processing object. Should normally not be used directly, use the corresponding factory methods instead.
 	 *
 	 * @param t3lib_file_File $originalFile
+	 * @param string $context
 	 * @param array $processingConfiguration
 	 */
-	public function __construct(t3lib_file_File $originalFile, array $processingConfiguration) {
-		$this->propertiesOfFileReference = $processingConfiguration;
+	public function __construct(t3lib_file_File $originalFile, $context, array $processingConfiguration) {
 		$this->originalFile = $originalFile;
+		$this->context = $context;
+		$this->processingConfiguration = $processingConfiguration;
 	}
 
 
@@ -167,10 +185,18 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return string
 	 */
 	public function getSha1() {
-
 		// TODO: Make this return sha1 of processed file
-
 		return $this->originalFile->getSha1();
+	}
+
+	/**
+	 * Returns the Sha1 of this file
+	 *
+	 * @return string
+	 */
+	public function calculateChecksum() {
+		return t3lib_div::shortMD5($this->originalFile->getUid() . $this->context . serialize($this->configuration));
+		return t3lib_div::shortMD5($this->originalFile->getUid() . $this->originalFile->getProperty('mtime') . $this->context . serialize($this->configuration));
 	}
 
 
@@ -273,6 +299,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return string Combined storage and file identifier, e.g. StorageUID:path/and/fileName.png
 	 */
 	public function getCombinedIdentifier() {
+		// @todo what to do here?
 		return $this->originalFile->getCombinedIdentifier();
 	}
 
@@ -283,7 +310,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return bool TRUE if deletion succeeded
 	 */
 	public function delete() {
-		return $this->originalFile->delete();
+		return $this->delete();
 	}
 
 	/**
@@ -293,7 +320,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return t3lib_file_FileReference
 	 */
 	public function rename($newName) {
-		return $this->originalFile->rename($newName);
+		return $this->getStorage()->renameFile($this, $newName);
 	}
 
 
@@ -312,10 +339,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 * @return string
 	 */
 	public function getPublicUrl() {
-
-		// TODO: Make this return public URL of processed file
-
-		return $this->originalFile->getPublicUrl();
+		return $this->getStorage()->getPublicUrlForFile($this);
 	}
 
 	/**
@@ -326,6 +350,15 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 	 */
 	public function isIndexed() {
 		return false;
+	}
+
+	/**
+	 * Returns TRUE if this file is already processed.
+	 *
+	 * @return bool
+	 */
+	public function isProcessed() {
+		return FALSE;
 	}
 
 	/**
@@ -340,7 +373,7 @@ class t3lib_file_ProcessedFile implements t3lib_file_FileInterface {
 
 		// TODO: Make this return local processing path of processed file
 
-		return $this->originalFile->getForLocalProcessing($writable);
+		// return $this->getForLocalProcessing($writable);
 	}
 
 	/**

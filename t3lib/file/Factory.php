@@ -405,6 +405,22 @@ class t3lib_file_Factory implements t3lib_Singleton {
 		return $fileReferenceObject;
 	}
 
+	/**
+	 * generates a new object of the type t3lib_file_ProcessedFile
+	 * additionally checks if this processed file already exists in the DB
+	 *
+	 * @param t3lib_file_FileInterface $originalFileObject
+	 * @param $context
+	 * @param array $configuration
+	 * @return t3lib_file_ProcessedFile
+	 */
+	public function getProcessedFileObject(t3lib_file_FileInterface $originalFileObject, $context, array $configuration) {
+		/** @var t3lib_file_ProcessedFile $fileProcessingObject */
+		$fileProcessingObject = t3lib_div::makeInstance('t3lib_file_ProcessedFile', $originalFileObject, $context, $configuration);
+
+		// @todo: check if this file already exists in the DB
+		return $fileProcessingObject;
+	}
 #
 #	protected function injectDependenciesForFileObject(t3lib_file_File $fileObject) {
 #		$pid = $fileObject->getValue('pid');
