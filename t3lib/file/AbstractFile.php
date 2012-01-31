@@ -192,6 +192,14 @@ abstract class t3lib_file_AbstractFile implements t3lib_file_FileInterface {
 		return $this->getStorage()->hashFile($this, 'sha1');
 	}
 
+	/**
+	 * Returns the date (as UNIX timestamp) the file was last modified.
+	 *
+	 * @return integer
+	 */
+	public function getModificationTime() {
+		return $this->getProperty('tstamp');
+	}
 
 	/**
 	 * Get the extension of this file
