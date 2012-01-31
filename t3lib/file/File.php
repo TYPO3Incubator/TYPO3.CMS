@@ -549,10 +549,11 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 	 * Set the identifier of this file
 	 *
 	 * @internal Should only be used by other parts of the File API (e.g. drivers after moving a file)
+	 * @param string $identifier
 	 * @return string
 	 */
-	public function setIdentifier() {
-		return $this->identifier;
+	public function setIdentifier($identifier) {
+		$this->identifier = $identifier;
 	}
 
 
