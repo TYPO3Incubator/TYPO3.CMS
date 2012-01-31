@@ -155,7 +155,7 @@ class t3lib_file_Storage {
 	 *
 	 * @var string
 	 */
-	protected $processingfolder = '_temp_';
+	protected $processingFolder = '_temp_';
 
 	/**
 	 * Constructor for a storage object.
@@ -174,13 +174,21 @@ class t3lib_file_Storage {
 			+ ($this->storageRecord['is_writable'] && $this->driver->hasCapability(self::CAPABILITY_WRITABLE) ? self::CAPABILITY_WRITABLE : 0);
 		$this->processConfiguration();
 
-		// @todo: make this configurable for each storage
-		$this->fileProcessingService = t3lib_div::makeInstance('t3lib_file_Service_FileProcessingService', $this, $this->driver);
-
 		if ($this->storageRecord['processingfolder']) {
-			$this->processingfolder = $this->storageRecord['processingfolder'];
+			$this->processingFolder = $this->storageRecord['processingfolder'];
 		}
-		$this->processingfolder = trim($this->processingfolder, '/');
+		$this->processingFolder = trim($this->processingFolder, '/');
+		if ($this->processingFolder) {
+			if ($this->driver->folderExists($this->processingFolder) === FALSE) {
+				$this->processingFolder = $this->driver->createFolder($this->processingFolder, $this->driver->getRootLevelFolder());
+			} else {
+				$this->processingFolder = $this->driver->getFolder($this->processingFolder);
+			}
+		} else {
+			$this->processingFolder = FALSE;
+		}
+
+		$this->fileProcessingService = t3lib_div::makeInstance('t3lib_file_Service_FileProcessingService', $this, $this->driver);
 	}
 
 	public function setPublisher(t3lib_file_Service_Publishing_Publisher $publisher) {
@@ -1486,11 +1494,13 @@ class t3lib_file_Storage {
 
 	/**
 	 * getter function to return the folder where the files can
-	 * be processed
-	 * @return string the processing folder, can be empty as well, if the storage doesn't have a processing folder
+	 * be processed. does not check for access rights here
+	 * @todo check if we need to implement "is writable" capability
+	 *
+	 * @return t3lib_file_Folder the processing folder, can be empty as well, if the storage doesn't have a processing folder
 	 */
 	public function getProcessingFolder() {
-		return $this->processingfolder;
+		return $this->processingFolder;
 	}
 }
 
