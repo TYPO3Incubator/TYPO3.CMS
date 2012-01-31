@@ -188,21 +188,22 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Returns a temporary path for a given file, including the file extension.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return string
 	 */
-	protected function getTemporaryPathForFile(t3lib_file_File $file) {
+	protected function getTemporaryPathForFile(t3lib_file_FileInterface $file) {
 		return t3lib_div::tempnam('fal-tempfile-') . '.' . $file->getExtension();
+		// @todo: we need to remove the temporary file again
 	}
 
 	/**
 	 * Returns the public URL to a file.
 	 *
 	 * @abstract
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return string
 	 */
-	abstract public function getPublicUrl(t3lib_file_File $file);
+	abstract public function getPublicUrl(t3lib_file_FileInterface $file);
 
 	/**
 	 * Returns a list of all hashing algorithms this Storage supports.
@@ -217,12 +218,12 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * Creates a (cryptographic) hash for a file.
 	 *
 	 * @abstract
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $hashAlgorithm The hash algorithm to use
 	 * @return string
 	 * TODO switch parameter order?
 	 */
-	abstract public function hash(t3lib_file_File $file, $hashAlgorithm);
+	abstract public function hash(t3lib_file_FileInterface $file, $hashAlgorithm);
 
 	/**
 	 * Creates a new file and returns the matching file object for it.
@@ -239,20 +240,20 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * require fetching the file from an external location. So this might be an expensive operation (both in terms of
 	 * processing resources and money) for large files.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return string The file contents
 	 */
-	abstract public function getFileContents(t3lib_file_File $file);
+	abstract public function getFileContents(t3lib_file_FileInterface $file);
 
 	/**
 	 * Sets the contents of a file to the specified value.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $contents
 	 * @return bool TRUE if setting the contents succeeded
 	 * @throws RuntimeException if the operation failed
 	 */
-	abstract public function setFileContents(t3lib_file_File $file, $contents);
+	abstract public function setFileContents(t3lib_file_FileInterface $file, $contents);
 
 	/**
 	 * Adds a file from the local server hard disk to a given path in TYPO3s virtual file system.
@@ -262,7 +263,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @param string $localFilePath
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $fileName The name to add the file under
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	abstract public function addFile($localFilePath, t3lib_file_Folder $targetFolder, $fileName);
 
@@ -290,21 +291,21 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * current version yourself!
 	 *
 	 * @abstract
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param bool $writable Set this to FALSE if you only need the file for read operations. This might speed up things, e.g. by using a cached local version. Never modify the file if you have set this flag!
 	 * @return string The path to the file on the local disk
 	 */
 	// TODO decide if this should return a file handle object
-	abstract public function getFileForLocalProcessing(t3lib_file_File $file, $writable = TRUE);
+	abstract public function getFileForLocalProcessing(t3lib_file_FileInterface $file, $writable = TRUE);
 
 	/**
 	 * Returns the permissions of a file as an array (keys r, w) of boolean flags
 	 *
 	 * @abstract
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return array
 	 */
-	abstract public function getFilePermissions(t3lib_file_File $file);
+	abstract public function getFilePermissions(t3lib_file_FileInterface $file);
 
 	/**
 	 * Returns the permissions of a folder as an array (keys r, w) of boolean flags
@@ -319,22 +320,22 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * Renames a file
 	 *
 	 * @abstract
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $newName
 	 * @return string The new identifier of the file if the operation succeeds
 	 * @throws RuntimeException if renaming the file failed
 	 */
-	abstract public function renameFile(t3lib_file_File $file, $newName);
+	abstract public function renameFile(t3lib_file_FileInterface $file, $newName);
 
 	/**
 	 * Replaces the contents (and file-specific metadata) of a file object with a local file.
 	 *
 	 * @abstract
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $localFilePath
 	 * @return bool
 	 */
-	abstract public function replaceFile(t3lib_file_File $file, $localFilePath);
+	abstract public function replaceFile(t3lib_file_FileInterface $file, $localFilePath);
 
 	/**
 	 * Returns information about a file for a given file identifier.
@@ -347,10 +348,10 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Returns information about a file for a given file object.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return array
 	 */
-	public function getFileInfo(t3lib_file_File $file) {
+	public function getFileInfo(t3lib_file_FileInterface $file) {
 		return $this->getFileInfoByIdentifier($file->getIdentifier());
 	}
 
@@ -358,7 +359,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * Returns a file object by its identifier.
 	 *
 	 * @param $identifier
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	public function getFile($identifier) {
 		$fileObject = NULL;
@@ -376,7 +377,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * Creates a file object from a given file data array
 	 *
 	 * @param array $fileData
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	protected function getFileObject(array $fileData) {
 		/** @var $factory t3lib_file_Factory */
@@ -417,34 +418,34 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * Copies a file to a temporary path and returns that path.
 	 *
 	 * @abstract
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return string The temporary path
 	 */
-	abstract public function copyFileToTemporaryPath(t3lib_file_File $file);
+	abstract public function copyFileToTemporaryPath(t3lib_file_FileInterface $file);
 
 	/**
 	 * Moves a file *within* the current storage.
 	 * Note that this is only about an intra-storage move action, where a file is just
 	 * moved to another folder in the same storage.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $fileName
 	 * @return string The new identifier of the file
 	 */
-	abstract public function moveFileWithinStorage(t3lib_file_File $file, t3lib_file_Folder $targetFolder, $fileName);
+	abstract public function moveFileWithinStorage(t3lib_file_FileInterface $file, t3lib_file_Folder $targetFolder, $fileName);
 
 	/**
 	 * Copies a file *within* the current storage.
 	 * Note that this is only about an intra-storage copy action, where a file is just
 	 * copied to another folder in the same storage.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $fileName
-	 * @return t3lib_file_File The new (copied) file object.
+	 * @return t3lib_file_FileInterface The new (copied) file object.
 	 */
-	abstract public function copyFileWithinStorage(t3lib_file_File $file, t3lib_file_Folder $targetFolder, $fileName);
+	abstract public function copyFileWithinStorage(t3lib_file_FileInterface $file, t3lib_file_Folder $targetFolder, $fileName);
 
 
 	/**
@@ -473,10 +474,10 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * it for some other reason - this has to be taken care of in the upper layers (e.g. the Storage)!
 	 *
 	 * @abstract
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return bool TRUE if deleting the file succeeded
 	 */
-	abstract public function deleteFile(t3lib_file_File $file);
+	abstract public function deleteFile(t3lib_file_FileInterface $file);
 
 	/**
 	 * Removes a folder from this storage.

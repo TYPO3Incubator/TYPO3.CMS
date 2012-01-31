@@ -481,10 +481,10 @@ class t3lib_file_Storage {
 	 * an action is allowed and whether action related UI elements should thus be shown (move icon, edit icon, etc.)
 	 *
 	 * @param string $action, can be read, write, delete
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return boolean
 	 */
-	public function checkFileActionPermission($action, t3lib_file_File $file) {
+	public function checkFileActionPermission($action, t3lib_file_FileInterface $file) {
 			// check 1: Does the user have permission to perform the action? e.g. "readFile"
 		if ($this->checkUserActionPermission($action, 'File') === FALSE) {
 			return FALSE;
@@ -650,7 +650,7 @@ class t3lib_file_Storage {
 	 * @param t3lib_file_Folder $targetFolder The target path, without the fileName
 	 * @param string $fileName The fileName. If not set, the local file name is used.
 	 * @param string $conflictMode possible value are 'cancel', 'replace', 'changeName'
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	public function addFile($localFilePath, t3lib_file_Folder $targetFolder, $fileName = '', $conflictMode = 'changeName') {
 		// TODO check permissions (write on target, upload, ...)
@@ -672,7 +672,7 @@ class t3lib_file_Storage {
 		return $this->driver->addFile($localFilePath, $targetFolder, $fileName);
 	}
 
-	public function hashFile(t3lib_file_File $fileObject, $hash) {
+	public function hashFile(t3lib_file_FileInterface $fileObject, $hash) {
 		return $this->driver->hash($fileObject, $hash);
 	}
 
@@ -682,31 +682,31 @@ class t3lib_file_Storage {
 	 * WARNING: Access to the file may be restricted by further means, e.g. some web-based authentication. You have to take care of this
 	 * yourself.
 	 *
-	 * @param t3lib_file_File $fileObject The file object
+	 * @param t3lib_file_FileInterface $fileObject The file object
 	 * @return string
 	 */
-	public function getPublicUrlForFile(t3lib_file_File $fileObject) {
+	public function getPublicUrlForFile(t3lib_file_FileInterface $fileObject) {
 		return $this->driver->getPublicUrl($fileObject);
 	}
 
 	/**
 	 * Returns a publicly accessible URL for a file.
 	 *
-	 * @param t3lib_file_File $fileObject The file object
-	 * @return string
+	 * @param t3lib_file_FileInterface $fileObject The file object
+	 * @return t3lib_file_ProcessedFile
 	 */
-	public function getProcessedUrlForFile(t3lib_file_File $fileObject, $context, array $configuration) {
+	public function processFile(t3lib_file_FileInterface $fileObject, $context, array $configuration) {
 		return $this->fileProcessingService->process($fileObject, $context, $configuration);
 	}
 
 	/**
 	 * Get the file form the storage for local processing
 	 *
-	 * @param t3lib_file_File $fileObject
+	 * @param t3lib_file_FileInterface $fileObject
 	 * @param bool $writable
 	 * @return string Path to local file (either original or copied to some temporary local location)
 	 */
-	public function getFileForLocalProcessing(t3lib_file_File $fileObject, $writable = TRUE) {
+	public function getFileForLocalProcessing(t3lib_file_FileInterface $fileObject, $writable = TRUE) {
 		return $this->driver->getFileForLocalProcessing($fileObject, $writable);
 	}
 
@@ -714,7 +714,7 @@ class t3lib_file_Storage {
 	 * Get file by identifier
 	 *
 	 * @param string $identifier
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	public function getFile($identifier) {
 		return $this->driver->getFile($identifier);
@@ -725,7 +725,7 @@ class t3lib_file_Storage {
 	 * Get file by identifier
 	 *
 	 * @param string $identifier
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	public function getFileInfo($file) {
 		return $this->driver->getFileInfo($file);
@@ -737,7 +737,7 @@ class t3lib_file_Storage {
 	 * @deprecated To be removed before final release of FAL. Use combination of getFileInfoByIdentifier() with a file object as argument instead.
 	 *
 	 * @param string $identifier
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	public function getFileInfoByIdentifier($identifier) {
 		return $this->driver->getFileInfoByIdentifier($identifier);
@@ -787,7 +787,7 @@ class t3lib_file_Storage {
 	/**
 	 * Get contents of a file object
 	 *
-	 * @param	t3lib_file_File	$file
+	 * @param	t3lib_file_FileInterface	$file
 	 * @return	string
 	 */
 	public function getFileContents($file) {
@@ -803,13 +803,13 @@ class t3lib_file_Storage {
 	/**
 	 * Set contents of a file object.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $contents
 	 * @return bool TRUE if the operation succeeded
 	 * TODO check if we should align the return value with file_put_contents (which returns the number of bytes that have been written to the file).
 	 *      This would also require changes to the drivers
 	 */
-	public function setFileContents(t3lib_file_File $file, $contents) {
+	public function setFileContents(t3lib_file_FileInterface $file, $contents) {
 			// TODO does setting file contents require update permission?
 			// check if user is allowed to update
 		if (!$this->checkUserActionPermission('update', 'File')) {
@@ -844,7 +844,7 @@ class t3lib_file_Storage {
 	 *
 	 * @param string $fileName
 	 * @param t3lib_file_Folder $targetFolderObject
-	 * @return t3lib_file_File The file object
+	 * @return t3lib_file_FileInterface The file object
 	 */
 	public function createFile($fileName, t3lib_file_Folder $targetFolderObject) {
 		if (!$this->checkFolderActionPermission('createFile', $targetFolderObject)) {
@@ -855,7 +855,7 @@ class t3lib_file_Storage {
 
 	/**
 	 * previously in t3lib_extFileFunc::deleteFile()
-	 * @param $fileObject t3lib_file_File
+	 * @param $fileObject t3lib_file_FileInterface
 	 * @return bool TRUE if deletion succeeded
 	 *
 	 * TODO throw FileInUseException when the file is still used anywhere
@@ -874,13 +874,13 @@ class t3lib_file_Storage {
 	 * copies a source file (from any location) in to the target
 	 * folder, the latter has to be part of this storage
 	 *
-	 * @param	t3lib_file_File	$file
+	 * @param	t3lib_file_FileInterface	$file
 	 * @param	t3lib_file_Folder $targetFolder
 	 * @param	string	$conflictMode	"overrideExistingFile", "renameNewFile", "cancel"
 	 * @param	string	$targetFileName	an optional destination fileName
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
-	public function copyFile(t3lib_file_File $file, t3lib_file_Folder $targetFolder, $targetFileName = NULL, $conflictMode = 'renameNewFile') {
+	public function copyFile(t3lib_file_FileInterface $file, t3lib_file_Folder $targetFolder, $targetFileName = NULL, $conflictMode = 'renameNewFile') {
 		$this->emitPreFileCopySignal($file, $targetFolder);
 
 		$this->checkFileCopyPermissions($file, $targetFolder, $targetFileName);
@@ -962,12 +962,12 @@ class t3lib_file_Storage {
 	 * Check if a file has the permission to be copied on a File/Folder/Storage,
 	 * if not throw an exception
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $targetFileName
 	 * @return void
 	 */
-	protected function checkFileCopyPermissions(t3lib_file_File $file, t3lib_file_Folder $targetFolder, $targetFileName) {
+	protected function checkFileCopyPermissions(t3lib_file_FileInterface $file, t3lib_file_Folder $targetFolder, $targetFileName) {
 			// check if targetFolder is within this storage, this should never happen
 		if ($this->getUid() != $targetFolder->getStorage()->getUid()) {
 			throw new t3lib_file_exception_AbstractFileException('The operation of the folder cannot be called by this storage "' . $this->getUid() . '"', 1319550405);
@@ -999,11 +999,11 @@ class t3lib_file_Storage {
 	 * the target folder has to be part of this storage
 	 *
 	 * previously in t3lib_extFileFunc::func_move()
-	 * @param	t3lib_file_File	$file
+	 * @param	t3lib_file_FileInterface	$file
 	 * @param	t3lib_file_Folder $targetFolder
 	 * @param	string	$conflictMode	"overrideExistingFile", "renameNewFile", "cancel"
 	 * @param	string	$targetFileName	an optional destination fileName
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	public function moveFile($file, $targetFolder, $targetFileName = NULL, $conflictMode = 'renameNewFile') {
 		// TODO emit signal -- should we do this after checking permissions?
@@ -1054,12 +1054,12 @@ class t3lib_file_Storage {
 	}
 
 	/**
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $identifier
 	 * @param t3lib_file_Storage $storage
 	 * @return void
 	 */
-	protected function updateFile(t3lib_file_File $file, $identifier = '', $storage = NULL) {
+	protected function updateFile(t3lib_file_FileInterface $file, $identifier = '', $storage = NULL) {
 		if ($identifier == '') {
 			$identifier = $file->getIdentifier();
 		}
@@ -1085,7 +1085,7 @@ class t3lib_file_Storage {
 		$fileRepository->update($file);
 	}
 
-	protected function checkFileMovePermissions(t3lib_file_File $file, t3lib_file_Folder $targetFolder) {
+	protected function checkFileMovePermissions(t3lib_file_FileInterface $file, t3lib_file_Folder $targetFolder) {
 			// check if targetFolder is within this storage
 		if ($this->getUid() != $targetFolder->getStorage()->getUid()) {
 			throw new RuntimeException();
@@ -1115,9 +1115,9 @@ class t3lib_file_Storage {
 	/**
 	 * previously in t3lib_extFileFunc::func_rename()
 	 *
-	 * @param	t3lib_file_File	$file
+	 * @param	t3lib_file_FileInterface	$file
 	 * @param	string	$targetFileName
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	public function renameFile($file, $targetFileName) {
 
@@ -1161,11 +1161,11 @@ class t3lib_file_Storage {
 	/**
 	 * Replaces a file with a local file (e.g. a freshly uploaded file)
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $localFilePath
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
-	public function replaceFile(t3lib_file_File $file, $localFilePath) {
+	public function replaceFile(t3lib_file_FileInterface $file, $localFilePath) {
 		if (!file_exists($localFilePath)) {
 			throw new InvalidArgumentException("File '$localFilePath' does not exist.", 1325842622);
 		}
@@ -1184,7 +1184,7 @@ class t3lib_file_Storage {
 	 * @param t3lib_file_Folder $targetFolder the target folder
 	 * @param string $targetFileName the file name to be written
 	 * @param string $conflictMode possible value are 'cancel', 'replace'
-	 * @return t3lib_file_File The file object
+	 * @return t3lib_file_FileInterface The file object
 	 */
 	public function addUploadedFile(array $uploadedFileData, t3lib_file_Folder $targetFolder = NULL, $targetFileName = NULL, $conflictMode = 'cancel') {
 
@@ -1402,7 +1402,7 @@ class t3lib_file_Storage {
 		);
 	}
 
-	protected function emitPreFileCopySignal(t3lib_file_File $file, $targetFolder) {
+	protected function emitPreFileCopySignal(t3lib_file_FileInterface $file, $targetFolder) {
 		$this->getSignalSlotDispatcher()->dispatch(
 			't3lib_file_Storage',
 			self::SIGNAL_PreFileCopy,
@@ -1410,7 +1410,7 @@ class t3lib_file_Storage {
 		);
 	}
 
-	protected function emitPostFileCopySignal(t3lib_file_File $file, $targetFolder) {
+	protected function emitPostFileCopySignal(t3lib_file_FileInterface $file, $targetFolder) {
 		$this->getSignalSlotDispatcher()->dispatch(
 			't3lib_file_Storage',
 			self::SIGNAL_PostFileCopy,
@@ -1418,7 +1418,7 @@ class t3lib_file_Storage {
 		);
 	}
 
-	protected function emitPreFileMoveSignal(t3lib_file_File $file, $targetFolder) {
+	protected function emitPreFileMoveSignal(t3lib_file_FileInterface $file, $targetFolder) {
 		$this->getSignalSlotDispatcher()->dispatch(
 			't3lib_file_Storage',
 			self::SIGNAL_PreFileMove,
@@ -1426,7 +1426,7 @@ class t3lib_file_Storage {
 		);
 	}
 
-	protected function emitPostFileMoveSignal(t3lib_file_File $file, $targetFolder) {
+	protected function emitPostFileMoveSignal(t3lib_file_FileInterface $file, $targetFolder) {
 		$this->getSignalSlotDispatcher()->dispatch(
 			't3lib_file_Storage',
 			self::SIGNAL_PostFileMove,

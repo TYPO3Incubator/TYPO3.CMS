@@ -158,11 +158,11 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Returns the public URL to a file. This can also be relative to the current website, if no absolute URL is available
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return string
 	 */
 	// TODO check if this can be moved to AbstractDriver.
-	public function getPublicUrl(t3lib_file_File $file) {
+	public function getPublicUrl(t3lib_file_FileInterface $file) {
 
 		// inserted by ingmar to get image gallery working. It seems like the whole baseUri/basePath stuff needs to be cleaned up,
 		// as before this change getPublicUrl returned only relative paths to the site root, even though there was a basePath in the setting.
@@ -510,11 +510,11 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Returns the absolute path of a file or folder.
 	 *
-	 * @param t3lib_file_File|t3lib_file_Folder|string $file
+	 * @param t3lib_file_FileInterface|t3lib_file_Folder|string $file
 	 * @return string
 	 */
 	public function getAbsolutePath($file) {
-		if ($file instanceof t3lib_file_File) {
+		if ($file instanceof t3lib_file_FileInterface) {
 			$path = $this->absoluteBasePath . ltrim($file->getIdentifier(), '/');
 		} elseif ($file instanceof t3lib_file_Folder) {
 				// We can assume a trailing slash here because it is added by the folder object on construction.
@@ -531,10 +531,10 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Returns metadata of a file (size, times, mimetype)
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return array
 	 */
-	public function getLowLevelFileInfo(t3lib_file_File $file) {
+	public function getLowLevelFileInfo(t3lib_file_FileInterface $file) {
 		// TODO define which data should be returned
 		// TODO write unit test
 		// TODO cache this info. Registry?
@@ -557,11 +557,11 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Creates a (cryptographic) hash for a file.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $hashAlgorithm The hash algorithm to use
 	 * @return string
 	 */
-	public function hash(t3lib_file_File $file, $hashAlgorithm) {
+	public function hash(t3lib_file_FileInterface $file, $hashAlgorithm) {
 		if (!in_array($hashAlgorithm, $this->getSupportedHashAlgorithms())) {
 			throw new InvalidArgumentException("Hash algorithm $hashAlgorithm is not supported.", 1304964032);
 		}
@@ -588,7 +588,7 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * @param string $localFilePath
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $fileName The name to add the file under
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	public function addFile($localFilePath, t3lib_file_Folder $targetFolder, $fileName) {
 		if (t3lib_div::isFirstPartOfStr($localFilePath, $this->absoluteBasePath)) {
@@ -673,11 +673,11 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Replaces the contents (and file-specific metadata) of a file object with a local file.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $localFilePath
 	 * @return bool TRUE if the operation succeeded
 	 */
-	public function replaceFile(t3lib_file_File $file, $localFilePath) {
+	public function replaceFile(t3lib_file_FileInterface $file, $localFilePath) {
 		$filePath = $this->getAbsolutePath($file);
 
 		$result = rename($localFilePath, $filePath);
@@ -735,12 +735,12 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * Note that this is only about an intra-storage move action, where a file is just
 	 * moved to another folder in the same storage.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $fileName
-	 * @return t3lib_file_File The new (copied) file object.
+	 * @return t3lib_file_FileInterface The new (copied) file object.
 	 */
-	public function copyFileWithinStorage(t3lib_file_File $file, t3lib_file_Folder $targetFolder, $fileName) {
+	public function copyFileWithinStorage(t3lib_file_FileInterface $file, t3lib_file_Folder $targetFolder, $fileName) {
 		// TODO add unit test
 		$sourcePath = $this->getAbsolutePath($file);
 		$targetPath = ltrim($targetFolder->getIdentifier(), '/') . $fileName;
@@ -755,12 +755,12 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * Note that this is only about an intra-storage move action, where a file is just
 	 * moved to another folder in the same storage.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $fileName
 	 * @return bool
 	 */
-	public function moveFileWithinStorage(t3lib_file_File $file, t3lib_file_Folder $targetFolder, $fileName) {
+	public function moveFileWithinStorage(t3lib_file_FileInterface $file, t3lib_file_Folder $targetFolder, $fileName) {
 		$sourcePath = $this->getAbsolutePath($file);
 		$targetIdentifier = $targetFolder->getIdentifier() . $fileName;
 
@@ -775,10 +775,10 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Copies a file to a temporary path and returns that path.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return string The temporary path
 	 */
-	public function copyFileToTemporaryPath(t3lib_file_File $file) {
+	public function copyFileToTemporaryPath(t3lib_file_FileInterface $file) {
 		$sourcePath = $this->getAbsolutePath($file);
 		$temporaryPath = $this->getTemporaryPathForFile($file);
 
@@ -855,11 +855,11 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Renames a file in this storage.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $newName The target path (including the file name!)
 	 * @return string The identifier of the file after renaming
 	 */
-	public function renameFile(t3lib_file_File $file, $newName) {
+	public function renameFile(t3lib_file_FileInterface $file, $newName) {
 			// Makes sure the Path given as parameter is valid
 		$newName = $this->sanitizeFileName($newName);
 		$newIdentifier = rtrim(dirname($file->getIdentifier()), '/') . '/' . $newName;
@@ -922,10 +922,10 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Removes a file from this storage.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return boolean TRUE if deleting the file succeeded
 	 */
-	public function deleteFile(t3lib_file_File $file) {
+	public function deleteFile(t3lib_file_FileInterface $file) {
 		$filePath = $this->getAbsolutePath($file);
 
 		$result = unlink($filePath);
@@ -976,11 +976,11 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * Returns a (local copy of) a file for processing it. This makes a copy first when in writable mode, so if you change the file,
 	 * you have to update it yourself afterwards.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param bool $writable Set this to FALSE if you only need the file for read operations. This might speed up things, e.g. by using a cached local version. Never modify the file if you have set this flag!
 	 * @return string The path to the file on the local disk
 	 */
-	public function getFileForLocalProcessing(t3lib_file_File $file, $writable = TRUE) {
+	public function getFileForLocalProcessing(t3lib_file_FileInterface $file, $writable = TRUE) {
 		if ($writable === FALSE) {
 				// TODO check if this is ok or introduce additional measures against file changes
 			return $this->getAbsolutePath($file);
@@ -993,11 +993,11 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Returns the permissions of a file as an array (keys r, w) of boolean flags
 	 *
-	 * @param t3lib_file_File $file The file object to check
+	 * @param t3lib_file_FileInterface $file The file object to check
 	 * @return array
 	 * @throws RuntimeException If fetching the permissions failed
 	 */
-	public function getFilePermissions(t3lib_file_File $file) {
+	public function getFilePermissions(t3lib_file_FileInterface $file) {
 		$filePath = $this->getAbsolutePath($file);
 
 		return $this->getPermissions($filePath);
@@ -1049,7 +1049,7 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 			return FALSE;
 		}
 
-		if ($content instanceof t3lib_file_File || $content instanceof t3lib_file_Folder) {
+		if ($content instanceof t3lib_file_FileInterface || $content instanceof t3lib_file_Folder) {
 			$content = $container->getIdentifier();
 		}
 		$folderPath = $container->getIdentifier();
@@ -1063,7 +1063,7 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 *
 	 * @param string $fileName
 	 * @param t3lib_file_Folder $parentFolder
-	 * @return t3lib_file_File
+	 * @return t3lib_file_FileInterface
 	 */
 	public function createFile($fileName, t3lib_file_Folder $parentFolder) {
 		if (!$this->isValidFilename($fileName)) {
@@ -1085,10 +1085,10 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * require fetching the file from an external location. So this might be an expensive operation (both in terms of
 	 * processing resources and money) for large files.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @return string The file contents
 	 */
-	public function getFileContents(t3lib_file_File $file) {
+	public function getFileContents(t3lib_file_FileInterface $file) {
 		$filePath = $this->getAbsolutePath($file);
 
 		return file_get_contents($filePath);
@@ -1097,12 +1097,12 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Sets the contents of a file to the specified value.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $contents
 	 * @return bool TRUE if setting the contents succeeded
 	 * @throws RuntimeException if the operation failed
 	 */
-	public function setFileContents(t3lib_file_File $file, $contents) {
+	public function setFileContents(t3lib_file_FileInterface $file, $contents) {
 		$filePath = $this->getAbsolutePath($file);
 
 		$result = file_put_contents($filePath, $contents);
