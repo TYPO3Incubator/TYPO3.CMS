@@ -1309,8 +1309,8 @@ class t3lib_file_Storage {
 	public function getFolderList($path, $pattern = '', $start = 0, $numberOfItems = 0) {
 		$items = $this->driver->getFolderList($path, $pattern, $start, $numberOfItems);
 			// exclude the _temp_ folder, so it won't get indexed etc
-		if ($path == '/' && isset($items[$this->processingfolder])) {
-			unset($items[$this->processingfolder]);
+		if ($this->processingFolder && $path == '/' && isset($items[$this->processingFolder->getIdentifier()])) {
+			unset($items[$this->processingFolder->getIdentifier()]);
 		}
 		uksort($items, 'strnatcasecmp');
 
