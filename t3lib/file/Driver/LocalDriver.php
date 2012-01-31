@@ -617,10 +617,10 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 		$fileInfo = $this->getFileInfoByIdentifier($relativeTargetPath);
 
 		if($updateFileObject) {
-			$updateFileObject->updateFileInfo($fileInfo);
+			$updateFileObject->updateProperties($fileInfo);
 			return $updateFileObject;
 		} else {
-			$fileObject = $this->getFileObject($fileInfo);
+			$fileObject = $this->updateProperties($fileInfo);
 			return $fileObject;
 		}
 	}
