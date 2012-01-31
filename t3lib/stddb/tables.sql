@@ -359,6 +359,7 @@ CREATE TABLE sys_file_processedfile (
 	name tinytext,
 	configuration text,
 	context varchar(200) DEFAULT '' NOT NULL,
+	checksum varchar(255) DEFAULT '' NOT NULL,
 	is_processed varchar(200) DEFAULT '' NOT NULL,
 	extension varchar(255) DEFAULT '' NOT NULL,
 	mime_type varchar(255) DEFAULT '' NOT NULL,
