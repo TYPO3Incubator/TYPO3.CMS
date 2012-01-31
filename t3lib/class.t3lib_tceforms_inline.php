@@ -516,13 +516,12 @@ class t3lib_TCEforms_inline {
 			$originalRecord = t3lib_BEfunc::getRecord($foreign_table, $rec['uid']);
 			if (is_array($originalRecord)) {
 				$fileUid = $originalRecord[$config['appearance']['headerThumbnail']];
-				list($fileUid) = explode(',', $fileUid);
-				$fileUid = intval($fileUid);
+				list($fileUid) = t3lib_div::intExplode(',', $fileUid);
 				if ($fileUid) {
 					$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
 					$fileObject = $fileFactory->getFileObject($fileUid);
 					if ($fileObject) {
-						$imageUrl = $fileObject->getProcessedUrl($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => 64, 'height' => 64));
+						$imageUrl = $fileObject->process($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => 64, 'height' => 64))->getPublicUrl();
 						$thumbnail = '<span class="nobr">' .
 							'<img src="' . $imageUrl . '" alt="' . $recTitle . '" />' .
 							'</span>';

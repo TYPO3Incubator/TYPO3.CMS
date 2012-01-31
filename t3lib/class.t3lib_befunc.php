@@ -1617,10 +1617,10 @@ final class t3lib_BEfunc {
 
 					// web image
 				if (t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'], $fileReferenceObject->getExtension())) {
-					$imageUrl = $fileObject->getProcessedUrl($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array(
+					$imageUrl = $fileObject->process($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array(
 						'width'  => $sizeParts[0],
 						'height' => $sizeParts[1],
-					));
+					))->getPublicUrl();
 					$imgTag = '<img src="' . $imageUrl . '" alt="' . htmlspecialchars($fileReferenceObject->getName()) . '" />';
 
 				} else {
