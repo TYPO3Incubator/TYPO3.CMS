@@ -131,6 +131,7 @@ $t3libClasses = array(
 	't3lib_file_exception_notinmountpointexception' => PATH_t3lib . 'file/Exception/NotInMountPointException.php',
 	't3lib_file_exception_uploadexception' => PATH_t3lib . 'file/Exception/UploadException.php',
 	't3lib_file_exception_uploadsizeexception' => PATH_t3lib . 'file/Exception/UploadSizeException.php',
+	't3lib_file_abstractfile' => PATH_t3lib . 'file/AbstractFile.php',
 	't3lib_file_factory' => PATH_t3lib . 'file/Factory.php',
 	't3lib_file_file' => PATH_t3lib . 'file/File.php',
 	't3lib_file_fileinterface' => PATH_t3lib . 'file/FileInterface.php',

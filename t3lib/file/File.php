@@ -33,41 +33,7 @@
  * @package  TYPO3
  * @subpackage  t3lib
  */
-class t3lib_file_File implements t3lib_file_FileInterface {
-
-	/**
-	 * Various file properties
-	 *
-	 * Note that all properties, which only the persisted (indexed) files have are stored in this
-	 * overall properties array only. The only properties which really exist as object properties of
-	 * the file object are the storage, the identifier, the fileName and the indexing status.
-	 *
-	 * @var array
-	 */
-	protected $properties;
-
-	/**
-	 * The storage this file is located in
-	 *
-	 * @var t3lib_file_Storage
-	 */
-	protected $storage;
-
-	/**
-	 * The identifier of this file to identify it on the storage.
-	 * On some drivers, this is the path to the file, but drivers could also just
-	 * provide any other unique identifier for this file on the specific storage.
-	 *
-	 * @var string
-	 */
-	protected $identifier;
-
-	/**
-	 * The file name of this file
-	 *
-	 * @var string
-	 */
-	protected $name;
+class t3lib_file_File extends t3lib_file_AbstractFile {
 
 	/**
 	 * File indexing status. True, if the file is indexed in the database; NULL is the default value, this means that the index status is unknown
@@ -90,13 +56,6 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 	 */
 	protected $updatedProperties = array();
 
-	/**
-	 * Contains a list of properties that are available for files. May be set from the outside by using setAvailableProperties()
-	 *
-	 * @var array
-	 */
-	protected static $availableProperties = array('uid', 'storage', 'identifier', 'name', 'sha1', 'size');
-
 
 	/*********************************************
 	 * GENERIC FILE TYPES
@@ -104,45 +63,6 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 	 * don't mix it up with mime types
 	 *********************************************/
 
-	/**
-	 * any other file
-	 */
-	const FILETYPE_UNKNOWN = 0;
-
-	/**
-	 * Any kind of text
-	 */
-	const FILETYPE_TEXT = 1;
-
-	/**
-	 * Any kind of image
-	 */
-	const FILETYPE_IMAGE = 2;
-
-	/**
-	 * Any kind of audio file
-	 */
-	const FILETYPE_AUDIO = 3;
-
-	/**
-	 * Any kind of video
-	 */
-	const FILETYPE_VIDEO = 4;
-
-	/**
-	 * Any kind of software, often known as "application"
-	 */
-	const FILETYPE_SOFTWARE = 5;
-
-	/*********************************************
-	 * FILE PROCESSING CONTEXTS
-	 *********************************************/
-
-	/**
-	 * basic processing context to get a processed
-	 * image with smaller width/height
-	 */
-	const PROCESSINGCONTEXT_IMAGEPREVIEW = 'image.preview';
 
 	/**
 	 * Constructor for a file object. Should normally not be used directly, use the corresponding factory methods instead.
@@ -171,35 +91,19 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 	 * VARIOUS FILE PROPERTY GETTERS
 	 *******************************/
 
-	/**
-	 * Checks if this file exists. This should normally always return TRUE; it might only return FALSE when
-	 * this object has been created from an index record without checking for.
-	 *
-	 * @return bool TRUE if this file physically exists
-	 */
-	public function exists() {
-		return $this->storage->hasFile($this->getIdentifier());
-	}
 
 	/**
-	 * Returns true if the given key exists for this file.
+	 * Returns a property value
 	 *
 	 * @param string $key
-	 * @return bool
+	 * @return mixed Property value
 	 */
-	public function hasProperty($key) {
-		return in_array($key, self::$availableProperties);
-	}
-
 	public function getProperty($key) {
-		if (!$this->hasProperty($key)) {
-			throw new InvalidArgumentException('Property "'.$key.'" was not found.', 1314226805);
-		}
 		if ($this->indexed === NULL) {
 			$this->loadIndexRecord();
 		}
 
-		return $this->properties[$key];
+		return parent::getProperty($key);
 	}
 
 	/**
@@ -211,118 +115,11 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 		if ($this->indexed === NULL) {
 			$this->loadIndexRecord();
 		}
-		return $this->properties;
-	}
 
-	/**
-	 * Returns the name of this file
-	 *
-	 * @return string
-	 */
-	public function getName() {
-		return $this->name;
-	}
-
-	/**
-	 * Returns the size of this file
-	 *
-	 * @return int
-	 */
-	public function getSize() {
-		return $this->properties['size'];
-	}
-
-	/**
-	 * Returns the uid of this file
-	 *
-	 * @return int
-	 */
-	public function getUid() {
-		return $this->getProperty('uid');
-	}
-
-	/**
-	 * Returns the Sha1 of this file
-	 *
-	 * @return string
-	 */
-	public function getSha1() {
-		return $this->getStorage()->hashFile($this, 'sha1');
+		return parent::getProperties();
 	}
 
 
-	/**
-	 * Get the extension of this file
-	 *
-	 * @return string The file extension
-	 */
-	public function getExtension() {
-		return pathinfo($this->getName(), PATHINFO_EXTENSION);
-	}
-
-	/**
-	 * Get the MIME type of this file
-	 *
-	 * @return array file information
-	 */
-	public function getMimeType() {
-		$stat = $this->getStorage()->getFileInfo($this);
-		return $stat['mimetype'];
-	}
-
-	/**
-	 * Returns the fileType of this file
-	 * basically there are only five main "file types"
-	 * "audio"
-	 * "image"
-	 * "software"
-	 * "text"
-	 * "video"
-	 * "other"
-	 * see the constants in this class
-	 *
-	 * @return int $fileType
-	 */
-	public function getType() {
-			// this basically extracts the mimetype and guess the filetype based on the first part of the mimetype
-			// works for 99% of all cases, and we don't need to make an SQL statement like EXT:media does currently
-		if (!$this->properties['type']) {
-			$mimeType = $this->getMimeType();
-			list($fileType) = explode('/', $mimeType);
-
-			switch (strtolower($fileType)) {
-				case 'text':
-					$this->properties['type'] = self::FILETYPE_TEXT;
-				break;
-				case 'image':
-					$this->properties['type'] = self::FILETYPE_IMAGE;
-				break;
-				case 'audio':
-					$this->properties['type'] = self::FILETYPE_AUDIO;
-				break;
-				case 'video':
-					$this->properties['type'] = self::FILETYPE_VIDEO;
-				break;
-				case 'application':
-				case 'software':
-					$this->properties['type'] = self::FILETYPE_SOFTWARE;
-				break;
-				default:
-					$this->properties['type'] = self::FILETYPE_UNKNOWN;
-				break;
-			}
-		}
-
-		return $this->properties['type'];
-
-			// @todo: this functionality belongs to the Media part, move it there, by overriding the string
-		if (!$this->properties['type']) {
-			$row = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow('file_type', 'static_file_mimetypes', 'mime_type = "' . $this->getMimeType() . '"');
-			$this->properties['type'] = $row['file_type'];
-		}
-
-		return $this->properties['type'];
-	}
 
 
 
@@ -476,22 +273,6 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 		return $this->updatedProperties;
 	}
 
-	/**
-	 * Sets the property names that are available in this class
-	 *
-	 * @static
-	 * @param array $properties
-	 * @return void
-	 */
-	public static function setAvailableProperties(array $properties) {
-		self::$availableProperties = $properties;
-	}
-
-	public static function getAvailableProperties() {
-		return self::$availableProperties;
-	}
-
-
 
 
 
@@ -499,80 +280,6 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 	/****************************************
 	 * STORAGE AND MANAGEMENT RELATED METHODS
 	 ****************************************/
-
-	/**
-	 * Get the storage this file is located in
-	 *
-	 * @return t3lib_file_Storage
-	 */
-	public function getStorage() {
-		if (!$this->storage) {
-			$this->loadStorage();
-		}
-
-		return $this->storage;
-	}
-
-	protected function loadStorage() {
-		/** @var $storageRepository t3lib_file_Repository_StorageRepository */
-		$storageRepository = t3lib_div::makeInstance('t3lib_file_Repository_StorageRepository');
-		$this->storage = $storageRepository->findByUid($this->getProperty('storage'));
-	}
-
-	/**
-	 * Sets the storage this file is located in. This is only meant for t3lib/file/-internal usage; don't use it to move files.
-	 *
-	 * @param integer|t3lib_file_Storage $storage
-	 * @return t3lib_file_File
-	 */
-	public function setStorage($storage) {
-		if (is_object($storage) && $storage instanceof t3lib_file_Storage) {
-			$this->storage = $storage;
-			$this->properties['storage'] = $storage->getUid();
-		} else {
-			$this->properties['storage'] = $storage;
-			$this->storage = NULL;
-		}
-		return $this;
-	}
-
-	/**
-	 * Returns the identifier of this file
-	 *
-	 * @return string
-	 */
-	public function getIdentifier() {
-		return $this->identifier;
-	}
-
-	/**
-	 * Set the identifier of this file
-	 *
-	 * @internal Should only be used by other parts of the File API (e.g. drivers after moving a file)
-	 * @param string $identifier
-	 * @return string
-	 */
-	public function setIdentifier($identifier) {
-		$this->identifier = $identifier;
-	}
-
-
-	/**
-	 * Returns a combined identifier of this file, i.e. the storage UID and the folder identifier
-	 * separated by a colon ":".
-	 *
-	 * @return string Combined storage and file identifier, e.g. StorageUID:path/and/fileName.png
-	 */
-	public function getCombinedIdentifier() {
-		if(is_array($this->properties) && t3lib_utility_Math::canBeInterpretedAsInteger($this->properties['storage'])) {
-			$combinedIdentifier = $this->properties['storage'].':'.$this->getIdentifier();
-		} else {
-			$combinedIdentifier = $this->getStorage()->getUid().':'.$this->getIdentifier();
-		}
-
-		return $combinedIdentifier;
-	}
-
 
 	/**
 	 * Check if a file operation (= action) is allowed for this file
@@ -583,55 +290,6 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 	public function checkActionPermission($action) {
 		return $this->getStorage()->checkFileActionPermission($action, $this);
 	}
-
-	/**
-	 * Deletes this file from its storage. This also means that this object becomes useless.
-	 *
-	 * @return bool TRUE if deletion succeeded
-	 * TODO mark file internally as deleted, throw exceptions on all method calls afterwards
-	 * TODO undelete mechanism?
-	 */
-	public function delete() {
-		return $this->storage->deleteFile($this);
-	}
-
-	/**
-	 * Renames this file.
-	 *
-	 * @param $newName The new file name
-	 * @return t3lib_file_File
-	 */
-	public function rename($newName) {
-		return $this->storage->renameFile($this, $newName);
-	}
-
-
-	/**
-	 * Copies this file into a target folder
-	 *
-	 * @param t3lib_file_Folder $targetFolder Folder to copy file into.
-	 * @param string $targetFileName an optional destination fileName
-	 * @param string $conflictMode overrideExistingFile", "renameNewFile", "cancel"
-	 *
-	 * @return t3lib_file_File The new (copied) file.
-	 */
-	public function copyTo(t3lib_file_Folder $targetFolder, $targetFileName = NULL, $conflictMode = 'renameNewFile') {
-		return $targetFolder->getStorage()->copyFile($this, $targetFolder, $targetFileName, $conflictMode);
-	}
-
-	/**
-	 * Moves the file into the target folder
-	 *
-	 * @param t3lib_file_Folder $targetFolder Folder to move file into.
-	 * @param string $targetFileName an optional destination fileName
-	 * @param string $conflictMode overrideExistingFile", "renameNewFile", "cancel"
-	 *
-	 * @return t3lib_file_File This file object, with updated properties.
-	 */
-	public function moveTo(t3lib_file_Folder $targetFolder, $targetFileName = NULL, $conflictMode = 'renameNewFile') {
-		return $targetFolder->getStorage()->moveFile($this, $targetFolder, $targetFileName, $conflictMode);
-	}
-
 
 
 
@@ -653,17 +311,6 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 		return md5($this->getCombinedIdentifier() . '|' . $this->getMimeType() . '|' . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']);
 	}
 
-	/**
-	 * Returns a publicly accessible URL for this file
-	 *
-	 * WARNING: Access to the file may be restricted by further means, e.g. some web-based authentication. You have to take care of this
-	 * yourself.
-	 *
-	 * @return string
-	 */
-	public function getPublicUrl() {
-		return $this->getStorage()->getPublicUrlForFile($this);
-	}
 
 	/**
 	 * Returns a modified version of the file.
@@ -676,17 +323,6 @@ class t3lib_file_File implements t3lib_file_FileInterface {
 		return $this->getStorage()->processFile($this, $context, $configuration);
 	}
 
-	/**
-	 * Returns a path to a local version of this file to process it locally (e.g. with some system tool).
-	 * If the file is normally located on a remote storages, this creates a local copy.
-	 * If the file is already on the local system, this only makes a new copy if $writable is set to TRUE.
-	 *
-	 * @param bool $writable Set this to FALSE if you only want to do read operations on the file.
-	 * @return string
-	 */
-	public function getForLocalProcessing($writable = TRUE) {
-		return $this->getStorage()->getFileForLocalProcessing($this, $writable);
-	}
 
 	/**
 	 * Returns an array representation of the file.
