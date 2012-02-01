@@ -1542,7 +1542,7 @@ final class t3lib_BEfunc {
 
 
 	/**
-	 * @todo: remove this function again, as this is now done directly on the file via $getProcessedUrl
+	 * @todo: remove this function again, as this is now done directly on the file via process()->getPublicUrl()
 	 *
 	 * Get a URL for thumbanil
 	 * Note: this is not a public API yet, it might be moved to a separate class handling thumbnail generation for both BE and FE.
@@ -1553,10 +1553,10 @@ final class t3lib_BEfunc {
 	 * @return string
 	 */
 	public static function getThumbnailUrlForFile(t3lib_file_FileInterface $file, $width = 64, $height = 64) {
-		return $file->getProcessedUrl($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array(
+		return $file->process($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array(
 			'width' => $width,
 			'height' => $height,
-		));
+		))->getPublicUrl();
 	}
 
 

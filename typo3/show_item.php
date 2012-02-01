@@ -322,8 +322,8 @@ class SC_show_item {
 		$this->content .= $this->doc->section('',$code);
 		$this->content .= $this->doc->divider(2);
 			// If the file was an image...:
-		if ($file->getType() == 'Image') {
-			$thumbUrl = $file->getProcessedUrl($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => '150m', 'height' => '150m'));
+		if ($file->getType() == $file::FILETYPE_IMAGE) {
+			$thumbUrl = $file->process($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => '150m', 'height' => '150m'))->getPublicUrl();
 			// @TODO adapt the accessing of image width
 			$code.= '<div class="fileInfoContainer fileDimensions">'
 				. '<strong>' . $GLOBALS['LANG']->sL('LLL:EXT:lang/locallang_core.xml:show_item.php.dimensions') . ':</strong> '
@@ -333,7 +333,7 @@ class SC_show_item {
 				<div align="center">' . $returnLinkTag . '<img src="' . $thumbUrl . '" alt="' . htmlspecialchars(trim($file->getName())) . '" title="' . htmlspecialchars(trim($file->getName())) . '" /></a></div>';
 			$this->content.= $this->doc->section('', $code);
 		} elseif ($file->getExtension() == 'ttf') {
-			$thumbUrl = $file->getProcessedUrl($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => '530m', 'height' => '600m'));
+			$thumbUrl = $file->process($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => '530m', 'height' => '600m'))->getPublicUrl();
 			$thumb = '<br />
 				<div align="center">' . $returnLinkTag . '<img src="' . $thumbUrl . '" border="0" title="' . htmlspecialchars(trim($file->getName())) . '" alt="" /></a></div>';
 			$this->content.= $this->doc->section('',$thumb);

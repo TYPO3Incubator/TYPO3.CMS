@@ -2166,7 +2166,7 @@ class t3lib_TCEforms {
 							$fileObject = $fileFactory->getFileObject($imgP[0]);
 
 							if (t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'], $fileObject->getExtension())) {
-								$imageUrl = $fileObject->getProcessedUrl($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array());
+								$imageUrl = $fileObject->process($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array())->getPublicUrl();
 								$imgTag = '<img src="' . $imageUrl . '" alt="' . htmlspecialchars($fileObject->getName()) . '" />';
 							} else {
 									// Icon
