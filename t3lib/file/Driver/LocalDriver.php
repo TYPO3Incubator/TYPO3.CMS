@@ -169,16 +169,15 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 		// When fixing this, please test with the media_gallery extension from Forge SVN and with the sysext/file/BackwardsCompatibility/TslibContentAdapter.php
 		// changed by Steffen to get relative URL only for 0: Storage Fallback
 		if ($this->configuration['pathType']==='relative' && rtrim($this->configuration['basePath'], '/') !== '') {
-			return rtrim($this->configuration['basePath'], '/') . '/' . ltrim($file->getIdentifier(), '/');
-		}
+			$publicUrl = rtrim($this->configuration['basePath'], '/') . '/' . ltrim($file->getIdentifier(), '/');
 		// end inserted by ingmar
-
-		if (isset($this->baseUri)) {
+		} else if (isset($this->baseUri)) {
 			$publicUrl = $this->baseUri . ltrim($file->getIdentifier(), '/');
 		} else {
 			// TODO check if publisher is available, if not, throw exception
 			$publicUrl = $this->resourcePublisher->publishFile($file);
 		}
+
 
 			// make the path relative to the current script in order to make it possible
 			// to use the relative file
