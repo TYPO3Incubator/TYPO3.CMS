@@ -38,7 +38,7 @@ require_once PATH_site . 'tests/t3lib/file/BaseTestCase.php';
  *
  * @author Andreas Wolf <andreas.wolf@ikt-werk.de>
  */
-class t3lib_file_Service_Driver_LocalDriverTest extends t3lib_file_BaseTestCase {
+class t3lib_file_Driver_LocalDriverTest extends t3lib_file_BaseTestCase {
 
 	private static $testDirs = array();
 
@@ -337,7 +337,7 @@ class t3lib_file_Service_Driver_LocalDriverTest extends t3lib_file_BaseTestCase 
 		));
 
 		$this->assertTrue(file_exists($this->getUrl('sourceFolder/file')));
-		$fixture->addFile($this->getUrl('sourceFolder/file'), $mockedFolder);
+		$fixture->addFile($this->getUrl('sourceFolder/file'), $mockedFolder, 'file');
 		$this->assertTrue(file_exists($this->getUrlInMount('/targetFolder/file')));
 	}
 
@@ -380,7 +380,7 @@ class t3lib_file_Service_Driver_LocalDriverTest extends t3lib_file_BaseTestCase 
 			'basePath' => $this->getMountRootUrl()
 		));
 
-		$fixture->addFile($this->getUrlInMount('/targetFolder/file'), $mockedFolder);
+		$fixture->addFile($this->getUrlInMount('/targetFolder/file'), $mockedFolder, 'file');
 	}
 
 	/**
@@ -401,7 +401,7 @@ class t3lib_file_Service_Driver_LocalDriverTest extends t3lib_file_BaseTestCase 
 		));
 
 		$this->assertTrue(file_exists($this->getUrl('sourceFolder/file')));
-		$fileObject = $fixture->addFile($this->getUrl('sourceFolder/file'), $mockedFolder);
+		$fileObject = $fixture->addFile($this->getUrl('sourceFolder/file'), $mockedFolder, 'file');
 
 		$this->assertInstanceOf('t3lib_file_File', $fileObject);
 		$this->assertEquals('file', $fileObject->getName());
@@ -575,7 +575,7 @@ class t3lib_file_Service_Driver_LocalDriverTest extends t3lib_file_BaseTestCase 
 
 	/**
 	 * @test
-	 * @depends fileExistsWorksForFilesAndFolders
+	 * @depends existenceChecksWorkForFilesAndFolders
 	 * @return array The driver fixture, the mocked file
 	 */
 	public function newFilesCanBeCreated() {
@@ -586,7 +586,7 @@ class t3lib_file_Service_Driver_LocalDriverTest extends t3lib_file_BaseTestCase 
 		list($basedir, $fixture) = $this->prepareRealTestEnvironment();
 
 		mkdir($basedir . '/someDir');
-		$fixture->createFile($fixture->getFolder('someDir'), 'testfile.txt');
+		$fixture->createFile('testfile.txt', $fixture->getFolder('someDir'));
 
 		$mockedFile = $this->getSimpleFileMock('/someDir/testfile.txt');
 
