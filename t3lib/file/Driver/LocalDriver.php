@@ -337,13 +337,14 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * @param string $pattern
 	 * @param integer $start The position to start the listing; if not set, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param bool $excludeHiddenFiles Set this to TRUE if you want to exclude hidden files (starting with a dot) from the listing
 	 * @param array $fileData Two-dimensional, identifier-indexed array of file index records from the database
 	 * @return array
 	 */
 	// TODO add unit tests
 	// TODO implement pattern matching
-	public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0, $fileData = array()) {
-		return $this->getDirectoryItemList($path, $start, $numberOfItems, 'getFileList_itemCallback', $fileData);
+	public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0, $excludeHiddenFiles = TRUE, $fileData = array()) {
+		return $this->getDirectoryItemList($path, $start, $numberOfItems, 'getFileList_itemCallback', $excludeHiddenFiles, $fileData);
 	}
 
 	/**
@@ -353,11 +354,12 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * @param string $pattern
 	 * @param integer $start The position to start the listing; if not set, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param bool $excludeHiddenFolders Set this to TRUE if you want to exclude hidden folders (starting with a dot) from the listing
 	 * @return array
 	 */
 	// TODO implement pattern matching
-	public function getFolderList($path, $pattern = '', $start = 0, $numberOfItems = 0) {
-		return $this->getDirectoryItemList($path, $start, $numberOfItems, 'getFolderList_itemCallback');
+	public function getFolderList($path, $pattern = '', $start = 0, $numberOfItems = 0, $excludeHiddenFolders = TRUE) {
+		return $this->getDirectoryItemList($path, $start, $numberOfItems, 'getFolderList_itemCallback', $excludeHiddenFolders);
 	}
 
 	/**
@@ -367,9 +369,11 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 * @param string $itemHandlerMethod The method (in this class) that handles the single iterator elements.
 	 * @param integer $start The position to start the listing; if not set, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param bool $excludeHiddenItems
+	 * @param array $itemRows
 	 * @return array
 	 */
-	protected function getDirectoryItemList($path, $start = 0, $numberOfItems = 0, $itemHandlerMethod, $itemRows = array()) {
+	protected function getDirectoryItemList($path, $start, $numberOfItems, $itemHandlerMethod, $excludeHiddenItems, $itemRows = array()) {
 		$realPath = $this->absoluteBasePath . trim($path, '/') . '/';
 
 		if (!is_dir($realPath)) {
@@ -391,15 +395,21 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 			$path = '/' . trim($path, '/') . '/';
 		}
 
+			// $c is the counter for how many items we still have to fetch (-1 is unlimited)
 		$c = ($numberOfItems > 0) ? $numberOfItems : -1;
 
 		$items = array();
 		while ($iterator->valid() && ($numberOfItems == 0 || $c > 0)) {
-			--$c;
+				// $iteratorItem is the file or folder name
 			$iteratorItem = $iterator->current();
 
 			$iterator->next();
 			$identifier = $path . $iteratorItem;
+
+			if ($excludeHiddenItems && $this->isHiddenFile($identifier, $iteratorItem)) {
+				continue;
+			}
+
 			if (isset($itemRows[$identifier])) {
 				list($key, $item) = $this->$itemHandlerMethod($iteratorItem, $path, $itemRows[$identifier]);
 			} else {
@@ -407,10 +417,12 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 			}
 
 			if (empty($item)) {
-				++$c;
 				continue;
 			}
 			$items[$key] = $item;
+
+				// Decrement item counter to make sure we only return $numberOfItems if it is set
+			--$c;
 		}
 
 		return $items;
@@ -425,11 +437,6 @@ class t3lib_file_Driver_LocalDriver extends t3lib_file_Driver_AbstractDriver {
 	 */
 	protected function getFileList_itemCallback($fileName, $path) {
 		$filePath = $this->getAbsolutePath($path . $fileName);
-
-			// also don't show hidden files
-		if (!is_file($filePath) || t3lib_div::isFirstPartOfStr($fileName, '.') === TRUE) {
-			return array('', array());
-		}
 
 			// TODO adjust column naming for modification time
 			// TODO add unit test for existing file row

@@ -652,9 +652,6 @@ class t3lib_file_Driver_LocalDriverTest extends t3lib_file_BaseTestCase {
 			'file2' => 'fdsa'
 		);
 		$this->addToMount($dirStructure);
-		$this->addToVfs(array('somedir' => array(
-			'somefile' => ''
-		)));
 		$fixture = $this->createDriverFixture(array(
 			'basePath' => $this->getMountRootUrl()
 		));
@@ -681,6 +678,26 @@ class t3lib_file_Driver_LocalDriverTest extends t3lib_file_BaseTestCase {
 	/**
 	 * @test
 	 */
+	public function getFileListDoesNotReturnHiddenFilesByDefault() {
+		$dirStructure = array(
+			'aDir' => array(),
+			'.someHiddenFile' => 'asdf',
+			'file1' => 'asdfg',
+			'file2' => 'fdsa'
+		);
+		$this->addToMount($dirStructure);
+		$fixture = $this->createDriverFixture(array(
+			'basePath' => $this->getMountRootUrl()
+		));
+
+		$fileList = $fixture->getFileList('/');
+
+		$this->assertEquals(array('file1', 'file2'), array_keys($fileList));
+	}
+
+	/**
+	 * @test
+	 */
 	public function getFolderListReturnsAllDirectoriesInDirectory() {
 		$dirStructure = array(
 			'dir1' => array(),
@@ -688,9 +705,6 @@ class t3lib_file_Driver_LocalDriverTest extends t3lib_file_BaseTestCase {
 			'file' => 'asdfg'
 		);
 		$this->addToMount($dirStructure);
-		$this->addToVfs(array('somedir' => array(
-			'somefile' => array()
-		)));
 
 		$fixture = $this->createDriverFixture(array(
 			'basePath' => $this->getMountRootUrl()
@@ -699,6 +713,25 @@ class t3lib_file_Driver_LocalDriverTest extends t3lib_file_BaseTestCase {
 		$fileList = $fixture->getFolderList('/');
 
 		$this->assertEquals(array('dir1', 'dir2'), array_keys($fileList));
+	}
+
+	/**
+	 * @test
+	 */
+	public function getFolderListDoesNotReturnHiddenFoldersByDefault() {
+		$dirStructure = array(
+			'.someHiddenFile' => array(),
+			'aDir' => array(),
+			'file1' => '',
+		);
+		$this->addToMount($dirStructure);
+		$fixture = $this->createDriverFixture(array(
+			'basePath' => $this->getMountRootUrl()
+		));
+
+		$fileList = $fixture->getFolderList('/');
+
+		$this->assertEquals(array('aDir'), array_keys($fileList));
 	}
 
 	/**

@@ -751,12 +751,13 @@ class t3lib_file_Storage {
 	 * @param string $pattern The pattern the files have to match
 	 * @param integer $start The position to start the listing; if not set or 0, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param bool $excludeHiddenFiles Set this to TRUE to exclude hidden files (starting with a dot)
 	 * @param bool $loadIndexRecords If set to TRUE, the index records for all files are loaded from the database. This can greatly improve performance of this method, especially with a lot of files.
 	 * @return array Information about the files found.
 	 */
 	// TODO check if we should use a folder object instead of $path
 	// TODO add unit test for $loadIndexRecords
-	public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0, $loadIndexRecords = TRUE) {
+	public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0, $excludeHiddenFiles = TRUE, $loadIndexRecords = TRUE) {
 		$rows = array();
 		if ($loadIndexRecords) {
 			/** @var $repository t3lib_file_Repository_FileRepository */
@@ -764,7 +765,7 @@ class t3lib_file_Storage {
 			$rows = $repository->getFileIndexRecordsForFolder($this->getFolder($path));
 		}
 
-		$items = $this->driver->getFileList($path, $pattern, $start, $numberOfItems, $rows);
+		$items = $this->driver->getFileList($path, $pattern, $start, $numberOfItems, $excludeHiddenFiles, $rows);
 		uksort($items, 'strnatcasecmp');
 
 		return $items;
@@ -1313,10 +1314,11 @@ class t3lib_file_Storage {
 	 * @param string $pattern The pattern the files have to match
 	 * @param integer $start The position to start the listing; if not set or 0, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param bool $excludeHiddenFolders Set to TRUE to exclude hidden folders (starting with a dot)
 	 * @return array Information about the folders found.
 	 */
-	public function getFolderList($path, $pattern = '', $start = 0, $numberOfItems = 0) {
-		$items = $this->driver->getFolderList($path, $pattern, $start, $numberOfItems);
+	public function getFolderList($path, $pattern = '', $start = 0, $numberOfItems = 0, $excludeHiddenFolders = TRUE) {
+		$items = $this->driver->getFolderList($path, $pattern, $start, $numberOfItems, $excludeHiddenFolders);
 			// exclude the _temp_ folder, so it won't get indexed etc
 		if ($this->processingFolder && $path == '/' && isset($items[$this->processingFolder->getIdentifier()])) {
 			unset($items[$this->processingFolder->getIdentifier()]);

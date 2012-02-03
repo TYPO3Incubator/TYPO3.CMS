@@ -405,16 +405,32 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	}
 
 	/**
+	 * Returns TRUE if a file should be excluded from a file listing.
+	 *
+	 * @param string $identifier
+	 * @param string $filename
+	 * @return bool
+	 */
+	protected function isHiddenFile($identifier, $filename) {
+		if (substr($filename, 0, 1) == '.') {
+			return TRUE;
+		}
+
+		return FALSE;
+	}
+
+	/**
 	 * Returns a list of files inside the specified path
 	 *
 	 * @param string $path
 	 * @param string $pattern
 	 * @param integer $start The position to start the listing; if not set, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param bool $excludeHiddenFiles Set this to TRUE if you want to exclude hidden files (starting with a dot) from the listing
 	 * @param array $fileData Two-dimensional, identifier-indexed array of file index records from the database
 	 * @return array
 	 */
-	abstract public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0, $fileData = array());
+	abstract public function getFileList($path, $pattern = '', $start = 0, $numberOfItems = 0, $excludeHiddenFiles = TRUE, $fileData = array());
 
 	/**
 	 * Copies a file to a temporary path and returns that path.
@@ -551,9 +567,10 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @param string $pattern
 	 * @param integer $start The position to start the listing; if not set, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
+	 * @param bool $excludeHiddenFolders Set to TRUE to exclude hidden folders (starting with a dot)
 	 * @return array
 	 */
-	abstract public function getFolderList($path, $pattern = '', $start = 0, $numberOfItems = 0);
+	abstract public function getFolderList($path, $pattern = '', $start = 0, $numberOfItems = 0, $excludeHiddenFolders = TRUE);
 
 	/**
 	 * Checks if a folder exists
