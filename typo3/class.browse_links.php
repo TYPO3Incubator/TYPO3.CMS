@@ -2187,7 +2187,7 @@ class browse_links {
 				$fileExtension = $fileObject->getExtension();
 					// Thumbnail/size generation:
 				if (t3lib_div::inList(strtolower($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext']), strtolower($fileExtension)) && !$noThumbs) {
-					$imageUrl = $fileObject->process($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array('width' => 64, 'height' => 64))->getPublicUrl();
+					$imageUrl = $fileObject->process(t3lib_file_ProcessedFile::CONTEXT_IMAGEPREVIEW, array('width' => 64, 'height' => 64))->getPublicUrl();
 
 					$imgInfo = $imgObj->getImageDimensions($fileObject->getForLocalProcessing(FALSE));
 					$pDim = $imgInfo[0].'x'.$imgInfo[1].' pixels';

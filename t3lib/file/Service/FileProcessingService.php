@@ -67,7 +67,7 @@ class t3lib_file_Service_FileProcessingService {
 	 */
 	public function process(t3lib_file_ProcessedFile $processedFile, t3lib_file_FileInterface $file, $context, array $configuration = array()) {
 		switch ($context) {
-			case $file::PROCESSINGCONTEXT_IMAGEPREVIEW:
+			case $processedFile::CONTEXT_IMAGEPREVIEW:
 				$this->processImagePreview($processedFile, $file, $configuration);
 				break;
 			default:

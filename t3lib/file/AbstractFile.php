@@ -100,18 +100,6 @@ abstract class t3lib_file_AbstractFile implements t3lib_file_FileInterface {
 	 */
 	const FILETYPE_SOFTWARE = 5;
 
-	/*********************************************
-	 * FILE PROCESSING CONTEXTS
-	 *********************************************/
-
-	/**
-	 * basic processing context to get a processed
-	 * image with smaller width/height
-	 */
-	const PROCESSINGCONTEXT_IMAGEPREVIEW = 'image.preview';
-
-
-
 	/*******************************
 	 * VARIOUS FILE PROPERTY GETTERS
 	 *******************************

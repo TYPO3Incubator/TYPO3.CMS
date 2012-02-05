@@ -1553,7 +1553,7 @@ final class t3lib_BEfunc {
 	 * @return string
 	 */
 	public static function getThumbnailUrlForFile(t3lib_file_FileInterface $file, $width = 64, $height = 64) {
-		return $file->process($file::PROCESSINGCONTEXT_IMAGEPREVIEW, array(
+		return $file->process(t3lib_file_ProcessedFile::CONTEXT_IMAGEPREVIEW, array(
 			'width' => $width,
 			'height' => $height,
 		))->getPublicUrl();
@@ -1617,7 +1617,7 @@ final class t3lib_BEfunc {
 
 					// web image
 				if (t3lib_div::inList($GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext'], $fileReferenceObject->getExtension())) {
-					$imageUrl = $fileObject->process($fileObject::PROCESSINGCONTEXT_IMAGEPREVIEW, array(
+					$imageUrl = $fileObject->process(t3lib_file_ProcessedFile::CONTEXT_IMAGEPREVIEW, array(
 						'width'  => $sizeParts[0],
 						'height' => $sizeParts[1],
 					))->getPublicUrl();

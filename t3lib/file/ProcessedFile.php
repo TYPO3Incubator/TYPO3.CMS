@@ -34,6 +34,15 @@
  * @subpackage t3lib
  */
 class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
+	/*********************************************
+	 * FILE PROCESSING CONTEXTS
+	 *********************************************/
+
+	/**
+	 * basic processing context to get a processed
+	 * image with smaller width/height to render a preview
+	 */
+	const CONTEXT_IMAGEPREVIEW = 'image.preview';
 
 	/**
 	 * Processing context
