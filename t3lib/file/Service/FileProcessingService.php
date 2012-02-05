@@ -59,7 +59,8 @@ class t3lib_file_Service_FileProcessingService {
 	/**
 	 * Processes the file.
 	 *
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_ProcessedFile $processedFile
+	 * @param t3lib_file_FileInterface $file
 	 * @param string $context
 	 * @param array $configuration
 	 * @return t3lib_file_ProcessedFile
@@ -85,11 +86,11 @@ class t3lib_file_Service_FileProcessingService {
 	 * removes the typo3temp/ file
 	 *
 	 * @param t3lib_file_ProcessedFile $processedFile
-	 * @param t3lib_file_File $file
+	 * @param t3lib_file_FileInterface $file
 	 * @param array $configuration
 	 * @return string
 	 */
-	protected function processImagePreview(t3lib_file_ProcessedFile $processedFile, t3lib_file_File $file, array $configuration) {
+	protected function processImagePreview(t3lib_file_ProcessedFile $processedFile, t3lib_file_FileInterface $file, array $configuration) {
 
 			// merge custom configuration with default configuration
 		$configuration = array_merge(
