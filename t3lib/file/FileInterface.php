@@ -56,6 +56,13 @@ interface t3lib_file_FileInterface {
 	public function getProperty($key);
 
 	/**
+	 * Returns the identifier of this file
+	 *
+	 * @return string
+	 */
+	public function getIdentifier();
+
+	/**
 	 * Returns the name of this file
 	 *
 	 * @return string
