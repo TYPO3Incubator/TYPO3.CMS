@@ -1504,6 +1504,27 @@ class t3lib_file_Storage {
 	}
 
 	/**
+	 * @return t3lib_file_Factory
+	 */
+	protected function getFileFactory() {
+		return t3lib_div::makeInstance('t3lib_file_Factory');
+	}
+
+	/**
+	 * @return t3lib_file_Service_FileProcessingService
+	 */
+	protected function getFileProcessingService() {
+		if (!$this->fileProcessingService) {
+			$this->fileProcessingService = t3lib_div::makeInstance(
+				't3lib_file_Service_FileProcessingService',
+				$this,
+				$this->driver
+			);
+		}
+		return $this->fileProcessingService;
+	}
+
+	/**
 	 * getter function to return the folder where the files can
 	 * be processed. does not check for access rights here
 	 * @todo check if we need to implement "is writable" capability
