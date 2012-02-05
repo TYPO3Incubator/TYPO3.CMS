@@ -72,6 +72,8 @@ class t3lib_file_Storage {
 	const SIGNAL_PostFileCopy = 'postFileCopy';
 	const SIGNAL_PreFileMove = 'preFileMove';
 	const SIGNAL_PostFileMove = 'postFileMove';
+	const SIGNAL_PreFileProcess = 'preFileProcess';
+	const SIGNAL_PostFileProcess = 'postFileProcess';
 
 	/**
 	 * The storage driver instance belonging to this storage.
@@ -187,8 +189,6 @@ class t3lib_file_Storage {
 		} else {
 			$this->processingFolder = FALSE;
 		}
-
-		$this->fileProcessingService = t3lib_div::makeInstance('t3lib_file_Service_FileProcessingService', $this, $this->driver);
 	}
 
 	public function setPublisher(t3lib_file_Service_Publishing_Publisher $publisher) {
@@ -693,10 +693,36 @@ class t3lib_file_Storage {
 	 * Returns a publicly accessible URL for a file.
 	 *
 	 * @param t3lib_file_FileInterface $fileObject The file object
+	 * @param string $context
+	 * @param array $configuration
 	 * @return t3lib_file_ProcessedFile
 	 */
 	public function processFile(t3lib_file_FileInterface $fileObject, $context, array $configuration) {
-		return $this->fileProcessingService->process($fileObject, $context, $configuration);
+		$processedFile = $this->getFileFactory()->getProcessedFileObject(
+			$fileObject,
+			$context,
+			$configuration
+		);
+
+			// Pre-process the file by an accordant slot
+		$this->emitPreFileProcess($processedFile, $fileObject, $context, $configuration);
+
+			// only do something if the file is not processed yet
+			// (maybe modified or already processed by a signal)
+			// or (in case of preview images) already in the DB/in the processing folder
+		if (!$processedFile->isProcessed()) {
+			$processedFile = $this->getFileProcessingService()->process(
+				$processedFile,
+				$fileObject,
+				$context,
+				$configuration
+			);
+		}
+
+			// Post-process (enrich) the file by an accordant slot
+		$this->emitPostFileProcess($processedFile, $fileObject, $context, $configuration);
+
+		return $processedFile;
 	}
 
 	/**
@@ -1444,6 +1470,41 @@ class t3lib_file_Storage {
 			array($file, $targetFolder)
 		);
 	}
+
+
+	/**
+	 * Emits file pre-processing signal.
+	 *
+	 * @param t3lib_file_ProcessedFile $processedFile
+	 * @param t3lib_file_FileInterface $file
+	 * @param string $context
+	 * @param array $configuration
+	 */
+	protected function emitPreFileProcess(t3lib_file_ProcessedFile $processedFile, t3lib_file_FileInterface $file, $context, array $configuration = array()) {
+		t3lib_SignalSlot_Dispatcher::getInstance()->dispatch(
+			't3lib_file_Storage',
+			self::SIGNAL_PreFileProcess,
+			array($this, $this->driver, $processedFile, $file, $context, $configuration)
+		);
+	}
+
+	/**
+	 * Emits file post-processing signal.
+	 *
+	 * @param t3lib_file_ProcessedFile $processedFile
+	 * @param t3lib_file_FileInterface $file
+	 * @param $context
+	 * @param array $configuration
+	 */
+	protected function emitPostFileProcess(t3lib_file_ProcessedFile $processedFile, t3lib_file_FileInterface $file, $context, array $configuration = array()) {
+		t3lib_SignalSlot_Dispatcher::getInstance()->dispatch(
+			't3lib_file_Storage',
+			self::SIGNAL_PostFileProcess,
+			array($this, $this->driver, $processedFile, $file, $context, $configuration)
+		);
+	}
+
+
 
 	/**
 	 * Returns the destination path/fileName of a unique fileName/foldername in that path.

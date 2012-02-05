@@ -34,8 +34,6 @@
  * @subpackage t3lib
  */
 class t3lib_file_Service_FileProcessingService {
-	const SIGNAL_PreProcess = 'preProcess';
-	const SIGNAL_PostProcess = 'postProcess';
 
 	/**
 	 * @var t3lib_file_Storage
@@ -59,22 +57,6 @@ class t3lib_file_Service_FileProcessingService {
 	}
 
 	/**
-	 * Emits pre-processing signal.
-	 *
-	 * @param t3lib_file_ProcessedFile $processedFile
-	 * @param t3lib_file_File $file
-	 * @param string $context
-	 * @param array $configuration
-	 */
-	protected function emitPreProcess(t3lib_file_ProcessedFile $processedFile, t3lib_file_File $file, $context, array $configuration = array()) {
-		return t3lib_SignalSlot_Dispatcher::getInstance()->dispatch(
-			't3lib_file_Service_FileProcessingService',
-			self::SIGNAL_PreProcess,
-			array($this->storage, $this->driver, $processedFile, $file, $context, $configuration)
-		);
-	}
-
-	/**
 	 * Processes the file.
 	 *
 	 * @param t3lib_file_File $file
@@ -82,50 +64,17 @@ class t3lib_file_Service_FileProcessingService {
 	 * @param array $configuration
 	 * @return t3lib_file_ProcessedFile
 	 */
-	public function process(t3lib_file_File $file, $context, array $configuration = array()) {
-
-		// first step, create "processed file"
-		$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
-		/* @var $processedFile t3lib_file_ProcessedFile */
-		$processedFile = $fileFactory->getProcessedFileObject($file, $context, $configuration);
-
-			// call a signal to process the file by another way
-		$this->emitPreProcess($processedFile, $file, $context, $configuration);
-
-			// only do something if the file is not processed yet
-			// (maybe modified or already processed by a signal)
-			// or (in case of preview images) already in the DB/in the processing folder
-		if (!$processedFile->isProcessed()) {
-			switch ($context) {
-				case $file::PROCESSINGCONTEXT_IMAGEPREVIEW:
-					$this->processImagePreview($processedFile, $file, $configuration);
-					break;
-				default:
-					throw new RuntimeException('Unknown processing context ' . $context);
-			}
+	public function process(t3lib_file_ProcessedFile $processedFile, t3lib_file_FileInterface $file, $context, array $configuration = array()) {
+		switch ($context) {
+			case $file::PROCESSINGCONTEXT_IMAGEPREVIEW:
+				$this->processImagePreview($processedFile, $file, $configuration);
+				break;
+			default:
+				throw new RuntimeException('Unknown processing context ' . $context);
 		}
-
-			// call a signal to process the file by another way
-		$this->emitPostProcess($processedFile, $file, $context, $configuration);
-
 		return $processedFile;
 	}
 
-	/**
-	 * Emits post-processing signal.
-	 *
-	 * @param t3lib_file_ProcessedFile $processedFile
-	 * @param t3lib_file_File $file
-	 * @param $context
-	 * @param array $configuration
-	 */
-	protected function emitPostProcess(t3lib_file_ProcessedFile $processedFile, t3lib_file_File $file, $context, array $configuration = array()) {
-		t3lib_SignalSlot_Dispatcher::getInstance()->dispatch(
-			't3lib_file_Service_FileProcessingService',
-			self::SIGNAL_PostProcess,
-			array($this->storage, $this->driver, $processedFile, $file, $context, $configuration)
-		);
-	}
 
 	/**
 	 * this method actually does the processing of files locally
