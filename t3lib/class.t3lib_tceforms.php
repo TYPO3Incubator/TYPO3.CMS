@@ -1062,7 +1062,7 @@ class t3lib_TCEforms {
 
 		$cssClasses[] = 'hasDefaultValue';
 		$item .= '<input type="text" ' .
-				 $this->getPlaceholderAttribute($config['placeholder'], $row) .
+				 $this->getPlaceholderAttribute($table, $field, $config, $row) .
 				 'id="' . $inputId . '" ' .
 				 'class="' . implode(' ', $cssClasses) . '" ' .
 				 'name="' . $PA['itemFormElName'] . '_hr" ' .
@@ -1258,7 +1258,7 @@ class t3lib_TCEforms {
 						 'rows="' . $rows . '" ' .
 						 'wrap="' . $wrap . '" ' .
 						 'onchange="' . htmlspecialchars($iOnChange) . '"' .
-						$this->getPlaceholderAttribute($config['placeholder'], $row) .
+						$this->getPlaceholderAttribute($table, $field, $config, $row) .
 						 $PA['onFocus'] . '>' .
 						 t3lib_div::formatForTextarea($PA['itemFormElValue']) .
 						 '</textarea>';
@@ -2792,7 +2792,7 @@ class t3lib_TCEforms {
 								$replace .= '.replace(/(tceforms-(datetime|date)field-)/g,"$1" + (new Date()).getTime())';
 								$onClickInsert = 'var ' . $var . ' = "' . 'idx"+(new Date()).getTime();';
 									// Do not replace $isTagPrefix in setActionStatus() because it needs section id!
-								$onClickInsert .= 'new Insertion.Bottom($("' . $idTagPrefix . '"), unescape(decodeURIComponent("' . rawurlencode($newElementTemplate) . '")).' . $replace . '); setActionStatus("' . $idTagPrefix . '");';
+								$onClickInsert .= 'new Insertion.Bottom($("' . $idTagPrefix . '"), ' . json_encode($newElementTemplate) . '.' . $replace . '); setActionStatus("' . $idTagPrefix . '");';
 								$onClickInsert .= 'eval(unescape("' . rawurlencode(implode(';', $this->additionalJS_post)) . '").' . $replace . ');';
 								$onClickInsert .= 'TBE_EDITOR.addActionChecks("submit", unescape("' . rawurlencode(implode(';', $this->additionalJS_submit)) . '").' . $replace . ');';
 								$onClickInsert .= 'TYPO3.TCEFORMS.update();';
@@ -6514,27 +6514,51 @@ class t3lib_TCEforms {
 	}
 
 	/**
-	 * @param string $placeholderKey
+	 * Determine and get the value for the placeholder and return the placeholder attribute
+	 *
+	 * @param string $table
+	 * @param string $field
+	 * @param array $config
 	 * @param array $row
 	 * @return string
 	 */
-	protected function getPlaceholderAttribute($placeholderKey, $row) {
-		$placeholder = NULL;
-		// TODO overwrite configuration by TSConfig
-		if ($placeholderKey) {
-			if (substr($placeholderKey, 0, 6) === '__row|') {
-				$placeholderKey = substr($placeholderKey, 6);
-				if (substr($placeholderKey, 0, 10) === '__foreign|' && isset($row['__foreign'])) {
-					$placeholderKey = substr($placeholderKey, 10);
-					$placeholder =  $row['__foreign'][$placeholderKey];
-				} else if (isset($row[$placeholderKey])) {
-					$placeholder = $row[$placeholderKey];
+	protected function getPlaceholderAttribute($table, $field, array $config, array $row) {
+		$value = trim($config['placeholder']);
+		if (!$value) {
+			return '';
+		}
+
+			// Check if we have a reference to another field value from the current record
+		if (substr($value, 0, 6) === '__row|') {
+			$keySegments = t3lib_div::trimExplode('|', substr($value, 6));
+
+			if (isset($row[$keySegments[0]])) {
+					// First segment (fieldname) exists in the current row
+				$value = $row[$keySegments[0]];
+
+				$fieldConf = $GLOBALS['TCA'][$table]['columns'][$keySegments[0]];
+				if ($fieldConf['config']['type'] === 'group' && $fieldConf['config']['internal_type'] === 'db') {
+						// The field is a relation to another record
+					list($foreignIdentifier, $foreignTitle) = t3lib_div::trimExplode('|', $value);
+
+						// Use the foreign title
+					$value = $foreignTitle;
+
+					if (!empty($keySegments[1])) {
+							// Use any field in the foreign record
+						list($foreignTable, $foreignUid) = t3lib_BEfunc::splitTable_Uid($foreignIdentifier);
+						$foreignRecord = t3lib_befunc::getRecord($foreignTable, $foreignUid);
+						if (isset($foreignRecord[$keySegments[1]])) {
+							$value = $foreignRecord[$keySegments[1]];
+						}
+					}
 				}
-			} else {
-				$placeholder = $placeholderKey;
 			}
 		}
-		return $placeholder === NULL ? '' : (' placeholder="' . $placeholder . '" ');
+
+			// Cleanup the string and support 'LLL:'
+		$value = htmlspecialchars(trim($this->sL($value)));
+		return empty($value) ? '' : (' placeholder="' . $value . '" ');
 	}
 
 	/**
