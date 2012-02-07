@@ -46,14 +46,16 @@ class t3lib_clipboard implements t3lib_Singleton {
 	/**
 	 * @var t3lib_clipboard_Clipboard
 	 */
-	protected $clipboardInstance = NULL;
+	protected $clipboardInstance;
 	var $backPath = '';
 	var $fileMode = 0; // If set, clipboard is displaying files.
 
 	/**
-	 * this is actively access from outside...
-	 * so keep it for compatibility
-	 * @var
+	 * The name of the clipboard currently being active.
+	 * (public variable is available for backward compatibility)
+	 *
+	 * @deprecated since TYPO3 4.7
+	 * @var string
 	 */
 	public $current;
 
@@ -66,16 +68,45 @@ class t3lib_clipboard implements t3lib_Singleton {
 	/**
 	 * Initialize the clipboard from the be_user session
 	 *
+	 * @deprecated since TYPO3 4.7 (is part of constructor)
 	 * @return	void
 	 */
-	function initializeClipboard() {
+	public function initializeClipboard() {
 		$this->backPath = $GLOBALS['BACK_PATH'];
 	}
 
+	/**
+	 * Creates this object.
+	 */
 	public function __construct() {
+		$this->backPath = $GLOBALS['BACK_PATH'];
 		$this->clipboardInstance = t3lib_div::makeInstance('t3lib_clipboard_Clipboard');
+
 		$current = $this->clipboardInstance->getActivePadId();
-		$this->current = $current >= 0 ?: 'normal';
+
+		if ($current >= 0) {
+			$this->setCurrent($current);
+		} else {
+			$this->setCurrent('normal');
+		}
+	}
+
+	/**
+	 * Sets the current active clipboard.
+	 *
+	 * @param string $current
+	 */
+	public function setCurrent($current) {
+		$this->current = $current;
+	}
+
+	/**
+	 * Gets the current active clipboard.
+	 *
+	 * @return string
+	 */
+	public function getCurrent() {
+		return $this->current;
 	}
 
 	/**
@@ -84,7 +115,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 *
 	 * @return	void
 	 */
-	function lockToNormal() {
+	public function lockToNormal() {
 		$this->clipboardInstance->lockToNormal();
 	}
 
@@ -97,10 +128,10 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 *		 Array $cmd['el'] has keys = element-ident, value = element value (see description of clipData array in header)
 	 *		 Selecting elements for 'copy' should be done by simultaneously setting setCopyMode.
 	 *
-	 * @param	array	$cmd	Array of actions, see function description
-	 * @return	void
+	 * @param array $cmd Array of actions, see function description
+	 * @return void
 	 */
-	function setCmd($cmd) {
+	public function setCmd(array $cmd) {
 		if (is_array($cmd['el'])) {
 			foreach ($cmd['el'] AS $element => $selected) {
 				list($type, $identifier) = t3lib_div::trimExplode('|', $element);
@@ -114,8 +145,6 @@ class t3lib_clipboard implements t3lib_Singleton {
 
 					$this->clipboardInstance->getPad()->add($type, $identifier, $selected == 1);
 				}
-
-
 			}
 		}
 			// Change clipboard pad (if not locked to normal)
@@ -128,28 +157,40 @@ class t3lib_clipboard implements t3lib_Singleton {
 		}
 			// Remove all on current pad (value = pad-ident)
 		if ($cmd['removeAll']) {
-			$this->clipboardInstance->getPad(intval($cmd['removeAll']))->clear();
+			$padId = intval($cmd['removeAll']);
+			$this->clipboardInstance->getPad($padId)->clear();
 		}
 			// Set copy mode of the tab
 		if (isset($cmd['setCopyMode'])) {
-			$this->clipboardInstance->getPad()->setMode($cmd['setCopyMode'] ? t3lib_clipboard_Pad::MODE_COPY : t3lib_clipboard_Pad::MODE_CUT);
+			$copyMode = ($cmd['setCopyMode'] ? t3lib_clipboard_Pad::MODE_COPY : t3lib_clipboard_Pad::MODE_CUT);
+			$this->clipboardInstance->getPad()->setMode($copyMode);
 		}
 			// Toggle thumbnail display for files on/off
 		if (isset($cmd['setThumb'])) {
-			$this->clipboardInstance->setDisplayProperty('showThumbnail', $cmd['setThumb'] ? true : false);
+			$this->clipboardInstance->setDisplayProperty('showThumbnail', (bool) $cmd['setThumb']);
 		}
 	}
 
 	/**
 	 * Setting the current pad on clipboard
 	 *
-	 * @param	string	$padIdent	Key in the array $this->clipData
-	 * @return	void
+	 * @param string $padId Key in the array $this->clipData
+	 * @return void
 	 */
-	function setCurrentPad($padIdent) {
-		$padIdent = str_replace('tab_', '', $padIdent);
-		$this->current = $padIdent == 0 ? 'normal' : $padIdent;
-		$this->clipboardInstance->switchPad($padIdent == 'normal' ? 0 : intval($padIdent));
+	public function setCurrentPad($padId) {
+		$padId = str_replace('tab_', '', $padId);
+
+		if ($padId == 0) {
+			$this->setCurrent('normal');
+		} else {
+			$this->setCurrent($padId);
+		}
+
+		if ($padId === 'normal') {
+			$this->clipboardInstance->switchPad(0);
+		} else {
+			$this->clipboardInstance->switchPad(intval($padId));
+		}
 	}
 
 	/**
@@ -158,7 +199,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 *
 	 * @return	void
 	 */
-	function endClipboard() {
+	public function endClipboard() {
 		$this->clipboardInstance->persist();
 	}
 
@@ -170,7 +211,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	boolean	$removeDeselected	$removeDeselected can be set in order to remove entries which are marked for deselection.
 	 * @return	array		Processed input $CBarr
 	 */
-	function cleanUpCBC($CBarr, $table, $removeDeselected = false) {
+	public function cleanUpCBC($CBarr, $table, $removeDeselected = FALSE) {
 		if (is_array($CBarr)) {
 			foreach ($CBarr as $k => $v) {
 				$p = explode('|', $k);
@@ -205,8 +246,12 @@ class t3lib_clipboard implements t3lib_Singleton {
 			</tr>';
 
 			// Button/menu header:
-		$thumb_url = t3lib_div::linkThisScript(array('CB' => array('setThumb' => $this->clipboardInstance->getDisplayProperty('showThumbnail') ? 0 : 1)));
-		$rmall_url = t3lib_div::linkThisScript(array('CB' => array('removeAll' => $this->clipboardInstance->getActivePadId())));
+		$thumb_url = t3lib_div::linkThisScript(
+			array('CB' => array('setThumb' => $this->clipboardInstance->getDisplayProperty('showThumbnail') ? 0 : 1))
+		);
+		$rmall_url = t3lib_div::linkThisScript(
+			array('CB' => array('removeAll' => $this->clipboardInstance->getActivePadId()))
+		);
 
 			// Copymode Selector menu
 		$copymode_url = t3lib_div::linkThisScript();
@@ -271,7 +316,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 				'</a></td>
 			</tr>';
 		if ($this->clipboardInstance->getActivePadId() === 0) {
-			$out = array_merge($out, $this->printContentFromTab(0));
+			$out = array_merge($out, $this->renderPad(0));
 		}
 
 			// Print header and content for the NUMERIC tabs:
@@ -284,7 +329,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 					'</a></td>
 				</tr>';
 			if ($this->clipboardInstance->getActivePadId() == $a) {
-				$out = array_merge($out, $this->printContentFromTab($a));
+				$out = array_merge($out, $this->renderPad($a));
 			}
 		}
 
@@ -308,10 +353,22 @@ class t3lib_clipboard implements t3lib_Singleton {
 	/**
 	 * Print the content on a pad. Called from ->printClipboard()
 	 *
-	 * @param	int	$pad	Pad reference
-	 * @return	string
+	 * @deprecated since TYPO3 4.7 (use protected method renderPad() instead)
+	 * @param integer $pad Pad reference
+	 * @return string
 	 */
-	private function printContentFromTab($pad) {
+	public function printContentFromTab($pad) {
+		t3lib_div::logDeprecatedFunction();
+		$this->renderPad($pad);
+	}
+
+	/**
+	 * Renders content of a pad.
+	 *
+	 * @param integer $pad Pad reference
+	 * @return string
+	 */
+	protected function renderPad($pad) {
 		/** @var t3lib_file_Factory $fileFactory */
 		$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
 		$lines = array();
@@ -321,10 +378,9 @@ class t3lib_clipboard implements t3lib_Singleton {
 				$bgColClass = ($type == '_FILE' && $this->fileMode) || ($type != '_FILE' && !$this->fileMode) ? 'bgColor4-20' : 'bgColor4';
 
 				if ($type == '_FILE' || $type == '_FOLDER') { // Rendering files/directories on the clipboard:
-					$error = false;
+					$error = FALSE;
 
 					$thumb = '';
-					$name = '';
 					if ($type == '_FOLDER') {
 						$folder = $fileFactory->getFolderObjectFromCombinedIdentifier($identifier);
 						$name = $folder->getName();
@@ -400,7 +456,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	int		$pad
 	 * @return	string		HTML table rows
 	 */
-	function getLocalizations($table, $parentRec, $bgColClass, $pad) {
+	public function getLocalizations($table, $parentRec, $bgColClass, $pad) {
 		$lines = array();
 		$tcaCtrl = $GLOBALS['TCA'][$table]['ctrl'];
 
@@ -450,7 +506,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	string	$pad	Pad reference
 	 * @return	string		HTML output (htmlspecialchar'ed content inside of tags.)
 	 */
-	function padTitleWrap($str, $pad) {
+	public function padTitleWrap($str, $pad) {
 		$el = count($this->elFromTable($this->fileMode ? '_FILE' : '', $pad));
 		if ($el) {
 			return '<strong>' . $str . '</strong> (' . ($this->clipboardInstance->getActivePadId() == 0 ? ($this->clipboardInstance->getPad()->getMode() == t3lib_clipboard_Pad::MODE_COPY ? $this->clLabel('copy', 'cm') : $this->clLabel('cut', 'cm')) : htmlspecialchars($el)) . ')';
@@ -482,13 +538,13 @@ class t3lib_clipboard implements t3lib_Singleton {
 				}
 			}
 		} else {
-			$folderIdentifier = false;
+			$folderIdentifier = FALSE;
 			if ($table == '_FILE' && $file = t3lib_div::makeInstance('t3lib_file_Factory')->getFileObjectFromCombinedIdentifier($rec) !== null) {
 				$folderIdentifier = $file->getFolder()->getIdentifier();
 			} elseif ($table == '_FOLDER' && $folder = t3lib_div::makeInstance('t3lib_file_Factory')->getFolderObjectFromCombinedIdentifier($rec) !== null) {
 				$folderIdentifier = $rec;
 			}
-			if ($folderIdentifier !== false) {
+			if ($folderIdentifier !== FALSE) {
 				if (!$this->fileMode) {
 					$str = $GLOBALS['TBE_TEMPLATE']->dfw($str);
 				} else {
@@ -551,7 +607,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	boolean	$setRedirect	If set, then the redirect URL will point back to the current script, but with CB reset.
 	 * @return	string
 	 */
-	function pasteUrl($table, $uid, $setRedirect = true) {
+	public function pasteUrl($table, $uid, $setRedirect = TRUE) {
 		$rU = $this->backPath . ($table == '_FILE' || $table == '_FOLDER' ? 'tce_file.php' : 'tce_db.php') . '?' .
 				($setRedirect ? 'redirect=' . rawurlencode(t3lib_div::linkThisScript(array('CB' => ''))) : '') .
 				'&vC=' . $GLOBALS['BE_USER']->veriCode() .
@@ -569,7 +625,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	boolean	$file			If set, then the URL will link to the tce_file.php script in the typo3/ dir.
 	 * @return	string
 	 */
-	function deleteUrl($setRedirect = true, $file = false) {
+	public function deleteUrl($setRedirect = TRUE, $file = FALSE) {
 		$rU = $this->backPath . ($file ? 'tce_file.php' : 'tce_db.php') . '?' .
 				($setRedirect ? 'redirect=' . rawurlencode(t3lib_div::linkThisScript(array('CB' => ''))) : '') .
 				'&vC=' . $GLOBALS['BE_USER']->veriCode() .
@@ -607,7 +663,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	string	$uid	uid integer/shortmd5 hash
 	 * @return	string		URL
 	 */
-	function removeUrl($table, $uid) {
+	public function removeUrl($table, $uid) {
 		return t3lib_div::linkThisScript(array('CB' => array('remove' => $table . '|' . $uid)));
 	}
 
@@ -620,7 +676,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	array		Array of selected elements
 	 * @return	string		JavaScript "confirm" message
 	 */
-	function confirmMsg($table, $rec, $type, $clElements) {
+	public function confirmMsg($table, $rec, $type, $clElements) {
 		if ($GLOBALS['BE_USER']->jsConfirmation(2)) {
 			$labelKey = 'LLL:EXT:lang/locallang_core.php:mess.' . ($this->currentMode() == 'copy' ? 'copy' : 'move') . ($this->clipboardInstance->getActivePadId() == 0 ? '' : 'cb') . '_' . $type;
 			$msg = $GLOBALS['LANG']->sL($labelKey);
@@ -676,7 +732,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 *
 	 * @return	string		GET parameters for current clipboard content to be exported.
 	 */
-	function exportClipElementParameters() {
+	public function exportClipElementParameters() {
 
 			// Init:
 		$params = array();
@@ -715,7 +771,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	string	$el	Key of element in ->clipData array
 	 * @return	void
 	 */
-	function removeElement($el) {
+	public function removeElement($el) {
 		list($type, $identifier) = t3lib_div::trimExplode('|', $el, FALSE, 2);
 		$this->clipboardInstance->getPad()->remove($type, $identifier);
 	}
@@ -727,7 +783,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @return	void
 	 * @access private
 	 */
-	function saveClipboard() {
+	public function saveClipboard() {
 		$this->clipboardInstance->persist();
 	}
 
@@ -736,7 +792,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 *
 	 * @return	string		"copy" or "cut"
 	 */
-	function currentMode() {
+	public function currentMode() {
 		return $this->clipboardInstance->getPad()->getMode() == t3lib_clipboard_Pad::MODE_COPY ? 'copy' : 'cut';
 	}
 
@@ -747,7 +803,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @deprecated Deprecated since 4.7, will be removed in 4.9
 	 * @return	void
 	 */
-	function cleanCurrent() {
+	public function cleanCurrent() {
 		t3lib_div::logDeprecatedFunction();
 	}
 
@@ -758,7 +814,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	int		$pad		$pad can optionally be used to set another pad than the current.
 	 * @return	array		Array with keys from the CB.
 	 */
-	function elFromTable($matchTable = '', $pad = -1) {
+	public function elFromTable($matchTable = '', $pad = -1) {
 		$currentId = $this->clipboardInstance->getActivePadId();
 		$this->clipboardInstance->switchPad(intval($pad));
 		$list = array();
@@ -786,7 +842,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	integer	$uid	Element uid (path for files)
 	 * @return	string
 	 */
-	function isSelected($table, $uid) {
+	public function isSelected($table, $uid) {
 		return $this->clipboardInstance->getPad()->isSelected($table, $uid);
 	}
 
@@ -799,7 +855,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	integer	$uid	Element uid
 	 * @return	array		Element record with extra field _RECORD_TITLE set to the title of the record...
 	 */
-	function getSelectedRecord($table = '', $uid = '') {
+	public function getSelectedRecord($table = '', $uid = '') {
 		if ((!$table && !$uid) || ! $this->isSelected($table, $uid)) {
 			$element = current($this->clipboardInstance->getPad()->getSelected());
 			list($table, $uid) = explode('|', $element);
@@ -815,7 +871,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 *
 	 * @return	boolean		TRUE if elements exist.
 	 */
-	function isElements() {
+	public function isElements() {
 		return $this->clipboardInstance->getPad()->count() > 0;
 	}
 
@@ -843,7 +899,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	array	$CMD	Command-array
 	 * @return	array		Modified Command-array
 	 */
-	function makePasteCmdArray($ref, $CMD) {
+	public function makePasteCmdArray($ref, $CMD) {
 		list($pTable, $pUid) = explode('|', $ref);
 		$pUid = intval($pUid);
 		if ($pTable || $pUid >= 0) { // pUid must be set and if pTable is not set (that means paste ALL elements) the uid MUST be positive/zero (pointing to page id)
@@ -874,7 +930,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @param	array	$CMD	Command-array
 	 * @return	array		Modified Command-array
 	 */
-	function makeDeleteCmdArray($CMD) {
+	public function makeDeleteCmdArray($CMD) {
 		$elements = $this->elFromTable(''); // all records
 		foreach ($elements as $tP) {
 			list($table, $uid) = explode('|', $tP);
@@ -904,7 +960,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @return	array		Modified Command-array
 	 * @TODO adapt to FAL
 	 */
-	function makePasteCmdArray_file($ref, $FILE) {
+	public function makePasteCmdArray_file($ref, $FILE) {
 		list($pTable, $pUid) = explode('|', $ref);
 		$elements = $this->elFromTable('_FILE');
 		$mode = $this->currentMode() == 'copy' ? 'copy' : 'move';
@@ -928,7 +984,7 @@ class t3lib_clipboard implements t3lib_Singleton {
 	 * @return	array		Modified Command-array
 	 * @TODO adapt to FAL
 	 */
-	function makeDeleteCmdArray_file($FILE) {
+	public function makeDeleteCmdArray_file($FILE) {
 		$elements = $this->elFromTable('_FILE');
 			// Traverse elements and make CMD array
 		foreach ($elements as $tP) {
