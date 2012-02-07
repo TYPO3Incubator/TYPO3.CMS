@@ -2,7 +2,7 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2011 Andreas Wolf <andreas.wolf@ikt-werk.de>
+ *  (c) 2011-2012 Andreas Wolf <andreas.wolf@ikt-werk.de>
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -97,7 +97,7 @@ class t3lib_SignalSlot_Dispatcher implements t3lib_Singleton {
 	 * @param string $signalName Name of the signal
 	 * @param array $signalArguments arguments passed to the signal method
 	 * @return void
-	 * @throws t3lib_SignalSlot_Exception_InvalidSlotException if the slot is not valid
+	 * @throws t3lib_SignalSlot_InvalidSlotException if the slot is not valid
 	 * @api
 	 */
 	public function dispatch($signalClassName, $signalName, array $signalArguments = array()) {
@@ -110,7 +110,7 @@ class t3lib_SignalSlot_Dispatcher implements t3lib_Singleton {
 				$object = $slotInformation['object'];
 			} else {
 				if (!class_exists($slotInformation['class'], TRUE)) {
-					throw new t3lib_SignalSlot_Exception_InvalidSlotException('The given class "' . $slotInformation['class'] . '" does not exist.', 1319136841);
+					throw new t3lib_SignalSlot_InvalidSlotException('The given class "' . $slotInformation['class'] . '" does not exist.', 1319136841);
 				}
 				$object = t3lib_div::makeInstance($slotInformation['class']);
 			}
@@ -118,7 +118,7 @@ class t3lib_SignalSlot_Dispatcher implements t3lib_Singleton {
 				$signalArguments[] = $signalClassName . '::' . $signalName;
 			}
 			if (!method_exists($object, $slotInformation['method'])) {
-				throw new t3lib_SignalSlot_Exception_InvalidSlotException('The slot method ' . get_class($object) . '->' . $slotInformation['method'] . '() does not exist.', 1245673368);
+				throw new t3lib_SignalSlot_InvalidSlotException('The slot method ' . get_class($object) . '->' . $slotInformation['method'] . '() does not exist.', 1245673368);
 			}
 			call_user_func_array(array($object, $slotInformation['method']), $signalArguments);
 		}
@@ -135,5 +135,10 @@ class t3lib_SignalSlot_Dispatcher implements t3lib_Singleton {
 	public function getSlots($signalClassName, $signalName) {
 		return (isset($this->slots[$signalClassName][$signalName])) ? $this->slots[$signalClassName][$signalName] : array();
 	}
-
 }
+
+if (defined('TYPO3_MODE') && isset($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/signalslot/Dispatcher.php'])) {
+	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/signalslot/Dispatcher.php']);
+}
+
+?>
