@@ -53,7 +53,7 @@ class Tx_File_Service_ExtDirect_CollectionManagement {
 	 * @return array
 	 */
 	public function read($params) {
-		$collectionObjects = $this->collectionRepository->findByType('static');
+		$collectionObjects = $this->collectionRepository->findByType($this->collectionRepository::TYPE_Static);
 
 		$filters = array();
 		/** @var t3lib_file_Collection_StaticFileCollection $collection */

@@ -44,18 +44,32 @@ class t3lib_collection_RecordCollectionRepository {
 	protected $table = 'sys_collection';
 
 	/**
+	 * @var string
+	 */
+	protected $typeField = 'type';
+
+	/**
+	 * @var string
+	 */
+	protected $tableField = 'table_name';
+
+	/**
 	 * Finds a record collection by uid.
 	 *
-	 * @param integer $uid
+	 * @param integer $uid The uid to be looked up
 	 * @return NULL|t3lib_collection_RecordCollection
 	 */
 	public function findByUid($uid) {
+		if (!is_numeric($uid)) {
+			throw new InvalidArgumentException('uid has to be numeric.', 1316779798);
+		}
+
 		$result = NULL;
 
 		$data = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow(
 			'uid',
 			$this->table,
-			'uid = ' . intval($uid) . t3lib_BEfunc::deleteClause('sys_collection')
+			'uid = ' . $uid . t3lib_BEfunc::deleteClause($this->table)
 		);
 
 		if ($data !== NULL) {
@@ -68,12 +82,12 @@ class t3lib_collection_RecordCollectionRepository {
 	/**
 	 * Finds record collections by table name.
 	 *
-	 * @param string $tableName Name of the table to query for
+	 * @param string $tableName Name of the table to be looked up
 	 * @return t3lib_collection_RecordCollection[]
 	 */
 	public function findByTableName($tableName) {
 		$conditions = array(
-			'table_name=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($tableName, $this->table),
+			$this->tableField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($tableName, $this->table),
 		);
 
 		return $this->queryMultipleRecords($conditions);
@@ -82,12 +96,12 @@ class t3lib_collection_RecordCollectionRepository {
 	/**
 	 * Finds record collection by type.
 	 *
-	 * @param $type
+	 * @param string $type Type to be looked up
 	 * @return NULL|t3lib_collection_RecordCollection[]
 	 */
 	public function findByType($type) {
 		$conditions = array(
-			'type=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($type, $this->table),
+			$this->typeField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($type, $this->table),
 		);
 
 		return $this->queryMultipleRecords($conditions);
@@ -96,14 +110,14 @@ class t3lib_collection_RecordCollectionRepository {
 	/**
 	 * Finds record collections by type and table name.
 	 *
-	 * @param string $type
-	 * @param string $tableName
+	 * @param string $type Type to be looked up
+	 * @param string $tableName Name of the table to be looked up
 	 * @return NULL|t3lib_collection_RecordCollection[]
 	 */
 	public function findByTypeAndTableName($type, $tableName) {
 		$conditions = array(
-			'type=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($type, $this->table),
-			'table_name=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($tableName, $this->table),
+			$this->typeField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($type, $this->table),
+			$this->tableField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($tableName, $this->table),
 		);
 
 		return $this->queryMultipleRecords($conditions);
@@ -112,7 +126,7 @@ class t3lib_collection_RecordCollectionRepository {
 	/**
 	 * Deletes a record collection by uid.
 	 *
-	 * @param integer $uid
+	 * @param integer $uid uid to be deleted
 	 */
 	public function deleteByUid($uid) {
 		$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
@@ -131,7 +145,7 @@ class t3lib_collection_RecordCollectionRepository {
 		$result = NULL;
 
 		$data = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
-			'uid, type',
+			'*',
 			$this->table,
 			implode(' AND ', $conditions) . t3lib_BEfunc::deleteClause($this->table)
 		);
@@ -146,7 +160,7 @@ class t3lib_collection_RecordCollectionRepository {
 	/**
 	 * Creates a record collection domain object.
 	 *
-	 * @param array $record
+	 * @param array $record Database record to be reconstituted
 	 * @return t3lib_collection_RecordCollection
 	 */
 	protected function createDomainObject(array $record) {
@@ -167,7 +181,7 @@ class t3lib_collection_RecordCollectionRepository {
 	/**
 	 * Creates multiple record collection domain objects.
 	 *
-	 * @param array $data
+	 * @param array $data Array of multiple database records to be reconstituted
 	 * @return t3lib_collection_RecordCollection[]
 	 */
 	protected function createMultipleDomainObjects(array $data) {
