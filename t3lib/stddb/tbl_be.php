@@ -699,25 +699,28 @@ $TCA['sys_filemounts'] = array(
 	)
 );
 
-$TCA['sys_collection'] = array (
+/**
+ * tca-record collections
+ */
+$TCA['sys_collection'] = array(
 	'ctrl' => $TCA['sys_collection']['ctrl'],
-	'interface' => array (
+	'interface' => array(
 		'showRecordFieldList' => 'title, description, table_name, items'
 	),
 	'feInterface' => $TCA['sys_collection']['feInterface'],
-	'columns' => array (
-		't3ver_label' => array (
+	'columns' => array(
+		't3ver_label' => array(
 			'label'  => 'LLL:EXT:lang/locallang_general.xml:LGL.versionLabel',
-			'config' => array (
+			'config' => array(
 				'type' => 'input',
 				'size' => '30',
 				'max'  => '30',
 			)
 		),
-		'sys_language_uid' => array (
+		'sys_language_uid' => array(
 			'exclude' => 1,
 			'label'  => 'LLL:EXT:lang/locallang_general.xml:LGL.language',
-			'config' => array (
+			'config' => array(
 				'type'                => 'select',
 				'foreign_table'       => 'sys_language',
 				'foreign_table_where' => 'ORDER BY sys_language.title',
@@ -727,36 +730,36 @@ $TCA['sys_collection'] = array (
 				)
 			)
 		),
-		'l10n_parent' => array (
+		'l10n_parent' => array(
 			'displayCond' => 'FIELD:sys_language_uid:>:0',
 			'exclude'     => 1,
 			'label'       => 'LLL:EXT:lang/locallang_general.xml:LGL.l18n_parent',
-			'config'      => array (
+			'config'      => array(
 				'type'  => 'select',
-				'items' => array (
+				'items' => array(
 					array('', 0),
 				),
 				'foreign_table'       => 'sys_file_collection',
 				'foreign_table_where' => 'AND sys_file_collection.pid=###CURRENT_PID### AND sys_file_collection.sys_language_uid IN (-1,0)',
 			)
 		),
-		'l10n_diffsource' => array (
-			'config' => array (
+		'l10n_diffsource' => array(
+			'config' => array(
 				'type' => 'passthrough'
 			)
 		),
-		'hidden' => array (
+		'hidden' => array(
 			'exclude' => 1,
 			'label'   => 'LLL:EXT:lang/locallang_general.xml:LGL.hidden',
-			'config'  => array (
+			'config'  => array(
 				'type'    => 'check',
 				'default' => '0'
 			)
 		),
-		'starttime' => array (
+		'starttime' => array(
 			'exclude' => 1,
 			'label'   => 'LLL:EXT:lang/locallang_general.xml:LGL.starttime',
-			'config'  => array (
+			'config'  => array(
 				'type'     => 'input',
 				'size'     => '8',
 				'max'      => '20',
@@ -765,28 +768,28 @@ $TCA['sys_collection'] = array (
 				'checkbox' => '0'
 			)
 		),
-		'endtime' => array (
+		'endtime' => array(
 			'exclude' => 1,
 			'label'   => 'LLL:EXT:lang/locallang_general.xml:LGL.endtime',
-			'config'  => array (
+			'config'  => array(
 				'type'     => 'input',
 				'size'     => '8',
 				'max'      => '20',
 				'eval'     => 'date',
 				'checkbox' => '0',
 				'default'  => '0',
-				'range'    => array (
+				'range'    => array(
 					'upper' => mktime(3, 14, 7, 1, 19, 2038),
 					'lower' => mktime(0, 0, 0, date('m')-1, date('d'), date('Y'))
 				)
 			)
 		),
-		'fe_group' => array (
+		'fe_group' => array(
 			'exclude' => 1,
 			'label'   => 'LLL:EXT:lang/locallang_general.xml:LGL.fe_group',
-			'config'  => array (
+			'config'  => array(
 				'type'  => 'select',
-				'items' => array (
+				'items' => array(
 					array('', 0),
 					array('LLL:EXT:lang/locallang_general.xml:LGL.hide_at_login', -1),
 					array('LLL:EXT:lang/locallang_general.xml:LGL.any_login', -2),
@@ -795,18 +798,18 @@ $TCA['sys_collection'] = array (
 				'foreign_table' => 'fe_groups'
 			)
 		),
-		'table_name' => array (
+		'table_name' => array(
 			'exclude' => 0,
 			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_collection.table_name',
-			'config' => array (
+			'config' => array(
 				'type' => 'select',
 				'special' => 'tables'
 			)
 		),
-		'items' => array (
+		'items' => array(
 			'exclude' => 0,
 			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_collection.items',
-			'config' => array (
+			'config' => array(
 				'type' => 'group',
 				'internal_type' => 'db',
 				'prepend_tname' => true,
@@ -817,28 +820,28 @@ $TCA['sys_collection'] = array (
 				
 			)
 		),
-		'title' => array (
+		'title' => array(
 			'exclude' => 0,
 			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_collection.title',
-			'config' => array (
+			'config' => array(
 				'type' => 'input',
 				'size' => '60',
 				'eval' => 'required'
 			)
 		),
-		'description' => array (
+		'description' => array(
 			'exclude' => 0,
 			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_collection.description',
-			'config' => array (
+			'config' => array(
 				'type' => 'text',
 				'cols' => '60',
 				'rows' => '5'
 			)
 		),
-		'type' => array (
+		'type' => array(
 			'exclude' => 0,
 			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_collection.type',
-			'config' => array (
+			'config' => array(
 				'type' => 'select',
 				'items' => array(
 					array('LLL:EXT:lang/locallang_tca.xlf:sys_collection.type.static', 'static'),
@@ -855,11 +858,11 @@ $TCA['sys_collection'] = array (
 			)
 		)
 	),
-	'types' => array (
+	'types' => array(
 		'static' => array('showitem' => 'title;;1,type, description,table_name, items'),
 		'filter' => array('showitem' => 'title;;1,type, description,table_name')
 	),
-	'palettes' => array (
+	'palettes' => array(
 		'1' => array('showitem' => 'starttime, endtime, fe_group, sys_language_uid, l10n_parent, l10n_diffsource, hidden')
 	)
 );
