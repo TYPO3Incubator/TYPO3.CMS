@@ -33,7 +33,7 @@
  * @package TYPO3
  * @subpackage t3lib
  */
-class t3lib_file_Service_Publishing_PublisherBaseTest extends Tx_Phpunit_TestCase {
+abstract class t3lib_file_Service_Publishing_PublisherBaseTest extends Tx_Phpunit_TestCase {
 
 	protected function mockTarget() {
 		$driver = $this->getMock('t3lib_file_Driver_LocalDriver');
@@ -43,3 +43,4 @@ class t3lib_file_Service_Publishing_PublisherBaseTest extends Tx_Phpunit_TestCas
 		return array($driver, $target);
 	}
 }
+?>

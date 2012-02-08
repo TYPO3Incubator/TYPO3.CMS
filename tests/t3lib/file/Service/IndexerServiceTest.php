@@ -59,3 +59,4 @@ class t3lib_file_Service_IndexerServiceTest extends Tx_Phpunit_TestCase {
 		$fixture->indexFile($mockedFile);
 	}
 }
+?>

@@ -28,7 +28,7 @@
 
 
 require_once 'vfsStream/vfsStream.php';
-require_once PATH_site . 'tests/t3lib/file/BaseTestCase.php';
+require_once dirname(dirname(__FILE__)) . '/BaseTestCase.php';
 
 /**
  * Testcase for the local storage driver class of the TYPO3 VFS
@@ -1354,3 +1354,4 @@ class t3lib_file_Driver_LocalDriverTest extends t3lib_file_BaseTestCase {
 		$this->assertFalse($fixture->folderExists('/targetFolder/sourceFolder/'));
 	}
 }
+?>

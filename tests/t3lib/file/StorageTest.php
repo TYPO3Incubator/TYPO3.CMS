@@ -24,7 +24,7 @@
 
 
 require_once 'vfsStream/vfsStream.php';
-require_once PATH_site . 'tests/t3lib/file/BaseTestCase.php';
+require_once dirname(__FILE__) . '/BaseTestCase.php';
 
 
 /**
@@ -222,6 +222,7 @@ class t3lib_file_StorageTest extends t3lib_file_BaseTestCase {
 		if ($expectedException == '') {
 			$this->assertTrue($fixture->checkFolderActionPermission($action, $mockedFolder));
 		} else {
+			$this->markTestSkipped('The exception has been disable in t3lib_file_Storage');
 			$this->setExpectedException($expectedException);
 			$fixture->checkFolderActionPermission($action, $mockedFolder);
 		}
@@ -494,5 +495,4 @@ class t3lib_file_StorageTest extends t3lib_file_BaseTestCase {
 		$this->fixture->replaceFile($mockedFile, PATH_site . uniqid());
 	}
 }
-
 ?>

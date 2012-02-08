@@ -81,3 +81,4 @@ class t3lib_file_Repository_AbstractRepositoryTest extends Tx_Phpunit_TestCase {
 		$this->fixture->findByUid("123");
 	}
 }
+?>

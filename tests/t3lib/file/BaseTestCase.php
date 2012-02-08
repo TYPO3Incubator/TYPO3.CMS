@@ -33,8 +33,7 @@
  * @package TYPO3
  * @subpackage t3lib
  */
-class t3lib_file_BaseTestCase extends Tx_Phpunit_TestCase {
-
+abstract class t3lib_file_BaseTestCase extends Tx_Phpunit_TestCase {
 
 	protected $basedir = 'basedir';
 
@@ -59,6 +58,10 @@ class t3lib_file_BaseTestCase extends Tx_Phpunit_TestCase {
 	}
 
 	protected function initializeVfs() {
+		if (is_callable('vfsStream::create') === FALSE) {
+			$this->markTestSkipped('vfsStream::create() does not exist');
+		}
+
 		vfsStream::create($this->vfsContents, $this->basedir);
 	}
 
@@ -166,3 +169,4 @@ class t3lib_file_BaseTestCase extends Tx_Phpunit_TestCase {
 		return $folder;
 	}
 }
+?>

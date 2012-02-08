@@ -87,3 +87,4 @@ class t3lib_file_FolderTest extends Tx_Phpunit_TestCase {
 		$this->assertEquals('someName', $fixture->getName());
 	}
 }
+?>

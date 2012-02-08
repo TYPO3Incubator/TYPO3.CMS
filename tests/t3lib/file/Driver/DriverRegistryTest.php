@@ -115,3 +115,4 @@ class t3lib_file_Driver_DriverRegistryTest extends Tx_Phpunit_TestCase {
 		$this->assertEquals($className, $this->fixture->getDriverClass($shortName));
 	}
 }
+?>

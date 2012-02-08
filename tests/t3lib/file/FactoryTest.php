@@ -89,5 +89,4 @@ class t3lib_file_FactoryTest extends Tx_Phpunit_TestCase {
 		$this->assertInstanceOf('t3lib_file_Driver_AbstractDriver', $obj);
 	}
 }
-
 ?>
