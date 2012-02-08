@@ -812,12 +812,11 @@ $TCA['sys_collection'] = array(
 			'config' => array(
 				'type' => 'group',
 				'internal_type' => 'db',
-				'prepend_tname' => true,
+				'prepend_tname' => TRUE,
 				'allowed' => '*',
 				'MM' => 'sys_collection_entries',
-				'MM_hasUidField' => true,
-				'multiple' => true,
-				
+				'MM_hasUidField' => TRUE,
+				'multiple' => TRUE,
 			)
 		),
 		'title' => array(
