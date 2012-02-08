@@ -105,7 +105,6 @@ class t3lib_utility_Http {
 	 * @return string
 	 * @see http://www.php.net/parse_url
 	 */
-	// TODO write a unit test for this
 	public static function buildUrl(array $urlParts) {
 		return (isset($urlParts['scheme']) ? $urlParts['scheme'] . '://' : '')
 			. (isset($urlParts['user']) ? $urlParts['user'] . (isset($urlParts['pass']) ? ':' . $urlParts['pass'] : '') . '@' : '')
