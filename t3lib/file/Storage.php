@@ -153,11 +153,14 @@ class t3lib_file_Storage {
 	const CAPABILITY_WRITABLE = 4;
 
 	/**
-	 * the folder where all processed files
-	 *
-	 * @var string
+	 * Name of the default processing folder
 	 */
-	protected $processingFolder = '_temp_';
+	const DEFAULT_ProcessingFolder = '_temp_';
+
+	/**
+	 * @var t3lib_file_Folder
+	 */
+	protected $processingFolder;
 
 	/**
 	 * Constructor for a storage object.
@@ -175,20 +178,6 @@ class t3lib_file_Storage {
 			+ ($this->storageRecord['is_public'] && $this->driver->hasCapability(self::CAPABILITY_PUBLIC) ? self::CAPABILITY_PUBLIC : 0)
 			+ ($this->storageRecord['is_writable'] && $this->driver->hasCapability(self::CAPABILITY_WRITABLE) ? self::CAPABILITY_WRITABLE : 0);
 		$this->processConfiguration();
-
-		if ($this->storageRecord['processingfolder']) {
-			$this->processingFolder = $this->storageRecord['processingfolder'];
-		}
-		$this->processingFolder = trim($this->processingFolder, '/');
-		if ($this->processingFolder) {
-			if ($this->driver->folderExists($this->processingFolder) === FALSE) {
-				$this->processingFolder = $this->driver->createFolder($this->processingFolder, $this->driver->getRootLevelFolder());
-			} else {
-				$this->processingFolder = $this->driver->getFolder($this->processingFolder);
-			}
-		} else {
-			$this->processingFolder = FALSE;
-		}
 	}
 
 	public function setPublisher(t3lib_file_Service_Publishing_Publisher $publisher) {
@@ -1593,6 +1582,25 @@ class t3lib_file_Storage {
 	 * @return t3lib_file_Folder the processing folder, can be empty as well, if the storage doesn't have a processing folder
 	 */
 	public function getProcessingFolder() {
+		if (!isset($this->processingFolder)) {
+			$processingFolder = self::DEFAULT_ProcessingFolder;
+
+			if (!empty($this->storageRecord['processingfolder'])) {
+				$processingFolder = $this->storageRecord['processingfolder'];
+			}
+
+			$processingFolder = trim($processingFolder, '/');
+
+			if ($this->driver->folderExists($processingFolder) === FALSE) {
+				$this->processingFolder = $this->driver->createFolder(
+					$processingFolder,
+					$this->driver->getRootLevelFolder()
+				);
+			} else {
+				$this->processingFolder = $this->driver->getFolder($processingFolder);
+			}
+		}
+
 		return $this->processingFolder;
 	}
 }
