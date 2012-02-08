@@ -2,7 +2,7 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2011 Andreas Wolf <andreas.wolf@ikt-werk.de>
+ *  (c) 2011-2012 Andreas Wolf <andreas.wolf@ikt-werk.de>
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -40,9 +40,20 @@ class t3lib_SignalSlot_DispatcherTest extends Tx_Phpunit_TestCase {
 	 */
 	private $fixture;
 
+	/**
+	 * Sets up this test case.
+	 */
 	public function setUp() {
 		$this->fixture = new t3lib_SignalSlot_Dispatcher();
 	}
+
+	/**
+	 * Cleans up this test case.
+	 */
+	public function tearDown() {
+		unset($this->fixture);
+	}
+
 	/**
 	 * @test
 	 */
@@ -116,7 +127,7 @@ class t3lib_SignalSlot_DispatcherTest extends Tx_Phpunit_TestCase {
 
 	/**
 	 * @test
-	 * @expectedException t3lib_SignalSlot_Exception_InvalidSlotException
+	 * @expectedException t3lib_SignalSlot_InvalidSlotException
 	 */
 	public function dispatchThrowsAnExceptionIfTheSpecifiedClassOfASlotIsUnknown() {
 		$this->fixture->connect('Foo', 'bar', 'NonExistingClassName', 'slot', FALSE);
@@ -125,7 +136,7 @@ class t3lib_SignalSlot_DispatcherTest extends Tx_Phpunit_TestCase {
 
 	/**
 	 * @test
-	 * @expectedException t3lib_SignalSlot_Exception_InvalidSlotException
+	 * @expectedException t3lib_SignalSlot_InvalidSlotException
 	 */
 	public function dispatchThrowsAnExceptionIfTheSpecifiedSlotMethodDoesNotExist() {
 		$slotClassName = 'Mock_' . md5(uniqid(mt_rand(), TRUE));
@@ -162,3 +173,4 @@ class t3lib_SignalSlot_DispatcherTest extends Tx_Phpunit_TestCase {
 		$this->fixture->connect(get_class($mockSignal), 'emitSomeSignal', get_class($mockSlot), 'someSlotMethod', FALSE);
 	}
 }
+?>
