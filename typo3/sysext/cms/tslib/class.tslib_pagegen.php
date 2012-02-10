@@ -138,44 +138,7 @@ class TSpagegen {
 		}
 
 			// linkVars
-		$linkVars = (string)$GLOBALS['TSFE']->config['config']['linkVars'];
-		if ($linkVars)	{
-			$linkVarArr = explode(',',$linkVars);
-
-			$GLOBALS['TSFE']->linkVars='';
-			$GET = t3lib_div::_GET();
-
-			foreach ($linkVarArr as $val)	{
-				$val = trim($val);
-
-				if (preg_match('/^(.*)\((.+)\)$/',$val,$match))	{
-					$val = trim($match[1]);
-					$test = trim($match[2]);
-				} else unset($test);
-
-				if ($val && isset($GET[$val]))	{
-					if (!is_array($GET[$val]))	{
-						$tmpVal = rawurlencode($GET[$val]);
-
-						if ($test && !TSpagegen::isAllowedLinkVarValue($tmpVal,$test))	{
-							continue;	// Error: This value was not allowed for this key
-						}
-
-						$value = '&'.$val.'='.$tmpVal;
-					} else {
-						if ($test && strcmp('array',$test))	{
-							continue;	// Error: This key must not be an array!
-						}
-						$value = t3lib_div::implodeArrayForUrl($val,$GET[$val]);
-					}
-				} else continue;
-
-				$GLOBALS['TSFE']->linkVars.= $value;
-			}
-			unset($GET);
-		} else {
-			$GLOBALS['TSFE']->linkVars='';
-		}
+		$GLOBALS['TSFE']->calculateLinkVars();
 
 			// dtdAllowsFrames indicates whether to use the target attribute in links
 		$GLOBALS['TSFE']->dtdAllowsFrames = FALSE;
@@ -536,6 +499,10 @@ class TSpagegen {
 			foreach ($GLOBALS['TSFE']->pSetup['includeCSS.'] as $key => $CSSfile) {
 				if (!is_array($CSSfile)) {
 					$ss = $GLOBALS['TSFE']->pSetup['includeCSS.'][$key . '.']['external'] ? $CSSfile : $GLOBALS['TSFE']->tmpl->getFileName($CSSfile);
+					if (isset($GLOBALS['TSFE']->pSetup['includeCSS.'][$key . '.']['if.'])
+						&& !$GLOBALS['TSFE']->cObj->checkIf($GLOBALS['TSFE']->pSetup['includeCSS.'][$key . '.']['if.'])) {
+						continue;
+					}
 					if ($ss) {
 						if ($GLOBALS['TSFE']->pSetup['includeCSS.'][$key . '.']['import']) {
 							if (! $GLOBALS['TSFE']->pSetup['includeCSS.'][$key . '.']['external'] && substr($ss, 0, 1) != '/') { // To fix MSIE 6 that cannot handle these as relative paths (according to Ben v Ende)
@@ -690,6 +657,10 @@ class TSpagegen {
 		if (is_array($GLOBALS['TSFE']->pSetup['includeJSlibs.'])) {
 			foreach ($GLOBALS['TSFE']->pSetup['includeJSlibs.'] as $key => $JSfile) {
 				if (!is_array($JSfile)) {
+					if (isset($GLOBALS['TSFE']->pSetup['includeJSlibs.'][$key . '.']['if.'])
+						&& !$GLOBALS['TSFE']->cObj->checkIf($GLOBALS['TSFE']->pSetup['includeJSlibs.'][$key . '.']['if.'])) {
+						continue;
+					}
 					$ss = $GLOBALS['TSFE']->pSetup['includeJSlibs.'][$key . '.']['external'] ? $JSfile : $GLOBALS['TSFE']->tmpl->getFileName($JSfile);
 					if ($ss) {
 						$type = $GLOBALS['TSFE']->pSetup['includeJSlibs.'][$key . '.']['type'];
@@ -713,6 +684,10 @@ class TSpagegen {
 		if (is_array($GLOBALS['TSFE']->pSetup['includeJSFooterlibs.'])) {
 			foreach ($GLOBALS['TSFE']->pSetup['includeJSFooterlibs.'] as $key => $JSfile) {
 				if (!is_array($JSfile)) {
+					if (isset($GLOBALS['TSFE']->pSetup['includeJSFooterlibs.'][$key . '.']['if.'])
+						&& !$GLOBALS['TSFE']->cObj->checkIf($GLOBALS['TSFE']->pSetup['includeJSFooterlibs.'][$key . '.']['if.'])) {
+						continue;
+					}
 					$ss = $GLOBALS['TSFE']->pSetup['includeJSFooterlibs.'][$key . '.']['external'] ? $JSfile : $GLOBALS['TSFE']->tmpl->getFileName($JSfile);
 					if ($ss) {
 						$type = $GLOBALS['TSFE']->pSetup['includeJSFooterlibs.'][$key . '.']['type'];
@@ -737,6 +712,10 @@ class TSpagegen {
 		if (is_array($GLOBALS['TSFE']->pSetup['includeJS.'])) {
 			foreach ($GLOBALS['TSFE']->pSetup['includeJS.'] as $key => $JSfile) {
 				if (!is_array($JSfile)) {
+					if (isset($GLOBALS['TSFE']->pSetup['includeJS.'][$key . '.']['if.'])
+						&& !$GLOBALS['TSFE']->cObj->checkIf($GLOBALS['TSFE']->pSetup['includeJS.'][$key . '.']['if.'])) {
+						continue;
+					}
 					$ss = $GLOBALS['TSFE']->pSetup['includeJS.'][$key . '.']['external'] ? $JSfile : $GLOBALS['TSFE']->tmpl->getFileName($JSfile);
 					if ($ss) {
 						$type = $GLOBALS['TSFE']->pSetup['includeJS.'][$key . '.']['type'];
@@ -759,6 +738,10 @@ class TSpagegen {
 		if (is_array($GLOBALS['TSFE']->pSetup['includeJSFooter.'])) {
 			foreach ($GLOBALS['TSFE']->pSetup['includeJSFooter.'] as $key => $JSfile) {
 				if (!is_array($JSfile)) {
+					if (isset($GLOBALS['TSFE']->pSetup['includeJSFooter.'][$key . '.']['if.'])
+						&& !$GLOBALS['TSFE']->cObj->checkIf($GLOBALS['TSFE']->pSetup['includeJSFooter.'][$key . '.']['if.'])) {
+						continue;
+					}
 					$ss = $GLOBALS['TSFE']->pSetup['includeJSFooter.'][$key . '.']['external'] ? $JSfile : $GLOBALS['TSFE']->tmpl->getFileName($JSfile);
 					if ($ss) {
 						$type = $GLOBALS['TSFE']->pSetup['includeJSFooter.'][$key . '.']['type'];

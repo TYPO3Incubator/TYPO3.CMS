@@ -317,12 +317,11 @@ abstract class t3lib_collection_AbstractRecordCollection implements t3lib_collec
 	 * Entries can be load on first access.
 	 *
 	 * @static
-	 * @param int|string $id
+	 * @param integer $id Id of database record to be loaded
 	 * @param boolean $fillItems Populates the entries directly on load, might be bad for memory on large collections
 	 * @return t3lib_collection_Collection
 	 */
 	public static function load($id, $fillItems = FALSE) {
-		$collection = new static();
 		t3lib_div::loadTCA(static::$storageTableName);
 
 		$collectionRecord = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow(
@@ -331,6 +330,20 @@ abstract class t3lib_collection_AbstractRecordCollection implements t3lib_collec
 			'uid=' . intval($id) . t3lib_BEfunc::deleteClause(static::$storageTableName)
 		);
 
+		return self::create($collectionRecord, $fillItems);
+	}
+
+	/**
+	 * Creates a new collection objects and reconstitutes the
+	 * given database record to the new object.
+	 *
+	 * @static
+	 * @param array $collectionRecord Database record
+	 * @param bool $fillItems Populates the entries directly on load, might be bad for memory on large collections
+	 * @return t3lib_collection_Collection
+	 */
+	public static function create(array $collectionRecord, $fillItems = FALSE) {
+		$collection = new static();
 		$collection->fromArray($collectionRecord);
 
 		if ($fillItems) {

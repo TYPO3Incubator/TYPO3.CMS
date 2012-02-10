@@ -844,7 +844,6 @@ $TCA['sys_collection'] = array(
 				'type' => 'select',
 				'items' => array(
 					array('LLL:EXT:lang/locallang_tca.xlf:sys_collection.type.static', 'static'),
-					array('LLL:EXT:lang/locallang_tca.xlf:sys_collection.type.filter', 'filter')
 				),
 				'default' => 'static'
 			)

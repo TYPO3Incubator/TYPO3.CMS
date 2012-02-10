@@ -1,28 +1,28 @@
 <?php
 /***************************************************************
- *  Copyright notice
+ * Copyright notice
  *
- *  (c) 2011-2012 Steffen Ritter <typo3@steffen-ritter.net>
- *  All rights reserved
+ * (c) 2011-2012 Steffen Ritter <typo3@steffen-ritter.net>
+ * All rights reserved
  *
- *  This script is part of the TYPO3 project. The TYPO3 project is
- *  free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ * This script is part of the TYPO3 project. The TYPO3 project is
+ * free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- *  The GNU General Public License can be found at
- *  http://www.gnu.org/copyleft/gpl.html.
- *  A copy is found in the textfile GPL.txt and important notices to the license
- *  from the author is found in LICENSE.txt distributed with these scripts.
+ * The GNU General Public License can be found at
+ * http://www.gnu.org/copyleft/gpl.html.
+ * A copy is found in the textfile GPL.txt and important notices to the license
+ * from the author is found in LICENSE.txt distributed with these scripts.
  *
  *
- *  This script is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This script is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- *  This copyright notice MUST APPEAR in all copies of the script!
+ * This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
 
 /**
@@ -37,7 +37,7 @@ class t3lib_collection_RecordCollectionRepository {
 	const TYPE_Filter = 'filter';
 
 	/**
-	 * the table name collections are stored to
+	 * Name of the table the collection records are stored to
 	 *
 	 * @var string
 	 */
@@ -60,16 +60,12 @@ class t3lib_collection_RecordCollectionRepository {
 	 * @return NULL|t3lib_collection_RecordCollection
 	 */
 	public function findByUid($uid) {
-		if (!is_numeric($uid)) {
-			throw new InvalidArgumentException('uid has to be numeric.', 1316779798);
-		}
-
 		$result = NULL;
 
-		$data = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow(
+		$data = $this->getDatabase()->exec_SELECTgetSingleRow(
 			'uid',
 			$this->table,
-			'uid = ' . $uid . t3lib_BEfunc::deleteClause($this->table)
+			'uid=' . intval($uid) . t3lib_BEfunc::deleteClause($this->table)
 		);
 
 		if ($data !== NULL) {
@@ -87,7 +83,7 @@ class t3lib_collection_RecordCollectionRepository {
 	 */
 	public function findByTableName($tableName) {
 		$conditions = array(
-			$this->tableField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($tableName, $this->table),
+			$this->tableField . '=' . $this->getDatabase()->fullQuoteStr($tableName, $this->table),
 		);
 
 		return $this->queryMultipleRecords($conditions);
@@ -101,7 +97,7 @@ class t3lib_collection_RecordCollectionRepository {
 	 */
 	public function findByType($type) {
 		$conditions = array(
-			$this->typeField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($type, $this->table),
+			$this->typeField . '=' . $this->getDatabase()->fullQuoteStr($type, $this->table),
 		);
 
 		return $this->queryMultipleRecords($conditions);
@@ -116,8 +112,8 @@ class t3lib_collection_RecordCollectionRepository {
 	 */
 	public function findByTypeAndTableName($type, $tableName) {
 		$conditions = array(
-			$this->typeField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($type, $this->table),
-			$this->tableField . '=' . $GLOBALS['TYPO3_DB']->fullQuoteStr($tableName, $this->table),
+			$this->typeField . '=' . $this->getDatabase()->fullQuoteStr($type, $this->table),
+			$this->tableField . '=' . $this->getDatabase()->fullQuoteStr($tableName, $this->table),
 		);
 
 		return $this->queryMultipleRecords($conditions);
@@ -129,7 +125,7 @@ class t3lib_collection_RecordCollectionRepository {
 	 * @param integer $uid uid to be deleted
 	 */
 	public function deleteByUid($uid) {
-		$GLOBALS['TYPO3_DB']->exec_UPDATEquery(
+		$this->getDatabase()->exec_UPDATEquery(
 			$this->table, 'uid=' . intval($uid),
 			array('deleted' => 1, 'tstamp' => $GLOBALS['EXEC_TIME'])
 		);
@@ -144,7 +140,7 @@ class t3lib_collection_RecordCollectionRepository {
 	protected function queryMultipleRecords(array $conditions = array()) {
 		$result = NULL;
 
-		$data = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+		$data = $this->getDatabase()->exec_SELECTgetRows(
 			'*',
 			$this->table,
 			implode(' AND ', $conditions) . t3lib_BEfunc::deleteClause($this->table)
@@ -166,7 +162,7 @@ class t3lib_collection_RecordCollectionRepository {
 	protected function createDomainObject(array $record) {
 		switch ($record['type']) {
 			case self::TYPE_Static:
-				$collection = t3lib_collection_StaticRecordCollection::load($record['uid']);
+				$collection = t3lib_collection_StaticRecordCollection::create($record);
 				break;
 			case self::TYPE_Filter:
 				$collection = t3lib_collection_FilteredRecordCollection::load($record['uid']);
@@ -192,6 +188,15 @@ class t3lib_collection_RecordCollectionRepository {
 		}
 
 		return $collections;
+	}
+
+	/**
+	 * Gets the database object.
+	 *
+	 * @return t3lib_DB
+	 */
+	protected function getDatabase() {
+		return $GLOBALS['TYPO3_DB'];
 	}
 }
 ?>

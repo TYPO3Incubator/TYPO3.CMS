@@ -235,7 +235,8 @@ class t3lib_TCEforms_inline {
 			// Render the level links (create new record, localize all, synchronize):
 		if ($config['appearance']['levelLinksPosition'] != 'none') {
 			$levelLinks = $this->getLevelInteractionLink('newRecord', $nameObject . self::Structure_Separator . $foreign_table, $config);
-			if ($language > 0) {
+
+			if ($language > 0 && $row[$GLOBALS['TCA'][$table]['ctrl']['transOrigPointerField']] > 0) {
 					// Add the "Localize all records" link before all child records:
 				if (isset($config['appearance']['showAllLocalizationLink']) && $config['appearance']['showAllLocalizationLink']) {
 					$levelLinks .= $this->getLevelInteractionLink('localize', $nameObject . self::Structure_Separator . $foreign_table, $config);
@@ -1308,7 +1309,9 @@ class t3lib_TCEforms_inline {
 				'inline.domAddRecordDetails(\'' . $domObjectId . '\',\'' . $objectPrefix . '\',' . ($expandSingle ? '1' : '0') . ',json.data);',
 			)
 		);
-
+		if ($config['foreign_unique']) {
+			$jsonArray['scriptCall'][] = 'inline.removeUsed(\'' . $objectPrefix . '\',\'' . $record['uid'] . '\');';
+		}
 		$this->getCommonScriptCalls($jsonArray, $config);
 			// Collapse all other records if requested:
 		if (!$collapseAll && $expandSingle) {
