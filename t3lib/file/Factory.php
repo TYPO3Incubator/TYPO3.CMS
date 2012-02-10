@@ -37,6 +37,14 @@
  */
 // TODO implement constructor-level caching
 class t3lib_file_Factory implements t3lib_Singleton {
+	/**
+	 * Gets a singleton instance of this class.
+	 *
+	 * @return t3lib_file_Factory
+	 */
+	public static function getInstance() {
+		return t3lib_div::makeInstance('t3lib_file_Factory');
+	}
 
 	/**
 	 * @var t3lib_file_Storage[]
@@ -92,7 +100,7 @@ class t3lib_file_Factory implements t3lib_Singleton {
 
 			$storageConfiguration = NULL;
 
-			if(intval($uid) === 0) { // If the built-in storage with UID=0 is requested:
+			if (intval($uid) === 0) { // If the built-in storage with UID=0 is requested:
 
 				$recordData = array(
 					'uid' => 0,
@@ -101,9 +109,9 @@ class t3lib_file_Factory implements t3lib_Singleton {
 					'description' => 'Internal storage, mounting the main TYPO3_site directory.',
 					'driver' => 'Local',
 					'configuration' => '',
-					'is_browsable' => true,
-					'is_public' => true,
-					'is_writable' => true,
+					'is_browsable' => TRUE,
+					'is_public' => TRUE,
+					'is_writable' => TRUE,
 				);
 
 				$storageConfiguration = array(
@@ -135,9 +143,9 @@ class t3lib_file_Factory implements t3lib_Singleton {
 		$configuration = array();
 
 		$flexFormContents = t3lib_div::xml2array($flexFormData);
-		if(is_array($flexFormContents) && isset($flexFormContents['data']['sDEF']['lDEF']) && is_array($flexFormContents['data']['sDEF']['lDEF'])) {
-			foreach($flexFormContents['data']['sDEF']['lDEF'] as $key => $value) {
-				if(isset($value['vDEF'])) {
+		if (is_array($flexFormContents) && isset($flexFormContents['data']['sDEF']['lDEF']) && is_array($flexFormContents['data']['sDEF']['lDEF'])) {
+			foreach ($flexFormContents['data']['sDEF']['lDEF'] as $key => $value) {
+				if (isset($value['vDEF'])) {
 					$configuration[$key] = $value['vDEF'];
 				}
 			}
@@ -164,7 +172,7 @@ class t3lib_file_Factory implements t3lib_Singleton {
 			if (count($recordData) === 0 || $recordData['uid'] !== $uid) {
 				/** @var $GLOBALS['TYPO3_DB'] t3lib_DB */
 				$recordData = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow('*', 'sys_file_collection', 'uid='.intval($uid).' AND deleted=0');
-				if(!is_array($recordData) || count($recordData) === 0) {
+				if (!is_array($recordData) || count($recordData) === 0) {
 					throw new InvalidArgumentException('No collection found for given UID.', 1314085992);
 				}
 			}
@@ -212,7 +220,7 @@ class t3lib_file_Factory implements t3lib_Singleton {
 	public function createStorageObject(array $storageRecord, array $storageConfiguration=NULL) {
 		$className = 't3lib_file_Storage';
 
-		if(!$storageConfiguration) {
+		if (!$storageConfiguration) {
 			$storageConfiguration = $this->convertFlexFormDataToConfigurationArray($storageRecord['configuration']);
 		}
 
@@ -267,7 +275,7 @@ class t3lib_file_Factory implements t3lib_Singleton {
 			if (empty($fileData)) {
 				/** @var $GLOBALS['TYPO3_DB'] t3lib_DB */
 				$fileData = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow('*', 'sys_file', 'uid=' . intval($uid) . ' AND deleted=0');
-				if(!is_array($fileData) || count($fileData) === 0) {
+				if (!is_array($fileData) || count($fileData) === 0) {
 					throw new InvalidArgumentException('No file found for given UID.', 1317178604);
 				}
 			}
@@ -287,7 +295,7 @@ class t3lib_file_Factory implements t3lib_Singleton {
 	public function getFileObjectFromCombinedIdentifier($identifier) {
 		$parts = t3lib_div::trimExplode(':', $identifier);
 
-		if(count($parts) === 2) {
+		if (count($parts) === 2) {
 			$storageUid = $parts[0];
 			$fileIdentifier = $parts[1];
 		} else {
@@ -310,7 +318,7 @@ class t3lib_file_Factory implements t3lib_Singleton {
 	public function getFolderObjectFromCombinedIdentifier($identifier) {
 		$parts = t3lib_div::trimExplode(':', $identifier);
 
-		if(count($parts) === 2) {
+		if (count($parts) === 2) {
 			$storageUid = $parts[0];
 			$folderIdentifier = $parts[1];
 		} else {
@@ -382,7 +390,7 @@ class t3lib_file_Factory implements t3lib_Singleton {
 			if (empty($fileReferenceData)) {
 				/** @var $GLOBALS['TYPO3_DB'] t3lib_DB */
 				$fileReferenceData = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow('*', 'sys_file_reference', 'uid=' . intval($uid) . ' AND deleted=0');
-				if(!is_array($fileReferenceData) || count($fileReferenceData) === 0) {
+				if (!is_array($fileReferenceData) || count($fileReferenceData) === 0) {
 					throw new InvalidArgumentException('No fileusage (sys_file_reference) found for given UID.', 1317178794);
 				}
 			}

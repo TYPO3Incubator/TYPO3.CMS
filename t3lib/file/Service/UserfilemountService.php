@@ -48,7 +48,7 @@ class t3lib_file_Service_UserfilemountService {
 	 */
 	public function renderTceformsSelectDropdown(&$PA, &$tceformsObj) {
 		$storageUid = intval($PA['row']['base']); // if working for sys_filemounts table
-		if(!$storageUid) {
+		if (!$storageUid) {
 			$storageUid = intval($PA['row']['storage']); // if working for sys_file_collection table
 		}
 		if ($storageUid > 0) {

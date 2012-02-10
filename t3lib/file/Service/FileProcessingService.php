@@ -205,7 +205,7 @@ class t3lib_file_Service_FileProcessingService {
 		if ($GLOBALS['TYPO3_CONF_VARS']['GFX']['gdlib_png']) {
 			$im = imagecreatefrompng(PATH_typo3 . 'gfx/notfound_thumb.png');
 		} else {
-			$im = imagecreatefromgif(PATH_typo3 . 'gfx/notfound_thumb.gif');
+			$im = imagecreatefromgif (PATH_typo3 . 'gfx/notfound_thumb.gif');
 		}
 
 			// Sets background color and print color.
@@ -232,7 +232,7 @@ class t3lib_file_Service_FileProcessingService {
 		if ($GLOBALS['TYPO3_CONF_VARS']['GFX']['gdlib_png']) {
 			imagePng($im, $filename);
 		} else {
-			imageGif($im, $filename);
+			imageGif ($im, $filename);
 		}
 	}
 

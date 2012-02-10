@@ -1,43 +1,41 @@
 <?php
 /***************************************************************
- *  Copyright notice
+ * Copyright notice
  *
- *  (c) 2011 Ingo Renner <ingo@typo3.org>
- *  All rights reserved
+ * (c) 2011 Steffen Ritter <steffen.ritter@typo3.org>
+ * All rights reserved
  *
- *  This script is part of the TYPO3 project. The TYPO3 project is
- *  free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ * This script is part of the TYPO3 project. The TYPO3 project is
+ * free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- *  The GNU General Public License can be found at
- *  http://www.gnu.org/copyleft/gpl.html.
- *  A copy is found in the textfile GPL.txt and important notices to the license
- *  from the author is found in LICENSE.txt distributed with these scripts.
+ * The GNU General Public License can be found at
+ * http://www.gnu.org/copyleft/gpl.html.
+ * A copy is found in the textfile GPL.txt and important notices to the license
+ * from the author is found in LICENSE.txt distributed with these scripts.
  *
  *
- *  This script is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This script is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- *  This copyright notice MUST APPEAR in all copies of the script!
+ * This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
-
 
 /**
  * Abstract collection.
  *
- * @author  Steffen Ritter
- * @package	TYPO3
- * @subpackage	t3lib
- *
+ * @author Steffen Ritter <steffen.ritter@typo3.org>
+ * @package TYPO3
+ * @subpackage t3lib
  */
 abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collection_AbstractRecordCollection  {
 
 	/**
-	 * the table name collections are stored to
+	 * The table name collections are stored to
 	 *
 	 * @var string
 	 */
@@ -45,7 +43,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 
 
 	/**
-	 * the type of file collection. Either static, filter or folder.
+	 * The type of file collection
+	 * (see t3lib_collection_RecordCollectionRepository::TYPE constants)
 	 *
 	 * @var string
 	 */
@@ -53,7 +52,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 
 
 	/**
-	 * the items field name (ususally either criteria, items or folder)
+	 * The name of the field items are handled with
+	 * (ususally either criteria, items or folder)
 	 *
 	 * @var string
 	 */
@@ -69,13 +69,15 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	protected $itemsCriteria;
 
 	/**
-	 * table name of the records stored in this collection
+	 * Name of the table records of this collection are stored in
 	 *
 	 * @var string
 	 */
 	protected $itemTableName = 'sys_file';
 
 	/**
+	 * Sets the description.
+	 *
 	 * @param string $description
 	 */
 	public function setDescription($description) {
@@ -83,6 +85,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
+	 * Sets the title.
+	 *
 	 * @param string $title
 	 */
 	public function setTitle($title) {
@@ -90,6 +94,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
+	 * Return the key of the current element
+	 *
 	 * @return string
 	 */
 	public function key() {
@@ -99,6 +105,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
+	 * Generates comma-separated list of entry uids for usage in TCEmain
+	 *
 	 * @param boolean $includeTableName
 	 * @return string
 	 */
@@ -106,7 +114,7 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 		$list = array();
 
 		/** @var $entry t3lib_file_File */
-		foreach($this->storage as $entry) {
+		foreach ($this->storage as $entry) {
 			$list[] = $this->getItemTableName() . '_' . $entry->getUid();
 		}
 
@@ -114,8 +122,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
-	 * Similar to method in FilteredRecordCollection,
-	 * but without 'table_name' => $this->getItemTableName()
+	 * Returns an array of the persistable properties and contents
+	 * which are processable by TCEmain.
 	 *
 	 * @return array
 	 */
@@ -129,7 +137,7 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
-	 * Similar to method in AbstractRecordCollection,
+	 * Similar to method in t3lib_collection_AbstractRecordCollection,
 	 * but without 'table_name' => $this->getItemTableName()
 	 *
 	 * @return array
@@ -151,6 +159,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
+	 * Gets the current available items.
+	 *
 	 * @return array
 	 */
 	public function getItems() {
@@ -165,7 +175,7 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
-	 * Similar to method in AbstractRecordCollection,
+	 * Similar to method in t3lib_collection_AbstractRecordCollection,
 	 * but without $this->itemTableName= $array['table_name'],
 	 * but with $this->storageItemsFieldContent = $array[self::$storageItemsField];
 	 *
@@ -179,6 +189,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
+	 * Gets ths items criteria.
+	 *
 	 * @return mixed
 	 */
 	public function getItemsCriteria() {
@@ -186,6 +198,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
+	 * Sets the items criteria.
+	 *
 	 * @param mixed $itemsCriteria
 	 */
 	public function setItemsCriteria($itemsCriteria) {
@@ -200,24 +214,28 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 
 	/**
+	 * Adds all files of another collection to the corrent one.
+	 *
 	 * @param t3lib_collection_Collection $other
 	 */
 	public function addAll(t3lib_collection_Collection $other) {
-		/** @var $value t3lib_file_File */
-		foreach($other as $value) {
+		/** @var $value t3lib_file_File[] */
+		foreach ($other as $value) {
 			$this->add($value);
 		}
 	}
 
 	/**
-	 * @param $data
+	 * Removes a file from this collection.
+	 *
+	 * @param t3lib_file_File $file
 	 */
-	public function remove(t3lib_file_File $data) {
+	public function remove(t3lib_file_File $file) {
 		$offset = 0;
 
 		/** @var $value t3lib_file_File */
 		foreach ($this->storage as $value) {
-			if ($value === $data) {
+			if ($value === $file) {
 				break;
 			}
 			$offset++;
@@ -234,8 +252,8 @@ abstract class t3lib_file_Collection_AbstractFileCollection extends t3lib_collec
 	}
 }
 
-if (defined('TYPO3_MODE') && isset($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/vfs/class.t3lib_file_collection.php'])) {
-	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/vfs/class.t3lib_file_collection.php']);
+if (defined('TYPO3_MODE') && isset($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/file/Collection/AbstractFileCollection.php'])) {
+	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/file/Collection/AbstractFileCollection.php']);
 }
 
 ?>

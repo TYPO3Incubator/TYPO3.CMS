@@ -96,11 +96,11 @@ class t3lib_file_FileReference implements t3lib_file_FileInterface {
 	public function __construct(array $fileReferenceData, $factory=NULL) {
 		$this->propertiesOfFileReference = $fileReferenceData;
 
-		if(!$fileReferenceData['uid_local']) {
+		if (!$fileReferenceData['uid_local']) {
 			throw new Exception('Incorrect reference to original file given for FileReference.', 1300098528);
 		}
 
-		if(!$factory) {
+		if (!$factory) {
 			/** @var $factory t3lib_file_Factory */
 			$factory = t3lib_div::makeInstance('t3lib_file_Factory');
 		}
@@ -109,7 +109,7 @@ class t3lib_file_FileReference implements t3lib_file_FileInterface {
 
 		$this->fileRepository = t3lib_div::makeInstance('t3lib_file_Repository_FileRepository');
 
-		if(!is_object($this->originalFile)) {
+		if (!is_object($this->originalFile)) {
 			throw new Exception('Original File not found for FileReference.', 1300098529);
 		}
 
@@ -368,7 +368,7 @@ class t3lib_file_FileReference implements t3lib_file_FileInterface {
 	 * @return bool
 	 */
 	public function isIndexed() {
-		return true;
+		return TRUE;
 	}
 
 	/**

@@ -1,40 +1,39 @@
 <?php
 /***************************************************************
- *  Copyright notice
+ * Copyright notice
  *
- *  (c) 2011 Ingo Renner <ingo@typo3.org>
- *  All rights reserved
+ * (c) 2011 Ingmar Schlecht <ingmar.schlecht@typo3.org>
+ * All rights reserved
  *
- *  This script is part of the TYPO3 project. The TYPO3 project is
- *  free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ * This script is part of the TYPO3 project. The TYPO3 project is
+ * free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- *  The GNU General Public License can be found at
- *  http://www.gnu.org/copyleft/gpl.html.
- *  A copy is found in the textfile GPL.txt and important notices to the license
- *  from the author is found in LICENSE.txt distributed with these scripts.
+ * The GNU General Public License can be found at
+ * http://www.gnu.org/copyleft/gpl.html.
+ * A copy is found in the textfile GPL.txt and important notices to the license
+ * from the author is found in LICENSE.txt distributed with these scripts.
  *
  *
- *  This script is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This script is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- *  This copyright notice MUST APPEAR in all copies of the script!
+ * This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
-
 
 /**
  * An abstract implementation of a storage driver.
  *
- * @author  Andreas Wolf <andreas.wolf@ikt-werk.de>
- * @package	TYPO3
- * @subpackage	t3lib
+ * @author Ingmar Schlecht <ingmar.schlecht@typo3.org>
+ * @author Andreas Wolf <andreas.wolf@ikt-werk.de>
+ * @package TYPO3
+ * @subpackage t3lib
  */
 abstract class t3lib_file_Driver_AbstractDriver {
-
 	/**
 	 * The mount object this driver instance belongs to
 	 *
@@ -44,7 +43,6 @@ abstract class t3lib_file_Driver_AbstractDriver {
 
 	/**
 	 * A list of all supported hash algorithms, written all lower case and without any dashes etc. (e.g. sha1 instead of SHA-1)
-	 *
 	 * Be sure to set this in inherited classes!
 	 *
 	 * @var array
@@ -79,12 +77,15 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 */
 	protected $configuration = array();
 
-
+	/**
+	 * Creates this object.
+	 *
+	 * @param array $configuration
+	 */
 	public function __construct(array $configuration = array()) {
 		$this->configuration = $configuration;
 		$this->processConfiguration();
 	}
-
 
 	/**
 	 * Initializes this object. This is called by the storage after the driver has been attached.
@@ -93,9 +94,8 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 */
 	abstract public function initialize();
 
-
 	/**
-	 * sets the storage object that works with this driver
+	 * Sets the accordant storage object depending on this driver
 	 *
 	 * @param t3lib_file_Storage $storage
 	 * @return t3lib_file_Driver_AbstractDriver
@@ -118,7 +118,6 @@ abstract class t3lib_file_Driver_AbstractDriver {
 
 	/**
 	 * Checks if a configuration is valid for this driver.
-	 *
 	 * Throws an exception if a configuration will not work.
 	 *
 	 * @abstract
@@ -128,13 +127,16 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	abstract public static function verifyConfiguration(array $configuration);
 
 	/**
-	 * processes the configuration, should be overridden by subclasses
+	 * Processes the configuration, should be overridden by subclasses
 	 * but we do this because PHPUnit cannot work if this is an abstract configuration
 	 *
 	 * @return void
 	 */
 	protected function processConfiguration() {
-		throw new RuntimeException('I should be overridden in subclasses');
+		throw new RuntimeException(
+			'Method processConfiguration() needs to be implemented for the specific driver',
+			1328899740
+		);
 	}
 
 	/*******************
@@ -152,10 +154,12 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * Capability for being browsable by (backend) users
 	 */
 	const CAPABILITY_BROWSABLE = 1;
+
 	/**
 	 * Capability for publicly accessible drivers (= accessible from the web)
 	 */
 	const CAPABILITY_PUBLIC = 2;
+
 	/**
 	 * Capability for writable drivers
 	 */
@@ -164,7 +168,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Returns the capabilities of this driver.
 	 *
-	 * @return int
+	 * @return integer
 	 * @see CAPABILITY_* constants
 	 */
 	public function getCapabilities() {
@@ -175,7 +179,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * Returns TRUE if this driver has the given capability.
 	 *
 	 * @param int $capability A capability, as defined in a CAPABILITY_* constant
-	 * @return bool
+	 * @return boolean
 	 */
 	public function hasCapability($capability) {
 		return $this->capabilities && $capability;
@@ -184,6 +188,24 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	/*******************
 	 * FILE FUNCTIONS
 	 *******************/
+
+	/**
+	 * Checks a fileName for validity
+	 *
+	 * @param string $fileName
+	 * @return boolean TRUE if file name is valid
+	 */
+	public function isValidFilename($fileName) {
+		if (strpos($fileName, '/') !== FALSE) {
+			return FALSE;
+		}
+
+		if (!preg_match('/^[[:alnum:][:blank:]\.-_]*$/iu', $fileName)) {
+			return FALSE;
+		}
+
+		return TRUE;
+	}
 
 	/**
 	 * Returns a temporary path for a given file, including the file extension.
@@ -221,7 +243,6 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @param t3lib_file_FileInterface $file
 	 * @param string $hashAlgorithm The hash algorithm to use
 	 * @return string
-	 * TODO switch parameter order?
 	 */
 	abstract public function hash(t3lib_file_FileInterface $file, $hashAlgorithm);
 
@@ -334,7 +355,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @abstract
 	 * @param t3lib_file_FileInterface $file
 	 * @param string $localFilePath
-	 * @return bool
+	 * @return boolean
 	 */
 	abstract public function replaceFile(t3lib_file_FileInterface $file, $localFilePath);
 
@@ -359,7 +380,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Returns a file object by its identifier.
 	 *
-	 * @param $identifier
+	 * @param string $identifier
 	 * @return t3lib_file_FileInterface
 	 */
 	public function getFile($identifier) {
@@ -381,9 +402,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @return t3lib_file_FileInterface
 	 */
 	protected function getFileObject(array $fileData) {
-		/** @var $factory t3lib_file_Factory */
-		$factory = t3lib_div::makeInstance('t3lib_file_Factory');
-		$fileObject = $factory->createFileObject($fileData);
+		$fileObject = t3lib_file_Factory::getInstance()->createFileObject($fileData);
 
 		return $fileObject;
 	}
@@ -391,7 +410,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	/**
 	 * Returns a folder by its identifier.
 	 *
-	 * @param $identifier
+	 * @param string $identifier
 	 * @return t3lib_file_Folder
 	 */
 	public function getFolder($identifier) {
@@ -399,9 +418,12 @@ abstract class t3lib_file_Driver_AbstractDriver {
 			// @todo possible return NULL instead of triggering an exception
 			throw new RuntimeException("Folder $identifier does not exist.", 1320575630);
 		}
-		/** @var $factory t3lib_file_Factory */
-		$factory = t3lib_div::makeInstance('t3lib_file_Factory');
-		return $factory->createFolderObject($this->storage, $identifier, '');
+
+		return t3lib_file_Factory::getInstance()->createFolderObject(
+			$this->storage,
+			$identifier,
+			''
+		);
 	}
 
 	/**
@@ -426,7 +448,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @param string $pattern
 	 * @param integer $start The position to start the listing; if not set, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
-	 * @param bool $excludeHiddenFiles Set this to TRUE if you want to exclude hidden files (starting with a dot) from the listing
+	 * @param boolean $excludeHiddenFiles Set this to TRUE if you want to exclude hidden files (starting with a dot) from the listing
 	 * @param array $fileData Two-dimensional, identifier-indexed array of file index records from the database
 	 * @return array
 	 */
@@ -465,7 +487,6 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 */
 	abstract public function copyFileWithinStorage(t3lib_file_FileInterface $file, t3lib_file_Folder $targetFolder, $fileName);
 
-
 	/**
 	 * Folder equivalent to moveFileWithinStorage().
 	 *
@@ -482,7 +503,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @param t3lib_file_Folder $folderToMove
 	 * @param t3lib_file_Folder $targetFolder
 	 * @param string $newFileName
-	 * @return bool
+	 * @return boolean
 	 */
 	abstract public function copyFolderWithinStorage(t3lib_file_Folder $folderToMove, t3lib_file_Folder $targetFolder, $newFileName = NULL);
 
@@ -501,7 +522,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * Removes a folder from this storage.
 	 *
 	 * @param t3lib_file_Folder $folder
-	 * @param bool $deleteRecursively
+	 * @param boolean $deleteRecursively
 	 * @return boolean
 	 */
 	abstract public function deleteFolder(t3lib_file_Folder $folder, $deleteRecursively = FALSE);
@@ -526,10 +547,9 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 *
 	 * @abstract
 	 * @param string $identifier
-	 * @return bool TRUE if removing the file succeeded
+	 * @return boolean TRUE if removing the file succeeded
 	 */
 	abstract public function deleteFileRaw($identifier);
-
 
 	/*******************
 	 * FOLDER FUNCTIONS
@@ -567,7 +587,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @param string $pattern
 	 * @param integer $start The position to start the listing; if not set, start from the beginning
 	 * @param integer $numberOfItems The number of items to list; if not set, return all items
-	 * @param bool $excludeHiddenFolders Set to TRUE to exclude hidden folders (starting with a dot)
+	 * @param boolean $excludeHiddenFolders Set to TRUE to exclude hidden folders (starting with a dot)
 	 * @return array
 	 */
 	abstract public function getFolderList($path, $pattern = '', $start = 0, $numberOfItems = 0, $excludeHiddenFolders = TRUE);
@@ -576,8 +596,8 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * Checks if a folder exists
 	 *
 	 * @abstract
-	 * @param $identifier
-	 * @return bool
+	 * @param string $identifier
+	 * @return boolean
 	 */
 	abstract public function folderExists($identifier);
 
@@ -587,7 +607,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @abstract
 	 * @param string $folderName
 	 * @param t3lib_file_Folder $folder
-	 * @return bool
+	 * @return boolean
 	 */
 	abstract public function folderExistsInFolder($folderName, t3lib_file_Folder $folder);
 
@@ -608,7 +628,7 @@ abstract class t3lib_file_Driver_AbstractDriver {
 	 * @abstract
 	 * @param t3lib_file_Folder $container
 	 * @param string $content
-	 * @return bool TRUE if $content is within $container
+	 * @return boolean TRUE if $content is within $container
 	 */
 	// TODO extend this to also support objects as $content
 	abstract public function isWithin(t3lib_file_Folder $container, $content);

@@ -312,7 +312,7 @@ abstract class t3lib_file_AbstractFile implements t3lib_file_FileInterface {
 
 
 	protected function loadStorage() {
-		if($this->getProperty('storage')) {
+		if ($this->getProperty('storage')) {
 			/** @var $storageRepository t3lib_file_Repository_StorageRepository */
 			$storageRepository = t3lib_div::makeInstance('t3lib_file_Repository_StorageRepository');
 			$this->storage = $storageRepository->findByUid($this->getProperty('storage'));
@@ -366,7 +366,7 @@ abstract class t3lib_file_AbstractFile implements t3lib_file_FileInterface {
 	 * @return string Combined storage and file identifier, e.g. StorageUID:path/and/fileName.png
 	 */
 	public function getCombinedIdentifier() {
-		if(is_array($this->properties) && t3lib_utility_Math::canBeInterpretedAsInteger($this->properties['storage'])) {
+		if (is_array($this->properties) && t3lib_utility_Math::canBeInterpretedAsInteger($this->properties['storage'])) {
 			$combinedIdentifier = $this->properties['storage'].':'.$this->getIdentifier();
 		} else {
 			$combinedIdentifier = $this->getStorage()->getUid().':'.$this->getIdentifier();

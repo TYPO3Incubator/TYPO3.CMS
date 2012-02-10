@@ -180,13 +180,13 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 	 * @param array $properties
 	 */
 	public function updateProperties(array $properties) {
-		if($properties['name']) {
+		if ($properties['name']) {
 			$this->name = $properties['name'];
 		}
-		if($properties['identifier']) {
+		if ($properties['identifier']) {
 			$this->identifier = $properties['identifier'];
 		}
-		if(t3lib_utility_Math::canBeInterpretedAsInteger($properties['storage'])) {
+		if (t3lib_utility_Math::canBeInterpretedAsInteger($properties['storage'])) {
 			$this->setStorage($properties['storage']);
 		}
 		$this->properties = array_merge($this->properties, $properties);

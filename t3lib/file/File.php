@@ -348,7 +348,7 @@ class t3lib_file_File extends t3lib_file_AbstractFile {
 			),
 			'checksum' => $this->calculateChecksum()
 		);
-		foreach($this->properties AS $key => $value) {
+		foreach ($this->properties AS $key => $value) {
 			$array[$key] = $value;
 		}
 		$stat = $this->storage->getFileInfo($this);

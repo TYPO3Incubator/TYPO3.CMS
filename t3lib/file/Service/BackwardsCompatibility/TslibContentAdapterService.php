@@ -65,9 +65,9 @@ class t3lib_file_Service_BackwardsCompatibility_TslibContentAdapterService {
 	 * @return	void
 	 */
 	public static function modifyDBRow(&$row, $table) {
-		if(array_key_exists($table, static::$migrateFields)) {
-			foreach(static::$migrateFields[$table] as $migrateFieldName => $oldFieldNames) {
-				if(isset($row[$migrateFieldName])) {
+		if (array_key_exists($table, static::$migrateFields)) {
+			foreach (static::$migrateFields[$table] as $migrateFieldName => $oldFieldNames) {
+				if (isset($row[$migrateFieldName])) {
 					/** @var $fileRepository t3lib_file_Repository_FileRepository */
 					$fileRepository = t3lib_div::makeInstance('t3lib_file_Repository_FileRepository');
 					$files = $fileRepository->findByRelation($table, $migrateFieldName, $row['uid']);
@@ -98,8 +98,8 @@ class t3lib_file_Service_BackwardsCompatibility_TslibContentAdapterService {
 						}
 						$row[$oldFieldName] = $fieldContents;
 					}
-					if(count($files)>0) {
-					} elseif($row['image'] > 0) {
+					if (count($files)>0) {
+					} elseif ($row['image'] > 0) {
 						throw new Exception('inconsistent count field in '.$table.'.'.$migrateFieldName);
 					}
 				}

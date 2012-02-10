@@ -225,11 +225,11 @@ class t3lib_file_Repository_FileRepository extends t3lib_file_Repository_Abstrac
 				' AND hidden=0'
 		);
 
-		if($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
+		if ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
 			$fileReferenceObject = $this->createFileReferenceObject($row);
 			return $fileReferenceObject;
 		} else {
-			return false;
+			return FALSE;
 		}
 	}
 

@@ -305,7 +305,7 @@ class t3lib_file_Storage {
 	 * @return boolean
 	 */
 	public function hasChildren() {
-		return true;
+		return TRUE;
 	}
 
 

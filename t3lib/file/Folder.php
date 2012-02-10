@@ -191,7 +191,7 @@ class t3lib_file_Folder {
 
 		$folderArray = $this->storage->getFolderList($this->identifier);
 
-		if(count($folderArray) > 0) {
+		if (count($folderArray) > 0) {
 			/** @var $factory t3lib_file_Factory */
 			$factory = t3lib_div::makeInstance('t3lib_file_Factory');
 
