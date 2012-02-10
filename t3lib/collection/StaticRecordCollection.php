@@ -145,7 +145,7 @@ class t3lib_collection_StaticRecordCollection extends t3lib_collection_AbstractR
 			'AND ' . self::$storageTableName . '.uid=' . intval($this->getIdentifier())
 		);
 
-		if (is_resource($resource)) {
+		if ($resource) {
 			while ($record = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($resource)) {
 				$relatedRecords[] = $record;
 			}
