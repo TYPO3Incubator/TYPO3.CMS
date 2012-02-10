@@ -53,7 +53,7 @@ class Tx_File_Service_ExtDirect_FilterManagement {
 	 * @return array
 	 */
 	public function read($params) {
-		$collectionObjects = $this->collectionRepository->findByType($this->collectionRepository::TYPE_Filter);
+		$collectionObjects = $this->collectionRepository->findByType(t3lib_collection_RecordCollectionRepository::TYPE_Filter);
 
 		$filters = array();
 		/** @var t3lib_file_Collection_FilteredFileCollection $collection */
