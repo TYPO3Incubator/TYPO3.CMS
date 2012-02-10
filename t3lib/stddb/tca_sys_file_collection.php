@@ -87,7 +87,7 @@ $TCA['sys_file_collection'] = array (
 		),
 		'type' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_collection.type',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_collection.type',
 			'config' => array (
 				'type' => 'select',
 				'items' => array(
@@ -99,12 +99,12 @@ $TCA['sys_file_collection'] = array (
 		),
 		'files' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_collection.files',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_collection.files',
 			'config' => t3lib_extMgm::getFileFieldTCAConfig('files'),
 		),
 		'title' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_collection.title',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_collection.title',
 			'config' => array (
 				'type' => 'input',
 				'size' => '30',
@@ -113,14 +113,14 @@ $TCA['sys_file_collection'] = array (
 		),
 		'criteria' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_collection.criteria',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_collection.criteria',
 			'config' => array (
 				'type' => 'text',
 			)
 		),
 		'storage' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_collection.storage',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_collection.storage',
 			'config' => array (
 				'type' => 'select',
 				'items' => array (
@@ -135,7 +135,7 @@ $TCA['sys_file_collection'] = array (
 		),
 		'folder' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_collection.folder',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_collection.folder',
 			'config' => array(
 				'type' => 'select',
 				'items' => array(),

@@ -2,7 +2,7 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2010 - 2011 Michael Miousse (michael.miousse@infoglobe.ca)
+ *  (c) 2011 Lorenz Ulrich <lorenz.ulrich@visol.ch>
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -29,7 +29,16 @@
  * @package TYPO3
  * @subpackage media
  */
-class Tx_File_Tasks_Indexing extends tx_scheduler_Task {
+class tx_scheduler_FileIndexing extends tx_scheduler_Task {
+	/**
+	 * @var string
+	 */
+	protected $indexingConfiguration;
+
+	/**
+	 * @var string
+	 */
+	protected $paths;
 
 	/**
 	 * Get the value of the protected property indexingConfiguration
@@ -76,7 +85,9 @@ class Tx_File_Tasks_Indexing extends tx_scheduler_Task {
 	 */
 	public function execute() {
 		$successfullyExecuted = TRUE;
+		/** @var $fileFactory t3lib_file_Factory */
 		$fileFactory = t3lib_div::makeInstance('t3lib_file_Factory');
+		/** @var $indexerService t3lib_file_Service_IndexerService */
 		$indexerService = t3lib_div::makeInstance('t3lib_file_Service_IndexerService');
 		$indexerService->setFactory($fileFactory);
 
@@ -94,11 +105,10 @@ class Tx_File_Tasks_Indexing extends tx_scheduler_Task {
 
 		return $successfullyExecuted;
 	}
-
-
 }
 
-if (defined('TYPO3_MODE') && isset($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/file/Classes/Tasks/Indexing.php'])) {
-	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/file/Classes/Tasks/Indexing.php']);
+if (defined('TYPO3_MODE') && isset($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scheduler/tasks/class.tx_scheduler_fileindexing.php'])) {
+	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scheduler/tasks/class.tx_scheduler_fileindexing.php']);
 }
+
 ?>

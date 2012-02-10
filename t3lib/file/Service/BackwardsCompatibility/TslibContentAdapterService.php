@@ -29,7 +29,7 @@
  * @author Ingmar Schlecht <ingmar@typo3.org>
  * @license     http://www.gnu.org/copyleft/gpl.html
  */
-class Tx_File_BackwardsCompatibility_TslibContentAdapter {
+class t3lib_file_Service_BackwardsCompatibility_TslibContentAdapterService {
 
 	/**
 	 * The name of the table

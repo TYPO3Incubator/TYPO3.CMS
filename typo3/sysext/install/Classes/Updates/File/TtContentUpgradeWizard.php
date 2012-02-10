@@ -30,7 +30,7 @@
  * @author Ingmar Schlecht <ingmar@typo3.org>
  * @license     http://www.gnu.org/copyleft/gpl.html
  */
-class Tx_File_UpgradeWizard_TtContentUpgradeWizard extends Tx_Install_Updates_Base {
+class Tx_Install_Updates_File_TtContentUpgradeWizard extends Tx_Install_Updates_Base {
 
 	protected $title = 'Migrate file relations';
 

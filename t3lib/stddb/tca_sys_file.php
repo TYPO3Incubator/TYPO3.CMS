@@ -87,7 +87,7 @@ $TCA['sys_file'] = array (
 		),
 		'storage' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.storage',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file.storage',
 			'config' => array (
 				'type' => 'select',
 				'items' => array (
@@ -102,7 +102,7 @@ $TCA['sys_file'] = array (
 		),
 		'name' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.name',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file.name',
 			'config' => array (
 				'type' => 'input',
 				'size' => '30',
@@ -110,23 +110,23 @@ $TCA['sys_file'] = array (
 		),
 		'type' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.type',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file.type',
 			'config' => array (
 				'type' => 'select',
 				'size' => '1',
 				'items' => array(
-					array('LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.type.unknown',  0),
-					array('LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.type.text',     1),
-					array('LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.type.image',    2),
-					array('LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.type.audio',    3),
-					array('LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.type.video',    4),
-					array('LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.type.software', 5),
+					array('LLL:EXT:lang/locallang_tca.xlf:sys_file.type.unknown',  0),
+					array('LLL:EXT:lang/locallang_tca.xlf:sys_file.type.text',     1),
+					array('LLL:EXT:lang/locallang_tca.xlf:sys_file.type.image',    2),
+					array('LLL:EXT:lang/locallang_tca.xlf:sys_file.type.audio',    3),
+					array('LLL:EXT:lang/locallang_tca.xlf:sys_file.type.video',    4),
+					array('LLL:EXT:lang/locallang_tca.xlf:sys_file.type.software', 5),
 				),
 			)
 		),
 		'mime_type' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.mime_type',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file.mime_type',
 			'config' => array (
 				'type' => 'input',
 				'size' => '30',
@@ -134,7 +134,7 @@ $TCA['sys_file'] = array (
 		),
 		'sha1' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.sha1',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file.sha1',
 			'config' => array (
 				'type' => 'input',
 				'size' => '30',
@@ -143,7 +143,7 @@ $TCA['sys_file'] = array (
 		),
 		'size' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file.size',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file.size',
 			'config' => array (
 				'type'     => 'input',
 				'size'     => '8',

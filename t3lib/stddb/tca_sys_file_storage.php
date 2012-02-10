@@ -23,7 +23,7 @@ $TCA['sys_file_storage'] = array (
 		),
 		'name' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.name',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_storage.name',
 			'config' => array (
 				'type' => 'input',
 				'size' => '30',
@@ -31,7 +31,7 @@ $TCA['sys_file_storage'] = array (
 		),
 		'description' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.description',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_storage.description',
 			'config' => array (
 				'type' => 'text',
 				'cols' => '30',
@@ -40,7 +40,7 @@ $TCA['sys_file_storage'] = array (
 		),
 		'is_browsable' => array(
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.is_browsable',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_storage.is_browsable',
 			'config' => array (
 				'type' => 'check',
 				'default' => 1
@@ -48,7 +48,7 @@ $TCA['sys_file_storage'] = array (
 		),
 		'is_public' => array(
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.is_public',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_storage.is_public',
 			'config' => array (
 				'type' => 'check',
 				'default' => 1
@@ -56,7 +56,7 @@ $TCA['sys_file_storage'] = array (
 		),
 		'is_writable' => array(
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.is_writable',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_storage.is_writable',
 			'config' => array (
 				'type' => 'check',
 				'default' => 1
@@ -64,7 +64,7 @@ $TCA['sys_file_storage'] = array (
 		),
 		'processingfolder' => array(
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.processingfolder',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_storage.processingfolder',
 			'config' => array (
 				'type' => 'input',
 				'placeholder' => '_temp_',
@@ -73,7 +73,7 @@ $TCA['sys_file_storage'] = array (
 		),
 		'driver' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.driver',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_storage.driver',
 			'config' => array (
 				'type' => 'select',
 				'items' => array(),
@@ -82,7 +82,7 @@ $TCA['sys_file_storage'] = array (
 		),
 		'configuration' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_storage.configuration',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_storage.configuration',
 			'config' => array (
 				'type' => 'flex',
 				'ds_pointerField' => 'driver',

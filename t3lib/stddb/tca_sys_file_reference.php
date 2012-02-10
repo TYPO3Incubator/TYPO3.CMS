@@ -20,7 +20,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'uid_local' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.uid_local',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.uid_local',
 			'config' => array (
 				'type' => 'group',
 				'internal_type' => 'db',
@@ -70,7 +70,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'uid_foreign' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.uid_foreign',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.uid_foreign',
 			'config' => array (
 				'type' => 'select',
 				'items' => array (
@@ -85,7 +85,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'tablenames' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.tablenames',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.tablenames',
 			'config' => array (
 				'type' => 'input',
 				'size' => '30',
@@ -94,7 +94,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'fieldname' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.fieldname',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.fieldname',
 			'config' => array (
 				'type' => 'input',
 				'size' => '30',
@@ -103,7 +103,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'sorting_foreign' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.sorting_foreign',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.sorting_foreign',
 			'config' => array (
 				'type'     => 'input',
 				'size'     => '4',
@@ -119,7 +119,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'table_local' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.table_local',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.table_local',
 			'config' => array (
 				'type' => 'input',
 				'size' => '20',
@@ -128,7 +128,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'title' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.title',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.title',
 			'config' => array (
 				'type' => 'input',
 				'size' => '22',
@@ -137,7 +137,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'link' => array(
 			'exclude' => 1,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.link',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.link',
 			'config' => array(
 				'type' => 'input',
 				'size' => '20',
@@ -145,7 +145,7 @@ $TCA['sys_file_reference'] = array (
 					'_PADDING' => 2,
 					'link' => array(
 						'type' => 'popup',
-						'title' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.link',
+						'title' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.link',
 						'icon' => 'link_popup.gif',
 						'script' => 'browse_links.php?mode=wizard',
 						'JSopenParams' => 'height=300,width=500,status=0,menubar=0,scrollbars=1',
@@ -155,7 +155,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'description' => array ( // This is used for captions in the frontend
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.description',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.description',
 			'config' => array (
 				'type' => 'text',
 				'cols' => '24',
@@ -164,7 +164,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'alternative' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.alternative',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.alternative',
 			'config' => array (
 				'type' => 'input',
 				'size' => '22',
@@ -173,7 +173,7 @@ $TCA['sys_file_reference'] = array (
 		),
 		'downloadname' => array (
 			'exclude' => 0,
-			'label' => 'LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.downloadname',
+			'label' => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.downloadname',
 			'config' => array (
 				'type' => 'input',
 				'size' => '20',
@@ -184,32 +184,32 @@ $TCA['sys_file_reference'] = array (
 	'types' => array (
 		'0' => array(
 			'showitem' => '
-				--palette--;LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.overlayPalette;overlayPalette,
+				--palette--;LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.overlayPalette;overlayPalette,
 				--palette--;;filePalette',
 		),
 		t3lib_file_File::FILETYPE_TEXT => array(
 			'showitem' => '
-				--palette--;LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.overlayPalette;overlayPalette,
+				--palette--;LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.overlayPalette;overlayPalette,
 				--palette--;;filePalette',
 		),
 		t3lib_file_File::FILETYPE_IMAGE => array(
 			'showitem' => '
-				--palette--;LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.overlayPalette;overlayPalette,
+				--palette--;LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.overlayPalette;overlayPalette,
 				--palette--;;filePalette',
 		),
 		t3lib_file_File::FILETYPE_AUDIO => array(
 			'showitem' => '
-				--palette--;LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.overlayPalette;overlayPalette,
+				--palette--;LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.overlayPalette;overlayPalette,
 				--palette--;;filePalette',
 		),
 		t3lib_file_File::FILETYPE_VIDEO => array(
 			'showitem' => '
-				--palette--;LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.overlayPalette;overlayPalette,
+				--palette--;LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.overlayPalette;overlayPalette,
 				--palette--;;filePalette',
 		),
 		t3lib_file_File::FILETYPE_SOFTWARE => array(
 			'showitem' => '
-				--palette--;LLL:EXT:file/Resources/Private/Language/db.xlf:sys_file_reference.overlayPalette;overlayPalette,
+				--palette--;LLL:EXT:lang/locallang_tca.xlf:sys_file_reference.overlayPalette;overlayPalette,
 				--palette--;;filePalette',
 		),
 	),

@@ -144,6 +144,7 @@ $t3libClasses = array(
 	't3lib_file_repository_filerepository' => PATH_t3lib . 'file/Repository/FileRepository.php',
 	't3lib_file_repository_processedfilerepository' => PATH_t3lib . 'file/Repository/ProcessedFileRepository.php',
 	't3lib_file_repository_storagerepository' => PATH_t3lib . 'file/Repository/StorageRepository.php',
+	't3lib_file_service_backwardscompatibility_tslibcontentadapterservice' => PATH_t3lib . 'file/Service/BackwardsCompatibility/TslibContentAdapterService.php',
 	't3lib_file_service_fileprocessingservice' => PATH_t3lib . 'file/Service/FileProcessingService.php',
 	't3lib_file_service_imageprocessingservice' => PATH_t3lib . 'file/Service/ImageProcessingService.php',
 	't3lib_file_service_indexerservice' => PATH_t3lib . 'file/Service/IndexerService.php',

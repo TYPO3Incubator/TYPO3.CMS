@@ -134,7 +134,7 @@ class tslib_content_Content extends tslib_content_Abstract {
 							}
 							*/
 
-							Tx_File_BackwardsCompatibility_TslibContentAdapter::modifyDBRow($row, $conf['table']);
+							t3lib_file_Service_BackwardsCompatibility_TslibContentAdapterService::modifyDBRow($row, $conf['table']);
 
 							if (!$GLOBALS['TSFE']->recordRegister[$conf['table'] . ':' . $row['uid']]) {
 								$this->cObj->currentRecordNumber++;

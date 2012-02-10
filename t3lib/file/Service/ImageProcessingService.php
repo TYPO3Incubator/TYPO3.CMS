@@ -70,7 +70,7 @@ class t3lib_file_Service_ImageProcessingService {
 		if ($file instanceof t3lib_file_FileInterface) {
 			$theImage = $file->getForLocalProcessing(FALSE);
 		} else {
-			$file = t3lib_div::resolveBackPath($file); // clean ../ sections of the path and resolve to proper string. This is necessary for the Tx_File_BackwardsCompatibility_TslibContentAdapter to work.
+			$file = t3lib_div::resolveBackPath($file); // clean ../ sections of the path and resolve to proper string. This is necessary for the t3lib_file_Service_BackwardsCompatibility_TslibContentAdapterService to work.
 
 			$theImage = $GLOBALS['TSFE']->tmpl->getFileName($file);
 			if (!$theImage) {

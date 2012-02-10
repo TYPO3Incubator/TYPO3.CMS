@@ -313,6 +313,137 @@ $TCA['sys_collection'] = array(
 );
 
 /**
+ * Table "sys_file_storage":
+ * defines a root-point of a file storage, that is like a mount point.
+ * each storage is attached to a driver (local, webdav, amazons3) and thus is the entry-point
+ * for all files
+ */
+$TCA['sys_file_storage'] = array(
+	'ctrl' => array(
+		'title'     => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_storage',
+		'label'     => 'name',
+		'tstamp'    => 'tstamp',
+		'crdate'    => 'crdate',
+		'cruser_id' => 'cruser_id',
+		'default_sortby' => 'ORDER BY name',
+		'delete' => 'deleted',
+		'rootLevel' => TRUE,
+		'enablecolumns' => array(
+			'disabled' => 'hidden',
+		),
+		'dividers2tabs'     => TRUE,
+		'dynamicConfigFile' => 'T3LIB:tca_sys_file_storage.php',
+		// @todo add icon file
+	),
+);
+
+/**
+ * Table "sys_file":
+ * Represents all files that are tracked by TYPO3
+ * which are assets, single entries of files with additional metadata
+ */
+$TCA['sys_file'] = array(
+	'ctrl' => array(
+		'title'     => 'LLL:EXT:lang/locallang_tca.xlf:sys_file',
+		'label'     => 'name',
+		'tstamp'    => 'tstamp',
+		'crdate'    => 'crdate',
+		'cruser_id' => 'cruser_id',
+		'type'		=> 'type',
+		'versioningWS'             => TRUE,
+		'origUid'                  => 't3_origuid',
+		'languageField'            => 'sys_language_uid',
+		'transOrigPointerField'    => 'l10n_parent',
+		'transOrigDiffSourceField' => 'l10n_diffsource',
+		'default_sortby' => 'ORDER BY crdate DESC',
+		'delete' => 'deleted',
+		'enablecolumns' => array(
+			'disabled' => 'hidden',
+			'starttime' => 'starttime',
+			'endtime' => 'endtime',
+		),
+		'dividers2tabs' => TRUE,
+		'typeicon_column' => 'type',
+		'typeicon_classes' => array(
+			'1' => 'mimetypes-text-text',
+			'2' => 'mimetypes-media-image',
+			'3' => 'mimetypes-media-audio',
+			'4' => 'mimetypes-media-video',
+			'5' => 'mimetypes-application',
+			'default' => 'mimetypes-other-other',
+		),
+		'dynamicConfigFile' => 'T3LIB:tca_sys_file.php',
+		// @todo add icon file
+	),
+);
+t3lib_extMgm::allowTableOnStandardPages('sys_file');
+
+/**
+ * Table "sys_file_reference":
+ * Is a single usage of a sys_file record somewhere in the installation
+ * Is kind of like a MM-table between sys_file and e.g. tt_content:image that is shown up
+ * in TCA so additional metadata can be added for this specific kind of usage
+ */
+$TCA['sys_file_reference'] = array(
+	'ctrl' => array(
+		'title'     => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_reference',
+		'label'     => 'uid',
+		'tstamp'    => 'tstamp',
+		'crdate'    => 'crdate',
+		'cruser_id' => 'cruser_id',
+		'type' => 'uid_local:type',
+		'hideTable' => TRUE,
+		'sortby' => 'sorting',
+		'delete' => 'deleted',
+		'enablecolumns' => array(
+			'disabled' => 'hidden',
+		),
+		'dynamicConfigFile' => 'T3LIB:tca_sys_file_reference.php',
+		// @todo add icon file
+	),
+);
+t3lib_extMgm::addPageTSConfig('mod.web_list.hideTables := addToList(sys_file_reference)');
+t3lib_extMgm::allowTableOnStandardPages('sys_file_reference');
+
+/**
+ * Table "sys_file_collection":
+ * Represents a list of sys_file records
+ */
+$TCA['sys_file_collection'] = array(
+	'ctrl' => array(
+		'title'     => 'LLL:EXT:lang/locallang_tca.xlf:sys_file_collection',
+		'label'     => 'title',
+		'tstamp'    => 'tstamp',
+		'crdate'    => 'crdate',
+		'cruser_id' => 'cruser_id',
+		'versioningWS' => TRUE,
+		'origUid' => 't3_origuid',
+		'languageField'            => 'sys_language_uid',
+		'transOrigPointerField'    => 'l10n_parent',
+		'transOrigDiffSourceField' => 'l10n_diffsource',
+		'default_sortby' => 'ORDER BY crdate',
+		'delete' => 'deleted',
+		'rootlevel' => -1,
+		'type' => 'type',
+		'typeicon_column' => 'type',
+		'typeicon_classes' => array(
+			'default' => 'apps-filetree-folder-media',
+			'static'  => 'apps-clipboard-images',
+			'filter'  => 'actions-system-tree-search-open',
+			'folder'  => 'apps-filetree-folder-media'
+		),
+		'enablecolumns' => array(
+			'disabled' => 'hidden',
+			'starttime' => 'starttime',
+			'endtime' => 'endtime',
+		),
+		'dynamicConfigFile' => 'T3LIB:tca_sys_file_collection.php',
+		// @todo add icon file
+	),
+);
+t3lib_extMgm::allowTableOnStandardPages('sys_file_collection');
+
+/**
  * Table "sys_languages":
  * Defines possible languages used for translation of records in the system
  * This is only the 'header' part (ctrl). The full configuration is found in t3lib/stddb/tbl_be.php

@@ -43,14 +43,6 @@
 				<source>Go back</source>
 				<target>Go back</target>
 			</trans-unit>
-			<trans-unit id="tasks.indexing.name" approved="yes">
-				<source>File Abstraction Layer: Indexing job</source>
-				<target>File Abstraction Layer: Indexing job</target>
-			</trans-unit>
-			<trans-unit id="tasks.indexing.description" approved="yes">
-				<source>Runs indexing tasks based on an indexing configuration and a storage/folder information.</source>
-				<target>Runs indexing tasks based on an indexing configuration and a storage/folder information.</target>
-			</trans-unit>
 			<trans-unit id="tasks.validate.indexingConfiguration" approved="yes">
 				<source>Indexing configuration</source>
 				<target>Indexing configuration</target>
