@@ -57,13 +57,13 @@ class t3lib_collection_RecordCollectionRepository {
 	 * Finds a record collection by uid.
 	 *
 	 * @param integer $uid The uid to be looked up
-	 * @return NULL|t3lib_collection_RecordCollection
+	 * @return NULL|t3lib_collection_AbstractRecordCollection
 	 */
 	public function findByUid($uid) {
 		$result = NULL;
 
 		$data = $this->getDatabase()->exec_SELECTgetSingleRow(
-			'uid',
+			'*',
 			$this->table,
 			'uid=' . intval($uid) . t3lib_BEfunc::deleteClause($this->table)
 		);
@@ -79,7 +79,7 @@ class t3lib_collection_RecordCollectionRepository {
 	 * Finds record collections by table name.
 	 *
 	 * @param string $tableName Name of the table to be looked up
-	 * @return t3lib_collection_RecordCollection[]
+	 * @return t3lib_collection_AbstractRecordCollection[]
 	 */
 	public function findByTableName($tableName) {
 		$conditions = array(
@@ -93,7 +93,7 @@ class t3lib_collection_RecordCollectionRepository {
 	 * Finds record collection by type.
 	 *
 	 * @param string $type Type to be looked up
-	 * @return NULL|t3lib_collection_RecordCollection[]
+	 * @return NULL|t3lib_collection_AbstractRecordCollection[]
 	 */
 	public function findByType($type) {
 		$conditions = array(
@@ -108,7 +108,7 @@ class t3lib_collection_RecordCollectionRepository {
 	 *
 	 * @param string $type Type to be looked up
 	 * @param string $tableName Name of the table to be looked up
-	 * @return NULL|t3lib_collection_RecordCollection[]
+	 * @return NULL|t3lib_collection_AbstractRecordCollection[]
 	 */
 	public function findByTypeAndTableName($type, $tableName) {
 		$conditions = array(
@@ -135,7 +135,7 @@ class t3lib_collection_RecordCollectionRepository {
 	 * Queries for multiple records for the given conditions.
 	 *
 	 * @param array $conditions Conditions concatenated with AND for query
-	 * @return NULL|t3lib_collection_RecordCollection[]
+	 * @return NULL|t3lib_collection_AbstractRecordCollection[]
 	 */
 	protected function queryMultipleRecords(array $conditions = array()) {
 		$result = NULL;
@@ -157,7 +157,7 @@ class t3lib_collection_RecordCollectionRepository {
 	 * Creates a record collection domain object.
 	 *
 	 * @param array $record Database record to be reconstituted
-	 * @return t3lib_collection_RecordCollection
+	 * @return t3lib_collection_AbstractRecordCollection
 	 */
 	protected function createDomainObject(array $record) {
 		switch ($record['type']) {
@@ -178,7 +178,7 @@ class t3lib_collection_RecordCollectionRepository {
 	 * Creates multiple record collection domain objects.
 	 *
 	 * @param array $data Array of multiple database records to be reconstituted
-	 * @return t3lib_collection_RecordCollection[]
+	 * @return t3lib_collection_AbstractRecordCollection[]
 	 */
 	protected function createMultipleDomainObjects(array $data) {
 		$collections = array();
