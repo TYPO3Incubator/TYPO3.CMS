@@ -146,7 +146,7 @@ class t3lib_file_Service_FileProcessingService {
 
 					// for "remote" storages this means "uploading" the file to the storage again
 				$this->driver->addFile($temporaryFileName, $targetFolder, $targetFileName, $processedFile);
-				$processedFile->setIsProcessed(TRUE);
+				$processedFile->setProcessed(TRUE);
 
 					// remove the temporary file as it's not necessary anymore
 				t3lib_div::unlink_tempfile($temporaryFileName);

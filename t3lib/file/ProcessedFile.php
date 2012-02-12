@@ -1,35 +1,35 @@
 <?php
 /***************************************************************
- *  Copyright notice
+ * Copyright notice
  *
- *  (c) 2011 Ingmar Schlecht <ingmar@typo3.org>
- *  All rights reserved
+ * (c) 2012 Benjamin Mack <benni@typo3.org>
+ * All rights reserved
  *
- *  This script is part of the TYPO3 project. The TYPO3 project is
- *  free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ * This script is part of the TYPO3 project. The TYPO3 project is
+ * free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- *  The GNU General Public License can be found at
- *  http://www.gnu.org/copyleft/gpl.html.
- *  A copy is found in the textfile GPL.txt and important notices to the license
- *  from the author is found in LICENSE.txt distributed with these scripts.
+ * The GNU General Public License can be found at
+ * http://www.gnu.org/copyleft/gpl.html.
+ * A copy is found in the textfile GPL.txt and important notices to the license
+ * from the author is found in LICENSE.txt distributed with these scripts.
  *
  *
- *  This script is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * This script is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- *  This copyright notice MUST APPEAR in all copies of the script!
+ * This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
 
 
 /**
  * Representation of a specific processing of a file.
  *
- * @author Ingmar Schlecht <ingmar@typo3.org>
+ * @author Benjamin Mack <benni@typo3.org>
  * @package TYPO3
  * @subpackage t3lib
  */
@@ -56,7 +56,7 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 	 *
 	 * @var boolean
 	 */
-	protected $isProcessed;
+	protected $processed;
 
 	/**
 	 * Processing configuration
@@ -87,9 +87,6 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 		$this->processingConfiguration = $processingConfiguration;
 	}
 
-
-
-
 	/*******************************
 	 * VARIOUS FILE PROPERTY GETTERS
 	 ************************
@@ -100,12 +97,8 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 	 * @return string
 	 */
 	public function calculateChecksum() {
-		return t3lib_div::shortMD5($this->originalFile->getUid() . $this->context . serialize($this->configuration));
+		return t3lib_div::shortMD5($this->originalFile->getUid() . $this->context . serialize($this->processingConfiguration));
 	}
-
-
-
-
 
 	/******************
 	 * CONTENTS RELATED
@@ -121,9 +114,6 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 		throw new Exception('Setting contents not possible for processed file.', 1305438528);
 	}
 
-
-
-
 	/****************************************
 	 * STORAGE AND MANAGEMENT RELATED METHDOS
 	 ****************************************/
@@ -137,8 +127,6 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 		return FALSE;
 	}
 
-
-
 	/*****************
 	 * SPECIAL METHODS
 	 *****************/
@@ -148,7 +136,7 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 	 * @return bool
 	 */
 	public function isProcessed() {
-		return $this->isProcessed;
+		return $this->processed;
 	}
 
 	/**
@@ -157,8 +145,8 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 	 * @param boolean $isProcessed
 	 * @return void
 	 */
-	public function setIsProcessed($isProcessed) {
-		$this->isProcessed = $isProcessed;
+	public function setProcessed($isProcessed) {
+		$this->processed = (bool) $isProcessed;
 
 			// DB-query to insert the info
 		/** @var $processedFileRepository t3lib_file_Repository_ProcessedFileRepository */
@@ -202,7 +190,7 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 			'storage' => $this->getStorage()->getUid(),
 			'identifier' => $this->getIdentifier(),
 			'name' => $this->getName(),
-			'is_processed' => intval($this->isProcessed),
+			'is_processed' => intval($this->processed),
 			'checksum' => $this->calculateChecksum(),
 			'context' => $this->context,
 			'configuration' => serialize($this->processingConfiguration),
@@ -211,9 +199,8 @@ class t3lib_file_ProcessedFile extends t3lib_file_AbstractFile {
 	}
 }
 
-
-if (defined('TYPO3_MODE') && isset($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/vfs/class.t3lib_file_file.php'])) {
-	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/vfs/class.t3lib_file_file.php']);
+if (defined('TYPO3_MODE') && isset($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/file/ProcessedFile.php'])) {
+	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['t3lib/file/ProcessedFile.php']);
 }
 
 ?>
