@@ -83,7 +83,7 @@
 	var $loginUser='';					// Global flag indicating that a front-end user is logged in. This is set only if a user really IS logged in. The group-list may show other groups (like added by IP filter or so) even though there is no user.
 	var $gr_list='';					// (RO=readonly) The group list, sorted numerically. Group '0,-1' is the default group, but other groups may be added by other means than a user being logged in though...
 	var $beUserLogin='';				// Flag that indicates if a Backend user is logged in!
-	var $workspacePreview='';			// Integer, that indicates which workspace is being previewed.
+	var $workspacePreview = 0;			// Integer, that indicates which workspace is being previewed.
 	var $loginAllowedInBranch = TRUE;	// Shows whether logins are allowed in branch
 	var $loginAllowedInBranch_mode = '';	// Shows specific mode (all or groups)
 	var $ADMCMD_preview_BEUSER_uid = 0;	// Integer, set to backend user ID to initialize when keyword-based preview is used.
@@ -642,28 +642,6 @@
 			$GLOBALS['TT']->pull();
 			$GLOBALS['TYPO3_MISC']['microtime_BE_USER_end'] = microtime(TRUE);
 
-		} elseif ($this->ADMCMD_preview_BEUSER_uid) {
-				// TODO: validate the comment below: is this necessary? if so,
-				// formfield_status should be set to "" in t3lib_tsfeBeUserAuth
-				// which is a subclass of t3lib_beUserAuth
-				// ----
-				// the value this->formfield_status is set to empty in order to
-				// disable login-attempts to the backend account through this script
-
-				// New backend user object
-			$BE_USER = t3lib_div::makeInstance('t3lib_tsfeBeUserAuth');
-			$BE_USER->userTS_dontGetCached = 1;
-			$BE_USER->OS = TYPO3_OS;
-			$BE_USER->setBeUserByUid($this->ADMCMD_preview_BEUSER_uid);
-			$BE_USER->unpack_uc('');
-			if ($BE_USER->user['uid']) {
-				$BE_USER->fetchGroupData();
-				$this->beUserLogin = 1;
-			} else {
-				$BE_USER = NULL;
-				$this->beUserLogin = 0;
-				$_SESSION['TYPO3-TT-start'] = FALSE;
-			}
 		}
 
 		// *****************
@@ -1967,18 +1945,7 @@
 	 * @see getFromCache(), getLockHash()
 	 */
 	function getHash()	{
-		$this->hash_base = serialize(
-			array(
-				'all' => $this->all,
-				'id' => intval($this->id),
-				'type' => intval($this->type),
-				'gr_list' => (string)$this->gr_list,
-				'MP' => (string)$this->MP,
-				'cHash' => $this->cHash_array,
-				'domainStartPage' => $this->domainStartPage,
-			)
-		);
-
+		$this->hash_base = $this->createHashBase(FALSE);
 		return md5($this->hash_base);
 	}
 
@@ -1991,18 +1958,48 @@
 	 * @see getFromCache(), getHash()
 	 */
 	function getLockHash()	{
-		$lockHash = serialize(
-			array(
-				'id' => intval($this->id),
-				'type' => intval($this->type),
-				'gr_list' => (string)$this->gr_list,
-				'MP' => (string)$this->MP,
-				'cHash' => $this->cHash_array,
-				'domainStartPage' => $this->domainStartPage,
-			)
+		$lockHash = $this->createHashBase(TRUE);
+		return md5($lockHash);
+	}
+
+
+	/**
+	 * Calculates the cache-hash (or the lock-hash)
+	 * This hash is unique to the template,
+	 * the variables ->id, ->type, ->gr_list (list of groups),
+	 * ->MP (Mount Points) and cHash array
+	 * Used to get and later store the cached data.
+	 *
+	 * @param boolean $createLockHashBase whether to create the lock hash, which doesn't contain the "this->all" (the template information)
+	 * @return string the serialized hash base
+	 */
+	protected function createHashBase($createLockHashBase = FALSE) {
+		$hashParameters = array(
+			'id'      => intval($this->id),
+			'type'    => intval($this->type),
+			'gr_list' => (string) $this->gr_list,
+			'MP'      => (string) $this->MP,
+			'cHash'   => $this->cHash_array,
+			'domainStartPage' => $this->domainStartPage
 		);
 
-		return md5($lockHash);
+			// include the template information if we shouldn't create a lock hash
+		if (!$createLockHashBase) {
+			$hashParameters['all'] = $this->all;
+		}
+
+			// Call hook to influence the hash calculation
+		if (is_array($this->TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['createHashBase'])) {
+			$_params = array(
+				'hashParameters' => &$hashParameters,
+				'createLockHashBase' => $createLockHashBase
+			);
+			foreach ($this->TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['createHashBase'] as $_funcRef) {
+				t3lib_div::callUserFunction($_funcRef, $_params, $this);
+			}
+		}
+
+		return serialize($hashParameters);
 	}
 
 	/**
@@ -4315,12 +4312,19 @@ if (version == "n3") {
 		}
 	}
 
+
+	/********************************************
+	 * PUBLIC ACCESSIBLE WORKSPACES FUNCTIONS
+	 *******************************************/
+
 	/**
 	 * Initialize workspace preview
 	 *
 	 * @return	void
+	 * @deprecated since TYPO3 4.7, will be removed in TYPO3 4.9 as this is part of Tx_Version now
 	 */
-	function workspacePreviewInit()	{
+	public function workspacePreviewInit()	{
+		t3lib_div::logDeprecatedFunction();
 		$previewWS = t3lib_div::_GP('ADMCMD_previewWS');
 		if ($this->beUserLogin && is_object($GLOBALS['BE_USER']) && t3lib_utility_Math::canBeInterpretedAsInteger($previewWS))	{
 			if ($previewWS==0 || ($previewWS>=-1 && $GLOBALS['BE_USER']->checkWorkspace($previewWS))) {	// Check Access to workspace. Live (0) is OK to preview for all.
@@ -4336,8 +4340,8 @@ if (version == "n3") {
 	 *
 	 * @return	boolean		Returns TRUE if workspace preview is enabled
 	 */
-	function doWorkspacePreview()	{
-		return (string)$this->workspacePreview!=='';
+	public function doWorkspacePreview() {
+		return ($this->workspacePreview !== 0 ? TRUE : FALSE);
 	}
 
 	/**

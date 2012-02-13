@@ -133,6 +133,7 @@ class TYPO3backend {
 			'debugPanel'            => 'js/extjs/debugPanel.js',
 			'viewport'              => 'js/extjs/viewport.js',
 			'iframepanel'           => 'js/extjs/iframepanel.js',
+			'backendcontentiframe'  => 'js/extjs/backendcontentiframe.js',
 			'modulepanel'           => 'js/extjs/modulepanel.js',
 			'viewportConfiguration' => 'js/extjs/viewportConfiguration.js',
 			'util'					=> '../t3lib/js/extjs/util.js',
@@ -346,13 +347,21 @@ class TYPO3backend {
 		}
 
 		$toolbar = '<ul id="typo3-toolbar">';
-		$toolbar.= '<li>'.$this->getLoggedInUserLabel().'</li>
-					<li><div id="logout-button" class="toolbar-item no-separator">'.$this->moduleMenu->renderLogoutButton().'</div></li>';
+		$toolbar .= '<li>' . $this->getLoggedInUserLabel() . '</li>';
+		$toolbar .= '<li class="separator"><div id="logout-button" class="toolbar-item no-separator">' . $this->moduleMenu->renderLogoutButton() . '</div></li>';
 
-		foreach($this->toolbarItems as $toolbarItem) {
+		$i = 0;
+		foreach($this->toolbarItems as $key => $toolbarItem) {
+			$i++;
 			$menu = $toolbarItem->render();
 			if ($menu) {
 				$additionalAttributes = $toolbarItem->getAdditionalAttributes();
+				if (sizeof($this->toolbarItems) > 1 && $i == sizeof($this->toolbarItems) -1) {
+					if (strpos($additionalAttributes, 'class="'))
+						str_replace('class="', 'class="separator ', $additionalAttributes);
+					else
+						$additionalAttributes .= 'class="separator"';
+				}
 				$toolbar .= '<li' . $additionalAttributes . '>' .$menu. '</li>';
 			}
 		}
@@ -366,7 +375,7 @@ class TYPO3backend {
 	 * @return	string		html code snippet displaying the currently logged in user
 	 */
 	protected function getLoggedInUserLabel() {
-		$css = 'toolbar-item no-separator';
+		$css = 'toolbar-item';
 		$icon = t3lib_iconWorks::getSpriteIcon('status-user-' . ($GLOBALS['BE_USER']->isAdmin() ? 'admin' : 'backend'));
 		$realName = $GLOBALS['BE_USER']->user['realName'];
 		$username = $GLOBALS['BE_USER']->user['username'];
@@ -825,6 +834,23 @@ $TYPO3backend = t3lib_div::makeInstance('TYPO3backend');
 if(is_array($GLOBALS['TYPO3_CONF_VARS']['typo3/backend.php']['additionalBackendItems'])) {
 	foreach($GLOBALS['TYPO3_CONF_VARS']['typo3/backend.php']['additionalBackendItems'] as $additionalBackendItem) {
 		include_once($additionalBackendItem);
+	}
+}
+	// process ExtJS module js and css
+if (is_array($GLOBALS['TBE_MODULES']['_configuration'])) {
+	foreach ($GLOBALS['TBE_MODULES']['_configuration'] as $moduleConfig) {
+		if (is_array($moduleConfig['cssFiles'])) {
+			foreach ($moduleConfig['cssFiles'] as $cssFileName => $cssFile) {
+				$TYPO3backend->addCssFile($name, t3lib_div::getFileAbsFileName($cssFile));
+			}
+		}
+		if (is_array($moduleConfig['jsFiles'])) {
+			foreach ($moduleConfig['jsFiles'] as $jsFile) {
+				$files = array(t3lib_div::getFileAbsFileName($jsFile));
+				$files = t3lib_div::removePrefixPathFromList($files, PATH_site);
+				$TYPO3backend->addJavascriptFile('../' . $files[0]);
+			}
+		}
 	}
 }
 
