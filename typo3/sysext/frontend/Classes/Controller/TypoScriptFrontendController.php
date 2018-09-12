@@ -1201,8 +1201,6 @@ class TypoScriptFrontendController implements LoggerAwareInterface
         // Final cleaning.
         // Make sure it's an integer
         $this->id = ($this->contentPid = (int)$this->id);
-        // Make sure it's an integer
-        $this->type = (int)$this->type;
         // Call post processing function for id determination:
         $_params = ['pObj' => &$this];
         foreach ($GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['determineId-PostProc'] ?? [] as $_funcRef) {
@@ -1362,9 +1360,8 @@ class TypoScriptFrontendController implements LoggerAwareInterface
         $this->sys_page = GeneralUtility::makeInstance(PageRepository::class, $this->context);
         // If $this->id is a string, it's an alias
         $this->checkAndSetAlias();
-        // The id and type is set to the integer-value - just to be sure...
+        // The id is set to the integer-value - just to be sure...
         $this->id = (int)$this->id;
-        $this->type = (int)$this->type;
         $timeTracker->pull();
         // We find the first page belonging to the current domain
         $timeTracker->push('fetch_the_id domain/');
@@ -2186,7 +2183,7 @@ class TypoScriptFrontendController implements LoggerAwareInterface
             GeneralUtility::_GETset($realGet);
             // Setting these specifically (like in the init-function):
             if (isset($GET_VARS['type'])) {
-                $this->type = (int)$GET_VARS['type'];
+                $this->type = $GET_VARS['type'];
             }
             if (isset($GET_VARS['cHash'])) {
                 $this->cHash = $GET_VARS['cHash'];
@@ -2497,7 +2494,7 @@ class TypoScriptFrontendController implements LoggerAwareInterface
         $userAspect = $this->context->getAspect('frontend.user');
         $hashParameters = [
             'id' => (int)$this->id,
-            'type' => (int)$this->type,
+            'type' => $this->type,
             'gr_list' => (string)implode(',', $userAspect->getGroupIds()),
             'MP' => (string)$this->MP,
             'siteBase' => $siteBase,

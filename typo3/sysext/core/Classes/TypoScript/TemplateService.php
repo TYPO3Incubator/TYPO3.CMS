@@ -1202,7 +1202,10 @@ class TemplateService
             foreach ($this->setup as $key => $value) {
                 if ($value === 'PAGE') {
                     // Set the typeNum of the current page object:
-                    if (isset($this->setup[$key . '.']['typeNum'])) {
+                    if (isset($this->setup[$key . '.']['type'])) {
+                        $typeName = $this->setup[$key . '.']['type'];
+                        $this->setup['types.'][$typeName] = $key;
+                    } elseif (isset($this->setup[$key . '.']['typeNum'])) {
                         $typeNum = $this->setup[$key . '.']['typeNum'];
                         $this->setup['types.'][$typeNum] = $key;
                     } elseif (!isset($this->setup['types.'][0]) || !$this->setup['types.'][0]) {
