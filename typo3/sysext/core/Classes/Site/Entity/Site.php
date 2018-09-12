@@ -322,13 +322,14 @@ class Site implements SiteInterface
     /**
      * Returns applicable routers for this site
      *
-     * @return RouterInterface[]
+     * @return \Generator
      */
-    public function getRouters(): array
+    public function getRouters(): \Generator
     {
-        return [
-            new PageRouter()
-        ];
+        $configuredRouters = $this->getConfiguration()['routers'];
+        foreach ($configuredRouters ?? [] as $routerConfiguration) {
+            yield new PageRouter($this, $routerConfiguration);
+        }
     }
 
     /**

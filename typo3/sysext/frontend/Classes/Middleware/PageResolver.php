@@ -75,26 +75,31 @@ class PageResolver implements MiddlewareInterface
         if ($hasSiteConfiguration) {
             /** @var RouteResult $previousResult */
             $previousResult = $request->getAttribute('routing', new RouteResult($request->getUri(), $site, $language));
-            if (!empty($previousResult->getTail())) {
-                // Check for the route
-                $routeResult = $this->getPageRouter()->matchRoute($request, $previousResult->getTail(), $site, $language);
+            // Check for the route
+            /** @var PageRouter $router */
+            foreach ($site->getRouters() as $router) {
+                $routeResult = $router->matchRequest($request, $language, $previousResult);
+                if ($routeResult === null) {
+                    continue;
+                }
+                // @todo: kick in the resolvers for the RouteEnhancers at this point
                 $request = $request->withAttribute('routing', $routeResult);
+                $this->controller->type = $routeResult['type'] ?? 0;
                 if (is_array($routeResult['page'])) {
                     $page = $routeResult['page'];
                     $this->controller->id = (int)($page['l10n_parent'] > 0 ? $page['l10n_parent'] : $page['uid']);
                     $tail = $routeResult->getTail();
                     $requestedUri = $request->getUri();
                     // the request was called with "/my-page" but it's actually called "/my-page/", let's do a redirect
-                    if ($tail === '' && substr($requestedUri->getPath(), -1) !== substr($page['slug'], -1)) {
-                        $uri = $requestedUri->withPath($requestedUri->getPath() . '/');
-                        return new RedirectResponse($uri, 307);
-                    }
+                    #if ($tail === '' && substr($requestedUri->getPath(), -1) !== substr($page['slug'], -1)) {
+                    #    $uri = $requestedUri->withPath($requestedUri->getPath() . '/');
+                    #    return new RedirectResponse($uri, 307);
+                    #}
                     if ($tail === '/') {
                         $uri = $requestedUri->withPath(rtrim($requestedUri->getPath(), '/'));
                         return new RedirectResponse($uri, 307);
                     }
                     if (!empty($tail)) {
-                        // @todo: kick in the resolvers for the RouteEnhancers at this point
                         return GeneralUtility::makeInstance(ErrorController::class)->pageNotFoundAction(
                             $request,
                             'The requested page does not exist',
@@ -108,10 +113,10 @@ class PageResolver implements MiddlewareInterface
                         ['code' => PageAccessFailureReasons::PAGE_NOT_FOUND]
                     );
                 }
-                // At this point, we later get further route modifiers
-                // for bw-compat we update $GLOBALS[TYPO3_REQUEST] to be used later in TSFE.
-                $GLOBALS['TYPO3_REQUEST'] = $request;
             }
+            // At this point, we later get further route modifiers
+            // for bw-compat we update $GLOBALS[TYPO3_REQUEST] to be used later in TSFE.
+            $GLOBALS['TYPO3_REQUEST'] = $request;
         } else {
             // old-school page resolving for realurl, cooluri etc.
             $this->controller->siteScript = $request->getAttribute('normalizedParams')->getSiteScript();

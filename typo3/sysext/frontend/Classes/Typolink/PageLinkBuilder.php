@@ -24,6 +24,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Exception\Page\RootLineException;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
+use TYPO3\CMS\Core\Routing\PageRouter;
 use TYPO3\CMS\Core\Routing\PageUriBuilder;
 use TYPO3\CMS\Core\Routing\SiteMatcher;
 use TYPO3\CMS\Core\Site\Entity\Site;
@@ -360,13 +361,13 @@ class PageLinkBuilder extends AbstractTypolinkBuilder
 
         $targetPageId = (int)($page['l10n_parent'] > 0 ? $page['l10n_parent'] : $page['uid']);
 
-        $uri = GeneralUtility::makeInstance(PageUriBuilder::class)->buildUri(
-            $targetPageId,
-            $queryParameters,
-            $fragment,
-            ['site' => $siteOfTargetPage, 'language' => $siteLanguageOfTargetPage],
-            $useAbsoluteUrl ? PageUriBuilder::ABSOLUTE_URL : PageUriBuilder::ABSOLUTE_PATH
-        );
+        $queryParameters['type'] = $this->getTypoScriptFrontendController()->type;
+        foreach ($siteOfTargetPage->getRouters() as $router) {
+            if ($router instanceof PageRouter) {
+                $uri = $router->generate($targetPageId, $siteLanguageOfTargetPage, $queryParameters, $fragment, $useAbsoluteUrl ? PageUriBuilder::ABSOLUTE_URL : PageUriBuilder::ABSOLUTE_PATH);
+                breaK;
+            }
+        }
         // Override scheme, but only if the site does not define a scheme yet AND the site defines a domain/host
         if ($useAbsoluteUrl && !$uri->getScheme() && $uri->getHost()) {
             $scheme = $conf['forceAbsoluteUrl.']['scheme'] ?? 'https';
