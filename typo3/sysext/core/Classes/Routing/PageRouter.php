@@ -184,7 +184,7 @@ class PageRouter
         $collection->add('default', $defaultRouteForPage);
 
         foreach ($this->getSuitableEnhancersForPage($pageId) as $enhancer) {
-            $enhancer->addVariants($collection);
+            $enhancer->enhance($collection);
         }
 
         $context = new RequestContext(
