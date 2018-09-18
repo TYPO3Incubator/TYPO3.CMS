@@ -16,9 +16,8 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  * The TYPO3 project - inspiring people to share!
  */
 
-
-use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
+use TYPO3\CMS\Core\Routing\Route;
 use TYPO3\CMS\Extbase\Reflection\ClassSchema;
 
 /**
@@ -37,7 +36,6 @@ use TYPO3\CMS\Extbase\Reflection\ClassSchema;
  * requirements:
  *   page: { regexp: '[0-9]+'}
  *   slug: { regexp: '.*', resolver: 'SlugResolver', tableName: 'tx_news_domain_model_news', fieldName: 'path_segment' }
- *
  */
 class ExtbasePluginEnhancer
 {
@@ -70,7 +68,6 @@ class ExtbasePluginEnhancer
                     'routePath' => '/' . strtolower($controllerName) . '-' . strtolower($action)
                 ];
                 foreach ($cls->getMethod($methodName)['params'] as $argumentName => $argument) {
-
                     $routesOfPlugin[$identifier]['routePath'][$argument['position']] = [
                         'name' => $argumentName,
                         'type' => $argument['type'],
@@ -111,11 +108,13 @@ class ExtbasePluginEnhancer
         return $route;
     }
 
-    public function flattenParameters($parameters) {
+    public function flattenParameters($parameters)
+    {
         return $parameters;
     }
 
-    public function unflattenParameters($parameters) {
+    public function unflattenParameters($parameters)
+    {
         return $parameters;
     }
 }

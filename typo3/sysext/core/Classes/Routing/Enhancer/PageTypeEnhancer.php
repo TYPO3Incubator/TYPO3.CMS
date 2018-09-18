@@ -16,8 +16,8 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  * The TYPO3 project - inspiring people to share!
  */
 
-use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
+use TYPO3\CMS\Core\Routing\Route;
 
 /**
  * Resolves a static list (like page.typeNum) against a file pattern. Usually added on the very last part
@@ -27,7 +27,6 @@ use Symfony\Component\Routing\RouteCollection;
  *   routePath: '{type}'
  *   requirements:
  *     type: '.json|.html'
- *
  */
 class PageTypeEnhancer
 {
@@ -65,11 +64,13 @@ class PageTypeEnhancer
         return $route;
     }
 
-    public function flattenParameters($parameters) {
+    public function flattenParameters($parameters)
+    {
         return $parameters;
     }
 
-    public function unflattenParameters($parameters) {
+    public function unflattenParameters($parameters)
+    {
         return $parameters;
     }
 }

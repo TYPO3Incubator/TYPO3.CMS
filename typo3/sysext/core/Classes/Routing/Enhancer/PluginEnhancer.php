@@ -16,9 +16,8 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  * The TYPO3 project - inspiring people to share!
  */
 
-
-use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
+use TYPO3\CMS\Core\Routing\Route;
 
 /**
  * Used for plugins like EXT:felogin.
@@ -29,7 +28,6 @@ use Symfony\Component\Routing\RouteCollection;
  *     controller: '[A-z]*'
  *     action: '[A-z]*'
  *   namespace: "tx_blogexample_pi1"
- *
  */
 class PluginEnhancer
 {
@@ -75,8 +73,8 @@ class PluginEnhancer
     {
         $namespace = $this->configuration['namespace'];
         $routePath = $this->configuration['routePath'];
-        #$routePath = str_replace(['{', '}'], ['{' . $namespace . '%5B', '%5D}'], $routePath);
-        #$routePath = str_replace(['{', '}'], ['{' . $namespace . '[', ']}'], $routePath);
+        //$routePath = str_replace(['{', '}'], ['{' . $namespace . '%5B', '%5D}'], $routePath);
+        //$routePath = str_replace(['{', '}'], ['{' . $namespace . '[', ']}'], $routePath);
         $routePath = str_replace('{', '{' . $namespace . '_', $routePath);
         return $routePath;
     }
@@ -91,7 +89,8 @@ class PluginEnhancer
         return $requirements;
     }
 
-    public function flattenParameters(array $parameters) {
+    public function flattenParameters(array $parameters)
+    {
         $namespace = $this->configuration['namespace'];
         if (isset($parameters[$namespace])) {
             $newParameters = [];
@@ -113,7 +112,8 @@ class PluginEnhancer
         return $parameters;
     }
 
-    public function unflattenParameters($parameters) {
+    public function unflattenParameters($parameters)
+    {
         $namespace = $this->configuration['namespace'];
         $newParameters = [];
         foreach ($parameters as $name => $v) {
