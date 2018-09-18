@@ -18,6 +18,7 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
 
 use Symfony\Component\Routing\RouteCollection;
 use TYPO3\CMS\Core\Routing\Route;
+use TYPO3\CMS\Core\Routing\Mapper\Mappable;
 
 /**
  * Resolves a static list (like page.typeNum) against a file pattern. Usually added on the very last part
@@ -30,11 +31,20 @@ use TYPO3\CMS\Core\Routing\Route;
  */
 class PageTypeEnhancer
 {
+    /**
+     * @var array
+     */
     protected $configuration;
 
-    public function __construct(array $configuration)
+    /**
+     * @var Mappable[]
+     */
+    protected $mappers;
+
+    public function __construct(array $configuration, array $mappers)
     {
         $this->configuration = $configuration;
+        $this->mappers = $mappers;
     }
 
     /**

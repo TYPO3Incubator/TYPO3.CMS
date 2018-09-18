@@ -17,6 +17,7 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  */
 
 use Symfony\Component\Routing\RouteCollection;
+use TYPO3\CMS\Core\Routing\Mapper\Mappable;
 use TYPO3\CMS\Core\Routing\Route;
 use TYPO3\CMS\Extbase\Reflection\ClassSchema;
 
@@ -39,15 +40,31 @@ use TYPO3\CMS\Extbase\Reflection\ClassSchema;
  */
 class ExtbasePluginEnhancer
 {
+    /**
+     * @var array
+     */
     protected $configuration;
 
+    /**
+     * @var Mappable[]
+     */
+    protected $mappers;
+
+    /**
+     * @var array
+     */
     protected $routesOfPlugin;
 
+    /**
+     * @var string
+     */
     protected $namespace;
 
-    public function __construct(array $configuration)
+    public function __construct(array $configuration, array $mappers)
     {
         $this->configuration = $configuration;
+        $this->mappers = $mappers;
+
         $extensionName = $this->configuration['extension'];
         $pluginName = $this->configuration['plugin'];
         $this->namespace = 'tx_' . strtolower($extensionName) . '_' . strtolower($pluginName);

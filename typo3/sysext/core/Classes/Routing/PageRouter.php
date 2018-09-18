@@ -32,6 +32,9 @@ use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Routing\Enhancer\ExtbasePluginEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PageTypeEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
+use TYPO3\CMS\Core\Routing\Mapper\AbstractMapperFactory;
+use TYPO3\CMS\Core\Routing\Mapper\Mappable;
+use TYPO3\CMS\Core\Routing\Mapper\MapperFactory;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -77,6 +80,11 @@ class PageRouter
     protected $configuration;
 
     /**
+     * @var AbstractMapperFactory[]
+     */
+    protected $mapperFactories = [];
+
+    /**
      * PageRouter constructor.
      * @param SiteInterface $site
      * @param array $configuration
@@ -85,6 +93,11 @@ class PageRouter
     {
         $this->site = $site;
         $this->configuration = $configuration;
+
+        // @todo Move to factory collection/registry
+        $this->mapperFactories = [
+            new MapperFactory(),
+        ];
     }
 
     /**
@@ -294,17 +307,76 @@ class PageRouter
     protected function getSuitableEnhancersForPage(int $pageId): \Generator
     {
         foreach ($this->configuration['routingEnhancers'] as $enhancerConfiguration) {
+            $mappers = $this->buildMappers($enhancerConfiguration['mappings'] ?? []);
+
             // @todo: Check if there is a restriction to page Ids.
             switch ($enhancerConfiguration['type']) {
                 case 'PageTypeEnhancer':
-                    yield new PageTypeEnhancer($enhancerConfiguration);
+                    yield new PageTypeEnhancer($enhancerConfiguration, $mappers);
                     break;
                 case 'PluginEnhancer':
-                    yield new PluginEnhancer($enhancerConfiguration);
+                    yield new PluginEnhancer($enhancerConfiguration, $mappers);
                     break;
                 case 'ExtbasePluginEnhancer':
-                    yield new ExtbasePluginEnhancer($enhancerConfiguration);
+                    yield new ExtbasePluginEnhancer($enhancerConfiguration, $mappers);
             }
+        }
+    }
+
+    /**
+     * @param array $mappings
+     * @return Mappable[]
+     */
+    protected function buildMappers(array $mappings): array
+    {
+        return array_map([$this, 'buildMapper'], $mappings);
+    }
+
+    /**
+     * @param array $settings
+     * @return Mappable
+     */
+    protected function buildMapper(array $settings): Mappable
+    {
+        $type = (string)($settings['type'] ?? '');
+
+        if (empty($type)) {
+            throw new \LogicException(
+                'Mapper type cannot be empty',
+                1537298184
+            );
+        }
+
+        return $this->findMapperFactory($type)->build($type, $settings);
+    }
+
+    /**
+     * @param string $name
+     * @return AbstractMapperFactory
+     */
+    protected function findMapperFactory(string $name): AbstractMapperFactory
+    {
+        $factories = array_filter(
+            $this->mapperFactories,
+            function (AbstractMapperFactory $factory) use ($name) {
+                return in_array($name, $factory->builds(), true);
+            }
+        );
+
+        if (count($factories) === 1) {
+            return $factories[0];
+        }
+        if (empty($factories)) {
+            throw new \LogicException(
+                sprintf('No mapper factories found for %s', $name),
+                1537298185
+            );
+        }
+        if (count($factories) > 1) {
+            throw new \LogicException(
+                sprintf('Multiple mapper factories found for %s', $name),
+                1537298185
+            );
         }
     }
 

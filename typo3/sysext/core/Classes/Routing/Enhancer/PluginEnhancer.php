@@ -17,6 +17,7 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  */
 
 use Symfony\Component\Routing\RouteCollection;
+use TYPO3\CMS\Core\Routing\Mapper\Mappable;
 use TYPO3\CMS\Core\Routing\Route;
 
 /**
@@ -31,11 +32,20 @@ use TYPO3\CMS\Core\Routing\Route;
  */
 class PluginEnhancer
 {
+    /**
+     * @var array
+     */
     protected $configuration;
 
-    public function __construct(array $configuration)
+    /**
+     * @var Mappable[]
+     */
+    protected $mappers;
+
+    public function __construct(array $configuration, array $mappers)
     {
         $this->configuration = $configuration;
+        $this->mappers = $mappers;
     }
 
     /**
