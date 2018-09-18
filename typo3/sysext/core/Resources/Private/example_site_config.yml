@@ -1,0 +1,37 @@
+routingEnhancers:
+  - type: PluginEnhancer
+    routePath: '/forgotpw/{user}/{hash}'
+    namespace: 'tx_felogin_pi1'
+    requirements:
+      user: '[0-9]+'
+      hash: '^[a-Z0-9]{32}$'
+  - type: ExtbasePluginEnhancer
+    vendor: 'GeorgRinger'
+    extension: 'News'
+    plugin: 'Pi1'
+    routes:
+    - { routePath: '/{blog-name}/{page}', '_controller': 'News::listAction' }
+    - { routePath: '/{blog-name}/{news_title}', '_controller': 'News::detailAction' }
+    - { routePath: '/archive/{year}/{month}', '_controller': 'News::archiveAction' }
+    defaults:
+      page: '0'
+    requirements:
+      page: '[0-9]+'
+    mappings:
+      # Placeholder Name
+      news_title:
+        # used for generating and requirement (+ optional condition)
+        type: SlugMapper
+        tableName: 'tx_news_domain_model_news'
+        fieldName: 'path_segment'
+      blog-name:
+        type: LocaleValueMapper
+        map:
+          blog: en
+          block: de
+  - type: PageTypeEnhancer
+    routePath: '{type}'
+    defaults:
+      type: '.html'
+    requirements:
+      type: '.json|.html'

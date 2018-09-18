@@ -94,7 +94,7 @@ class PageRouter
      * @param ServerRequestInterface $request
      * @param SiteLanguage $language
      * @param RouteResult $result
-     * @return null|RouteResult
+     * @return RouteResult|null
      */
     public function matchRequest(ServerRequestInterface $request, SiteLanguage $language, RouteResult $result): ?RouteResult
     {
@@ -294,8 +294,7 @@ class PageRouter
 
     protected function getSuitableEnhancersForPage(int $pageId): \Generator
     {
-        foreach ($this->configuration['enhancers'] as $enhancerConfiguration)
-        {
+        foreach ($this->configuration['routingEnhancers'] as $enhancerConfiguration) {
             // @todo: Check if there is a restriction to page Ids.
             switch ($enhancerConfiguration['type']) {
                 case 'PageTypeEnhancer':
@@ -307,7 +306,6 @@ class PageRouter
                 case 'ExtbasePluginEnhancer':
                     yield new ExtbasePluginEnhancer($enhancerConfiguration);
             }
-
         }
     }
 

@@ -77,42 +77,44 @@ class PageResolver implements MiddlewareInterface
             $previousResult = $request->getAttribute('routing', new RouteResult($request->getUri(), $site, $language));
             // Check for the route
             /** @var PageRouter $router */
-            foreach ($site->getRouters() as $router) {
-                $routeResult = $router->matchRequest($request, $language, $previousResult);
-                if ($routeResult === null) {
-                    continue;
+            $router = $site->getRouter();
+            $routeResult = $router->matchRequest($request, $language, $previousResult);
+            if ($routeResult === null) {
+                return GeneralUtility::makeInstance(ErrorController::class)->pageNotFoundAction(
+                    $request,
+                    'The requested page does not exist',
+                    ['code' => PageAccessFailureReasons::PAGE_NOT_FOUND]
+                );
+            }
+            $request = $request->withAttribute('routing', $routeResult);
+            $this->controller->type = $routeResult['type'] ?? 0;
+            if (is_array($routeResult['page'])) {
+                $page = $routeResult['page'];
+                $this->controller->id = (int)($page['l10n_parent'] > 0 ? $page['l10n_parent'] : $page['uid']);
+                $tail = $routeResult->getTail();
+                $requestedUri = $request->getUri();
+                // the request was called with "/my-page" but it's actually called "/my-page/", let's do a redirect
+                //if ($tail === '' && substr($requestedUri->getPath(), -1) !== substr($page['slug'], -1)) {
+                //    $uri = $requestedUri->withPath($requestedUri->getPath() . '/');
+                //    return new RedirectResponse($uri, 307);
+                //}
+                if ($tail === '/') {
+                    $uri = $requestedUri->withPath(rtrim($requestedUri->getPath(), '/'));
+                    return new RedirectResponse($uri, 307);
                 }
-                // @todo: kick in the resolvers for the RouteEnhancers at this point
-                $request = $request->withAttribute('routing', $routeResult);
-                $this->controller->type = $routeResult['type'] ?? 0;
-                if (is_array($routeResult['page'])) {
-                    $page = $routeResult['page'];
-                    $this->controller->id = (int)($page['l10n_parent'] > 0 ? $page['l10n_parent'] : $page['uid']);
-                    $tail = $routeResult->getTail();
-                    $requestedUri = $request->getUri();
-                    // the request was called with "/my-page" but it's actually called "/my-page/", let's do a redirect
-                    #if ($tail === '' && substr($requestedUri->getPath(), -1) !== substr($page['slug'], -1)) {
-                    #    $uri = $requestedUri->withPath($requestedUri->getPath() . '/');
-                    #    return new RedirectResponse($uri, 307);
-                    #}
-                    if ($tail === '/') {
-                        $uri = $requestedUri->withPath(rtrim($requestedUri->getPath(), '/'));
-                        return new RedirectResponse($uri, 307);
-                    }
-                    if (!empty($tail)) {
-                        return GeneralUtility::makeInstance(ErrorController::class)->pageNotFoundAction(
-                            $request,
-                            'The requested page does not exist',
-                            ['code' => PageAccessFailureReasons::PAGE_NOT_FOUND]
-                        );
-                    }
-                } else {
+                if (!empty($tail)) {
                     return GeneralUtility::makeInstance(ErrorController::class)->pageNotFoundAction(
                         $request,
                         'The requested page does not exist',
                         ['code' => PageAccessFailureReasons::PAGE_NOT_FOUND]
                     );
                 }
+            } else {
+                return GeneralUtility::makeInstance(ErrorController::class)->pageNotFoundAction(
+                    $request,
+                    'The requested page does not exist',
+                    ['code' => PageAccessFailureReasons::PAGE_NOT_FOUND]
+                );
             }
             // At this point, we later get further route modifiers
             // for bw-compat we update $GLOBALS[TYPO3_REQUEST] to be used later in TSFE.

@@ -17,6 +17,7 @@ namespace TYPO3\CMS\Core\Site\Entity;
  */
 
 use Psr\Http\Message\UriInterface;
+use Symfony\Component\Yaml\Yaml;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Error\PageErrorHandler\FluidPageErrorHandler;
 use TYPO3\CMS\Core\Error\PageErrorHandler\InvalidPageErrorHandlerException;
@@ -26,7 +27,6 @@ use TYPO3\CMS\Core\Error\PageErrorHandler\PageErrorHandlerNotConfiguredException
 use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Routing\PageRouter;
-use TYPO3\CMS\Core\Routing\RouterInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
@@ -322,14 +322,14 @@ class Site implements SiteInterface
     /**
      * Returns applicable routers for this site
      *
-     * @return \Generator
+     * @return PageRouter
      */
-    public function getRouters(): \Generator
+    public function getRouter(): PageRouter
     {
-        $configuredRouters = $this->getConfiguration()['routers'];
-        foreach ($configuredRouters ?? [] as $routerConfiguration) {
-            yield new PageRouter($this, $routerConfiguration);
-        }
+        // @todo: fix me
+        $yaml = 'EXT:core/Resources/Private/example_site_config.yml';
+        $routerConfiguration = Yaml::parse(file_get_contents(GeneralUtility::getFileAbsFileName($yaml)));
+        return new PageRouter($this, $routerConfiguration);
     }
 
     /**
