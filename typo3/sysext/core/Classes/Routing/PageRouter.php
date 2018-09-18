@@ -198,23 +198,28 @@ class PageRouter
             $language->getBase()->getHost(),
             $language->getBase()->getScheme() ?? ''
         );
+        $parameters['_fragment'] = $fragment;
         $generator = new UrlGenerator($collection, $context);
         $generator->setStrictRequirements(true);
-        $parameters['_fragment'] = $fragment;
         $allRoutes = $collection->all();
         $allRoutes = array_reverse($allRoutes, true);
+        $matchedRoute = null;
         foreach ($allRoutes as $routeName => $route) {
             try {
                 $result = $generator->generate($routeName, $parameters, $type);
+                $matchedRoute = $collection->get($routeName);
                 break;
             } catch (MissingMandatoryParametersException $e) {
+                var_dump($e);
+                exit;
             }
         }
         $uri = new Uri($result);
-        if ($uri->getQuery()) {
+        if ($matchedRoute && $uri->getQuery()) {
             $queryParams = [];
             parse_str($uri->getQuery(), $queryParams);
-            foreach ($this->getSuitableEnhancersForPage($pageId) as $enhancer) {
+            if ($matchedRoute->hasOption('enhancer')) {
+                $enhancer = $matchedRoute->getOption('enhancer');
                 if (method_exists($enhancer, 'unflattenParameters')) {
                     $queryParams = $enhancer->unflattenParameters($queryParams);
                 }
