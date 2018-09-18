@@ -20,6 +20,17 @@ namespace TYPO3\CMS\Core\Routing\Enhancers;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
+/**
+ * Used for plugins like EXT:felogin.
+ *
+ * - type: PluginEnhancer
+ *   routePath: '/{controller}/{action}/'
+ *   requirements:
+ *     controller: '[A-z]*'
+ *     action: '[A-z]*'
+ *   namespace: "tx_blogexample_pi1"
+ *
+ */
 class PluginEnhancer
 {
     protected $configuration;

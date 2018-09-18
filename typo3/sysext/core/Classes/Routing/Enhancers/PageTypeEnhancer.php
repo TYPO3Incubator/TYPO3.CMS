@@ -16,13 +16,18 @@ namespace TYPO3\CMS\Core\Routing\Enhancers;
  * The TYPO3 project - inspiring people to share!
  */
 
-
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
 /**
  * Resolves a static list (like page.typeNum) against a file pattern. Usually added on the very last part
- * of
+ * of the URL.
+ *
+ * type: PageTypeEnhancer
+ *   routePath: '{type}'
+ *   requirements:
+ *     type: '.json|.html'
+ *
  */
 class PageTypeEnhancer
 {

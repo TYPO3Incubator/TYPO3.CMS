@@ -30,6 +30,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\FrontendWorkspaceRestriction;
 use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Routing\Enhancers\ExtbasePluginEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancers\PageTypeEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancers\PluginEnhancer;
 use TYPO3\CMS\Core\Site\Entity\Site;
@@ -300,6 +301,9 @@ class PageRouter
                     break;
                 case 'PluginEnhancer':
                     yield new PluginEnhancer($enhancerConfiguration);
+                    break;
+                case 'ExtbasePluginEnhancer':
+                    yield new ExtbasePluginEnhancer($enhancerConfiguration);
             }
 
         }
