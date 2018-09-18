@@ -17,7 +17,6 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  */
 
 use Symfony\Component\Routing\RouteCollection;
-use TYPO3\CMS\Core\Routing\Route;
 use TYPO3\CMS\Core\Routing\Mapper\Mappable;
 
 /**
@@ -51,7 +50,7 @@ class PageTypeEnhancer
      * Used when a URL is matched.
      * @param RouteCollection $collection
      */
-    public function addVariants(RouteCollection $collection)
+    public function enhance(RouteCollection $collection)
     {
         foreach ($collection->all() as $existingRoute) {
             $variant = clone $existingRoute;
@@ -60,18 +59,6 @@ class PageTypeEnhancer
             $variant->addRequirements($this->configuration['requirements'] ?? ['type' => '.*']);
             $collection->add('enhancer_' . spl_object_hash($this) . spl_object_hash($existingRoute), $variant);
         }
-    }
-
-    /**
-     * @param Route $route
-     * @return Route
-     */
-    public function enhanceDefaultRoute(Route $route)
-    {
-        $route->setPath(rtrim($route->getPath(), '/') . $this->configuration['routePath']);
-        $route->addDefaults(['type' => 0]);
-        $route->addRequirements($this->configuration['requirements']);
-        return $route;
     }
 
     public function flattenParameters($parameters)

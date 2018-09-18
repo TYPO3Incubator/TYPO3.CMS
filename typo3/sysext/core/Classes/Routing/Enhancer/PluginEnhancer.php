@@ -58,7 +58,7 @@ class PluginEnhancer
      * Used when a URL is matched.
      * @param RouteCollection $collection
      */
-    public function addVariants(RouteCollection $collection)
+    public function enhance(RouteCollection $collection)
     {
         $routePath = $this->getNamespacedRoutePath();
         $defaultPageRoute = $collection->get('default');
@@ -69,21 +69,6 @@ class PluginEnhancer
             $variant->addRequirements($this->getNamespacedRequirements());
         }
         $collection->add('enhancer_' . $this->namespace . spl_object_hash($variant), $variant);
-    }
-
-    /**
-     * If the route enhancers contains non-default parameters, they NEED to be cloned.
-     *
-     * @param Route $route
-     * @return Route
-     */
-    public function enhanceDefaultRoute(Route $route)
-    {
-        $newPath = rtrim($route->getPath(), '/') . $this->getNamespacedRoutePath();
-        $route = clone $route;
-        $route->setPath($newPath);
-        $route->addRequirements($this->getNamespacedRequirements());
-        return $route;
     }
 
     protected function getNamespacedRoutePath()

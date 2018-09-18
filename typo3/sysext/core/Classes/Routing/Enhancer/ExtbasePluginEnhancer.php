@@ -84,7 +84,7 @@ class ExtbasePluginEnhancer extends PluginEnhancer
      * Used when a URL is matched.
      * @param RouteCollection $collection
      */
-    public function addVariants(RouteCollection $collection)
+    public function enhance(RouteCollection $collection)
     {
         $i = 0;
         $defaultPageRoute = $collection->get('default');
@@ -97,15 +97,6 @@ class ExtbasePluginEnhancer extends PluginEnhancer
             $route->addRequirements($this->configuration['requirements']);
             $collection->add($this->namespace . '_' . $i++, $route);
         }
-    }
-
-    /**
-     * @param Route $route
-     * @return Route
-     */
-    public function enhanceDefaultRoute(Route $route)
-    {
-        return $route;
     }
 
     /**
