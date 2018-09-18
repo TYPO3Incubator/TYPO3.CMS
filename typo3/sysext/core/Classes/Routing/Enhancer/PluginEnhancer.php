@@ -42,10 +42,16 @@ class PluginEnhancer
      */
     protected $mappers;
 
+    /**
+     * @var string
+     */
+    protected $namespace;
+
     public function __construct(array $configuration, array $mappers)
     {
         $this->configuration = $configuration;
         $this->mappers = $mappers;
+        $this->namespace = $this->configuration['namespace'] ?? '';
     }
 
     /**
@@ -58,10 +64,11 @@ class PluginEnhancer
         $defaultPageRoute = $collection->get('default');
         $variant = clone $defaultPageRoute;
         $variant->setPath(rtrim($variant->getPath(), '/') . '/' . ltrim($routePath, '/'));
+        $variant->addOptions(['enhancer' => $this]);
         if ($this->configuration['requirements']) {
             $variant->addRequirements($this->getNamespacedRequirements());
         }
-        $collection->add('enhancer_' . spl_object_hash($this) . spl_object_hash($variant), $variant);
+        $collection->add('enhancer_' . $this->namespace . spl_object_hash($variant), $variant);
     }
 
     /**
@@ -81,37 +88,35 @@ class PluginEnhancer
 
     protected function getNamespacedRoutePath()
     {
-        $namespace = $this->configuration['namespace'];
         $routePath = $this->configuration['routePath'];
-        //$routePath = str_replace(['{', '}'], ['{' . $namespace . '%5B', '%5D}'], $routePath);
-        //$routePath = str_replace(['{', '}'], ['{' . $namespace . '[', ']}'], $routePath);
-        $routePath = str_replace('{', '{' . $namespace . '_', $routePath);
+        $routePath = str_replace('{', '{' . $this->namespace . '_', $routePath);
         return $routePath;
     }
 
     protected function getNamespacedRequirements()
     {
-        $namespace = $this->configuration['namespace'];
         $requirements = [];
         foreach ($this->configuration['requirements'] as $name => $value) {
-            $requirements[$namespace . '_' . $name] = $value;
+            $requirements[$this->namespace . '_' . $name] = $value;
         }
         return $requirements;
     }
 
     public function flattenParameters(array $parameters)
     {
-        $namespace = $this->configuration['namespace'];
-        if (isset($parameters[$namespace])) {
+        if (empty($this->namespace)) {
+            return $parameters;
+        }
+        if (isset($parameters[$this->namespace])) {
             $newParameters = [];
             foreach ($parameters as $name => $v) {
-                if ($name === $namespace) {
+                if ($name === $this->namespace) {
                     if (is_array($v)) {
                         foreach ($v as $k2 => $v2) {
-                            $newParameters[$namespace . '_' . $k2] = $v2;
+                            $newParameters[$this->namespace . '_' . $k2] = $v2;
                         }
                     } else {
-                        $newParameters[$namespace . '_' . $name] = $v;
+                        $newParameters[$this->namespace . '_' . $name] = $v;
                     }
                     continue;
                 }
@@ -124,12 +129,14 @@ class PluginEnhancer
 
     public function unflattenParameters($parameters)
     {
-        $namespace = $this->configuration['namespace'];
+        if (empty($this->namespace)) {
+            return $parameters;
+        }
         $newParameters = [];
         foreach ($parameters as $name => $v) {
-            if (strpos($name, $namespace) === 0) {
-                $name = substr($name, strlen($namespace)+1);
-                $newParameters[$namespace][$name] = $v;
+            if ($name !== $this->namespace && strpos($name, $this->namespace) === 0) {
+                $name = substr($name, strlen($this->namespace)+1);
+                $newParameters[$this->namespace][$name] = $v;
                 continue;
             }
             $newParameters[$name] = $v;

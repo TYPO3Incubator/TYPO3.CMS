@@ -17,7 +17,6 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  */
 
 use Symfony\Component\Routing\RouteCollection;
-use TYPO3\CMS\Core\Routing\Mapper\Mappable;
 use TYPO3\CMS\Core\Routing\Route;
 use TYPO3\CMS\Extbase\Reflection\ClassSchema;
 
@@ -38,33 +37,16 @@ use TYPO3\CMS\Extbase\Reflection\ClassSchema;
  *   page: { regexp: '[0-9]+'}
  *   slug: { regexp: '.*', resolver: 'SlugResolver', tableName: 'tx_news_domain_model_news', fieldName: 'path_segment' }
  */
-class ExtbasePluginEnhancer
+class ExtbasePluginEnhancer extends PluginEnhancer
 {
-    /**
-     * @var array
-     */
-    protected $configuration;
-
-    /**
-     * @var Mappable[]
-     */
-    protected $mappers;
-
     /**
      * @var array
      */
     protected $routesOfPlugin;
 
-    /**
-     * @var string
-     */
-    protected $namespace;
-
     public function __construct(array $configuration, array $mappers)
     {
-        $this->configuration = $configuration;
-        $this->mappers = $mappers;
-
+        parent::__construct($configuration, $mappers);
         $extensionName = $this->configuration['extension'];
         $pluginName = $this->configuration['plugin'];
         $this->namespace = 'tx_' . strtolower($extensionName) . '_' . strtolower($pluginName);
@@ -110,7 +92,8 @@ class ExtbasePluginEnhancer
             $routePath = $routeDefinition['routePath'];
             unset($routeDefinition['routePath']);
             $defaults = array_merge_recursive($defaultPageRoute->getDefaults(), $routeDefinition);
-            $route = new Route(rtrim($defaultPageRoute->getPath(), '/') . '/' . ltrim($routePath, '/'), $defaults, [], ['utf8' => true]);
+            $options = ['enhancer' => $this, 'utf8' => true];
+            $route = new Route(rtrim($defaultPageRoute->getPath(), '/') . '/' . ltrim($routePath, '/'), $defaults, [], $options);
             $route->addRequirements($this->configuration['requirements']);
             $collection->add($this->namespace . '_' . $i++, $route);
         }
@@ -125,13 +108,17 @@ class ExtbasePluginEnhancer
         return $route;
     }
 
-    public function flattenParameters($parameters)
-    {
-        return $parameters;
-    }
-
+    /**
+     * A route has matched the controller/action combination, so ensure that these properties
+     * are set to tx_blogexample_pi1[controller] and tx_blogexample_pi1[action].
+     * @param $parameters
+     * @return array
+     */
     public function unflattenParameters($parameters)
     {
-        return $parameters;
+        list($controllerName, $actionName) = explode('::', $parameters['_controller']);
+        $parameters[$this->namespace]['controller'] = $controllerName;
+        $parameters[$this->namespace]['action'] = $actionName;
+        return parent::unflattenParameters($parameters);
     }
 }

@@ -148,6 +148,13 @@ class PageRouter
         $matcher = new UrlMatcher($fullCollection, $context);
         try {
             $result = $matcher->match('/' . trim($result->getTail(), '/'));
+            $matchedRoute = $fullCollection->get($result['_route']);
+            if ($matchedRoute->hasOption('enhancer')) {
+                $enhancer = $matchedRoute->getOption('enhancer');
+                if (method_exists($enhancer, 'unflattenParameters')) {
+                    $result = $enhancer->unflattenParameters($result);
+                }
+            }
             return new RouteResult($request->getUri(), $this->site, $language, $result['tail'] ?? '', $result);
         } catch (ResourceNotFoundException $e) {
             // do nothing
