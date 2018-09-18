@@ -26,6 +26,7 @@ class MapperFactory extends AbstractMapperFactory
         $classNames = [
             SlugMapper::class,
             StaticValueMapper::class,
+            LocaleValueMapper::class,
         ];
         // remove namespace prefix
         return array_merge(
@@ -82,16 +83,27 @@ class MapperFactory extends AbstractMapperFactory
     protected function buildStaticValueMapper(array $settings): StaticValueMapper
     {
         $map = $settings['map'] ?? null;
-        $locale = $settings['locale'] ?? null;
 
         if (!array($map)) {
             throw new \LogicException('Static value map must be array', 1537277143);
         }
-        if (!is_string($locale ?? '')) {
-            throw new \LogicException('Static value locale must be string', 1537277144);
+
+        return new StaticValueMapper($map);
+    }
+
+    /**
+     * @param array $settings
+     * @return LocaleValueMapper
+     */
+    protected function buildLocaleValueMapper(array $settings): LocaleValueMapper
+    {
+        $map = $settings['map'] ?? null;
+
+        if (!array($map)) {
+            throw new \LogicException('Locale value map must be array', 1537277144);
         }
 
-        return new StaticValueMapper($map, $locale);
+        return new LocaleValueMapper($map);
     }
 
     /**

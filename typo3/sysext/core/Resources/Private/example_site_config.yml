@@ -26,8 +26,7 @@ routingEnhancers:
         tableName: 'tx_news_domain_model_news'
         fieldName: 'path_segment'
       blog-name:
-        type: StaticValueMapper
-        locale: _locale
+        type: LocaleValueMapper
         map:
           blog: en
           block: de

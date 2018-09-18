@@ -16,41 +16,8 @@ namespace TYPO3\CMS\Core\Routing\Mapper;
  * The TYPO3 project - inspiring people to share!
  */
 
-class StaticValueMapper implements Mappable
+class LocaleValueMapper extends StaticValueMapper
 {
-    /**
-     * @var array
-     */
-    protected $map;
-
-    /**
-     * @param array $map
-     * @param string|null $locale
-     */
-    public function __construct(array $map)
-    {
-        $this->map = $map;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function serialize()
-    {
-        return serialize([
-            'map' => $this->map,
-        ]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function unserialize($serialized)
-    {
-        $data = unserialize($serialized, ['allowed_classes' => false]);
-        $this->map = $data['map'] ?? [];
-    }
-
     public function getRegularExpression(): string
     {
     }
