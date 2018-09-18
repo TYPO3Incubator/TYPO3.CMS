@@ -30,10 +30,9 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\FrontendWorkspaceRestriction;
 use TYPO3\CMS\Core\Http\Uri;
-use TYPO3\CMS\Core\Routing\Enhancers\ExtbasePluginEnhancer;
-use TYPO3\CMS\Core\Routing\Enhancers\PageTypeEnhancer;
-use TYPO3\CMS\Core\Routing\Enhancers\PluginEnhancer;
-use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Routing\Enhancer\ExtbasePluginEnhancer;
+use TYPO3\CMS\Core\Routing\Enhancer\PageTypeEnhancer;
+use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -103,6 +102,9 @@ class PageRouter
         if (empty($slugCandidates)) {
             return null;
         }
+
+        // @todo Match page -> Route, then match Enhancers ("page takes precendence")
+
         $pageCandidates = $this->getPagesFromDatabaseForCandidates($slugCandidates, $this->site, $language->getLanguageId());
         // Stop if there are no candidates
         if (empty($pageCandidates)) {

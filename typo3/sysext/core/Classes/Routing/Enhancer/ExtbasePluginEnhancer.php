@@ -1,7 +1,7 @@
 <?php
 declare(strict_types = 1);
 
-namespace TYPO3\CMS\Core\Routing\Enhancers;
+namespace TYPO3\CMS\Core\Routing\Enhancer;
 
 /*
  * This file is part of the TYPO3 CMS project.
