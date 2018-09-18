@@ -24,11 +24,11 @@ use TYPO3\CMS\Core\Routing\Route;
  * Used for plugins like EXT:felogin.
  *
  * - type: PluginEnhancer
- *   routePath: '/{controller}/{action}/'
+ *   routePath: '/forgot-pw/{user-id}/{hash}/'
  *   requirements:
- *     controller: '[A-z]*'
- *     action: '[A-z]*'
- *   namespace: "tx_blogexample_pi1"
+ *     user-id: '[A-z]*'
+ *     hash: '[A-z]{0-6}'
+ *   namespace: "tx_felogin_pi1"
  */
 class PluginEnhancer
 {
