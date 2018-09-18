@@ -47,21 +47,20 @@ class PluginEnhancer
     public function addVariants(RouteCollection $collection)
     {
         $routePath = $this->getNamespacedRoutePath();
-        foreach ($collection->all() as $existingRoute) {
-            $variant = clone $existingRoute;
-            $variant->setPath($variant->getPath() . $routePath);
-            #$variant->addDefaults(['type' => 0]);
-            if ($this->configuration['requirements']) {
-                $variant->addRequirements($this->getNamespacedRequirements());
-            }
-            $collection->add('enhancer_' . spl_object_hash($this) . spl_object_hash($existingRoute), $variant);
+        $defaultPageRoute = $collection->get('default');
+        $variant = clone $defaultPageRoute;
+        $variant->setPath(rtrim($variant->getPath(), '/') . '/' . ltrim($routePath, '/'));
+        if ($this->configuration['requirements']) {
+            $variant->addRequirements($this->getNamespacedRequirements());
         }
+        $collection->add('enhancer_' . spl_object_hash($this) . spl_object_hash($variant), $variant);
     }
 
     /**
      * If the route enhancers contains non-default parameters, they NEED to be cloned.
      *
      * @param Route $route
+     * @return Route
      */
     public function enhanceDefaultRoute(Route $route)
     {

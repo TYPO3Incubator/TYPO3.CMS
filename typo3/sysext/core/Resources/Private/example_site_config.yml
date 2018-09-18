@@ -13,6 +13,7 @@ routingEnhancers:
     - { routePath: '/{blog-name}/{page}', '_controller': 'News::listAction' }
     - { routePath: '/{blog-name}/{news_title}', '_controller': 'News::detailAction' }
     - { routePath: '/archive/{year}/{month}', '_controller': 'News::archiveAction' }
+    - { routePath: '/news-test/', '_controller': 'News::listAction' }
     defaults:
       page: '0'
     requirements:

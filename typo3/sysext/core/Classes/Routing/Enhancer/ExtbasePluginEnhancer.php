@@ -31,9 +31,9 @@ use TYPO3\CMS\Extbase\Reflection\ClassSchema;
  * vendor: 'GeorgRinger'
  * extension: 'News'
  * plugin: 'Pi1'
- * actions:
- *   - { routePath: '/blog/{page}', '_controller': 'News::listAction' }
- *   - { routePath: '/blog/{slug}', '_controller': 'News::detailAction' }
+ * routes:
+ *   - { routePath: '/blog/{page}', '_controller': 'News::list' }
+ *   - { routePath: '/blog/{slug}', '_controller': 'News::detail' }
  * requirements:
  *   page: { regexp: '[0-9]+'}
  *   slug: { regexp: '.*', resolver: 'SlugResolver', tableName: 'tx_news_domain_model_news', fieldName: 'path_segment' }
@@ -43,28 +43,35 @@ class ExtbasePluginEnhancer
 {
     protected $configuration;
 
-    protected $map;
+    protected $routesOfPlugin;
+
+    protected $namespace;
 
     public function __construct(array $configuration)
     {
         $this->configuration = $configuration;
         $extensionName = $this->configuration['extension'];
         $pluginName = $this->configuration['plugin'];
+        $this->namespace = 'tx_' . strtolower($extensionName) . '_' . strtolower($pluginName);
+        $this->routesOfPlugin = $this->configuration['routes'] ?? [];
+        return;
+        // we should do this somewhere else.
         $controllersActions = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['extbase']['extensions'][$extensionName]['plugins'][$pluginName]['controllers'];
-        $map = [];
+        $routesOfPlugin = [];
         foreach ($controllersActions as $controllerName => $actions) {
+            $controllerName = ucfirst($controllerName);
             $className = $this->configuration['vendor'] . '\\' . $extensionName . '\\Controller\\' . ucfirst($controllerName) . 'Controller';
             foreach ($actions['actions'] as $action) {
                 $methodName = $action . 'Action';
                 $cls = new ClassSchema($className);
                 $identifier = ucfirst($controllerName) . '::' . $action;
-                $map[$identifier] = [
-                    'controller' => $controllerName,
-                    'action' => $action,
-                    'arguments' => []
+                $routesOfPlugin[$identifier] = [
+                    '_controller' => $controllerName . '::' . $action,
+                    'routePath' => '/' . strtolower($controllerName) . '-' . strtolower($action)
                 ];
                 foreach ($cls->getMethod($methodName)['params'] as $argumentName => $argument) {
-                    $map[$identifier]['arguments'][$argument['position']] = [
+
+                    $routesOfPlugin[$identifier]['routePath'][$argument['position']] = [
                         'name' => $argumentName,
                         'type' => $argument['type'],
                         'optional' => $argument['optional'],
@@ -83,6 +90,16 @@ class ExtbasePluginEnhancer
      */
     public function addVariants(RouteCollection $collection)
     {
+        $i = 0;
+        $defaultPageRoute = $collection->get('default');
+        foreach ($this->routesOfPlugin as $routeDefinition) {
+            $routePath = $routeDefinition['routePath'];
+            unset($routeDefinition['routePath']);
+            $defaults = array_merge_recursive($defaultPageRoute->getDefaults(), $routeDefinition);
+            $route = new Route(rtrim($defaultPageRoute->getPath(), '/') . '/' . ltrim($routePath, '/'), $defaults, [], ['utf8' => true]);
+            $route->addRequirements($this->configuration['requirements']);
+            $collection->add($this->namespace . '_' . $i++, $route);
+        }
     }
 
     /**
