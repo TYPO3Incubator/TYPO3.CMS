@@ -16,6 +16,8 @@ namespace TYPO3\CMS\Core\Routing\Mapper;
  * The TYPO3 project - inspiring people to share!
  */
 
+use TYPO3\CMS\Core\Routing\SiteContext;
+
 class MapperFactory extends AbstractMapperFactory
 {
     /**
@@ -39,11 +41,12 @@ class MapperFactory extends AbstractMapperFactory
     }
 
     /**
+     * @param SiteContext $context
      * @param string $name
      * @param array $settings
      * @return Mappable
      */
-    public function build(string $name, array $settings): Mappable
+    public function build(SiteContext $context, string $name, array $settings): Mappable
     {
         if (!in_array($name, $this->builds(), true)) {
             throw new \LogicException(
@@ -53,15 +56,17 @@ class MapperFactory extends AbstractMapperFactory
         }
         return call_user_func(
             [$this, 'build' . $this->removeNamespace($name)],
+            $context,
             $settings
         );
     }
 
     /**
+     * @param SiteContext $context
      * @param array $settings
      * @return SlugMapper
      */
-    protected function buildSlugMapper(array $settings): SlugMapper
+    protected function buildSlugMapper(SiteContext $context, array $settings): SlugMapper
     {
         $tableName = $settings['tableName'] ?? null;
         $fieldName = $settings['fieldName'] ?? null;
@@ -73,14 +78,15 @@ class MapperFactory extends AbstractMapperFactory
             throw new \LogicException('Slug field name must be string', 1537277134);
         }
 
-        return new SlugMapper($tableName, $fieldName);
+        return new SlugMapper($context, $tableName, $fieldName);
     }
 
     /**
+     * @param SiteContext $context
      * @param array $settings
      * @return StaticValueMapper
      */
-    protected function buildStaticValueMapper(array $settings): StaticValueMapper
+    protected function buildStaticValueMapper(SiteContext $context, array $settings): StaticValueMapper
     {
         $map = $settings['map'] ?? null;
 
@@ -88,14 +94,15 @@ class MapperFactory extends AbstractMapperFactory
             throw new \LogicException('Static value map must be array', 1537277143);
         }
 
-        return new StaticValueMapper($map);
+        return new StaticValueMapper($context, $map);
     }
 
     /**
+     * @param SiteContext $context
      * @param array $settings
      * @return LocaleValueMapper
      */
-    protected function buildLocaleValueMapper(array $settings): LocaleValueMapper
+    protected function buildLocaleValueMapper(SiteContext $context, array $settings): LocaleValueMapper
     {
         $map = $settings['map'] ?? null;
 
@@ -103,7 +110,7 @@ class MapperFactory extends AbstractMapperFactory
             throw new \LogicException('Locale value map must be array', 1537277144);
         }
 
-        return new LocaleValueMapper($map);
+        return new LocaleValueMapper($context, $map);
     }
 
     /**

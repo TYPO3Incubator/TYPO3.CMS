@@ -16,19 +16,27 @@ namespace TYPO3\CMS\Core\Routing\Mapper;
  * The TYPO3 project - inspiring people to share!
  */
 
+use TYPO3\CMS\Core\Routing\SiteContext;
+
 class StaticValueMapper implements Mappable
 {
+    /**
+     * @var SiteContext
+     */
+    protected $context;
+
     /**
      * @var array
      */
     protected $map;
 
     /**
+     * @param SiteContext $context
      * @param array $map
-     * @param string|null $locale
      */
-    public function __construct(array $map)
+    public function __construct(SiteContext $context, array $map)
     {
+        $this->context = $context;
         $this->map = $map;
     }
 

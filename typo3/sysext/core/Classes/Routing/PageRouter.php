@@ -35,7 +35,7 @@ use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
 use TYPO3\CMS\Core\Routing\Mapper\AbstractMapperFactory;
 use TYPO3\CMS\Core\Routing\Mapper\Mappable;
 use TYPO3\CMS\Core\Routing\Mapper\MapperFactory;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Page\CacheHashCalculator;
@@ -70,7 +70,7 @@ use TYPO3\CMS\Frontend\Page\PageRepository;
 class PageRouter
 {
     /**
-     * @var SiteInterface
+     * @var Site
      */
     protected $site;
 
@@ -86,10 +86,10 @@ class PageRouter
 
     /**
      * PageRouter constructor.
-     * @param SiteInterface $site
+     * @param Site $site
      * @param array $configuration
      */
-    public function __construct(SiteInterface $site, array $configuration)
+    public function __construct(Site $site, array $configuration)
     {
         $this->site = $site;
         $this->configuration = $configuration;
@@ -110,6 +110,11 @@ class PageRouter
      */
     public function matchRequest(ServerRequestInterface $request, SiteLanguage $language, RouteResult $result): ?RouteResult
     {
+        $context = new SiteContext(
+            $this->site,
+            $language
+        );
+
         $slugCandidates = $this->getCandidateSlugsFromRoutePath($result->getTail());
         if (empty($slugCandidates)) {
             return null;
@@ -136,7 +141,7 @@ class PageRouter
             );
             $pageCollection->add('default', $defaultRouteForPage);
 
-            foreach ($this->getSuitableEnhancersForPage($pageIdForDefaultLanguage) as $enhancer) {
+            foreach ($this->getSuitableEnhancersForPage($context, $pageIdForDefaultLanguage) as $enhancer) {
                 $enhancer->enhance($pageCollection);
             }
 
@@ -223,11 +228,11 @@ class PageRouter
     /**
      * @param ServerRequestInterface $request
      * @param string $routePathTail
-     * @param SiteInterface $site
+     * @param Site $site
      * @param SiteLanguage $language
      * @return RouteResult|null
      */
-    public function matchRoute(ServerRequestInterface $request, string $routePathTail, SiteInterface $site, SiteLanguage $language): ?RouteResult
+    public function matchRoute(ServerRequestInterface $request, string $routePathTail, Site $site, SiteLanguage $language): ?RouteResult
     {
         $slugCandidates = $this->getCandidateSlugsFromRoutePath($routePathTail);
         if (empty($slugCandidates)) {
@@ -267,11 +272,11 @@ class PageRouter
      * Check for records in the database which matches one of the slug candidates.
      *
      * @param array $slugCandidates
-     * @param SiteInterface $site
+     * @param Site $site
      * @param int $languageId
      * @return array
      */
-    protected function getPagesFromDatabaseForCandidates(array $slugCandidates, SiteInterface $site, int $languageId): array
+    protected function getPagesFromDatabaseForCandidates(array $slugCandidates, Site $site, int $languageId): array
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable('pages');
@@ -312,10 +317,10 @@ class PageRouter
         return $pages;
     }
 
-    protected function getSuitableEnhancersForPage(int $pageId): \Generator
+    protected function getSuitableEnhancersForPage(SiteContext $context, int $pageId): \Generator
     {
         foreach ($this->configuration['routingEnhancers'] as $enhancerConfiguration) {
-            $mappers = $this->buildMappers($enhancerConfiguration['mappings'] ?? []);
+            $mappers = $this->buildMappers($context, $enhancerConfiguration['mappings'] ?? []);
             // @todo: Check if there is a restriction to page Ids.
             switch ($enhancerConfiguration['type']) {
                 case 'PageTypeEnhancer':
@@ -334,16 +339,21 @@ class PageRouter
      * @param array $mappings
      * @return Mappable[]
      */
-    protected function buildMappers(array $mappings): array
+    protected function buildMappers(SiteContext $context, array $mappings): array
     {
-        return array_map([$this, 'buildMapper'], $mappings);
+        return array_map(
+            function ($mappings) use ($context) {
+                return $this->buildMapper($context, $mappings);
+            },
+            $mappings
+        );
     }
 
     /**
      * @param array $settings
      * @return Mappable
      */
-    protected function buildMapper(array $settings): Mappable
+    protected function buildMapper(SiteContext $context, array $settings): Mappable
     {
         $type = (string)($settings['type'] ?? '');
 
@@ -354,7 +364,7 @@ class PageRouter
             );
         }
 
-        return $this->findMapperFactory($type)->build($type, $settings);
+        return $this->findMapperFactory($type)->build($context, $type, $settings);
     }
 
     /**

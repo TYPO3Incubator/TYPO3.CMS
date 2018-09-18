@@ -16,6 +16,8 @@ namespace TYPO3\CMS\Core\Routing\Mapper;
  * The TYPO3 project - inspiring people to share!
  */
 
+use TYPO3\CMS\Core\Routing\SiteContext;
+
 abstract class AbstractMapperFactory
 {
     /**
@@ -24,9 +26,10 @@ abstract class AbstractMapperFactory
     abstract public function builds(): array;
 
     /**
+     * @param SiteContext $context
      * @param string $name
      * @param array $settings
      * @return Mappable
      */
-    abstract public function build(string $name, array $settings): Mappable;
+    abstract public function build(SiteContext $context, string $name, array $settings): Mappable;
 }

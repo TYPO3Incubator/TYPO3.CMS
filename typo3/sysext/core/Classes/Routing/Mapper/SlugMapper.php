@@ -16,8 +16,15 @@ namespace TYPO3\CMS\Core\Routing\Mapper;
  * The TYPO3 project - inspiring people to share!
  */
 
+use TYPO3\CMS\Core\Routing\SiteContext;
+
 class SlugMapper implements Mappable
 {
+    /**
+     * @var SiteContext
+     */
+    protected $context;
+
     /**
      * @var string
      */
@@ -28,8 +35,9 @@ class SlugMapper implements Mappable
      */
     protected $fieldName;
 
-    public function __construct(string $tableName, string $fieldName)
+    public function __construct(SiteContext $context, string $tableName, string $fieldName)
     {
+        $this->context = $context;
         $this->tableName = $tableName;
         $this->fieldName = $fieldName;
     }
