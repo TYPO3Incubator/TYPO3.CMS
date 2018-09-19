@@ -18,6 +18,7 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
 
 use Symfony\Component\Routing\RouteCollection;
 use TYPO3\CMS\Core\Routing\Route;
+use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
 use TYPO3\CMS\Extbase\Reflection\ClassSchema;
 
 /**
@@ -39,14 +40,16 @@ use TYPO3\CMS\Extbase\Reflection\ClassSchema;
  */
 class ExtbasePluginEnhancer extends PluginEnhancer
 {
+    use AspectsAwareTrait;
+
     /**
      * @var array
      */
     protected $routesOfPlugin;
 
-    public function __construct(array $configuration, array $mappers)
+    public function __construct(array $configuration)
     {
-        parent::__construct($configuration, $mappers);
+        parent::__construct($configuration);
         $extensionName = $this->configuration['extension'];
         $pluginName = $this->configuration['plugin'];
         $this->namespace = 'tx_' . strtolower($extensionName) . '_' . strtolower($pluginName);
@@ -90,10 +93,12 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         $defaultPageRoute = $collection->get('default');
         foreach ($this->routesOfPlugin as $routeDefinition) {
             $routePath = $routeDefinition['routePath'];
+            $routePath = $this->modifyRoutePath($routePath);
             unset($routeDefinition['routePath']);
             $defaults = array_merge_recursive($defaultPageRoute->getDefaults(), $routeDefinition);
             $options = ['enhancer' => $this, 'utf8' => true];
             $route = new Route(rtrim($defaultPageRoute->getPath(), '/') . '/' . ltrim($routePath, '/'), $defaults, [], $options);
+            $route->setAspects($this->aspects ?? []);
             $route->addRequirements($this->configuration['requirements']);
             $collection->add($this->namespace . '_' . $i++, $route);
         }

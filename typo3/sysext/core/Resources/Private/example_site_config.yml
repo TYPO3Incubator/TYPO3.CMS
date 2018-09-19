@@ -10,7 +10,7 @@ routingEnhancers:
     extension: 'News'
     plugin: 'Pi1'
     routes:
-    - { routePath: '/{blog-name}/{page}', '_controller': 'News::listAction' }
+    - { routePath: '/{blog_name}/{page}', '_controller': 'News::listAction' }
     - { routePath: '/detail/{news_title}', '_controller': 'News::detailAction' }
     - { routePath: '/archive/{year}/{month}', '_controller': 'News::archiveAction' }
     - { routePath: '/news-test/', '_controller': 'News::listAction' }
@@ -18,18 +18,44 @@ routingEnhancers:
       page: '0'
     requirements:
       page: '[0-9]+'
-    mappings:
+    aspects:
       # Placeholder Name
       news_title:
-        # used for generating and requirement (+ optional condition)
         type: SlugMapper
         tableName: 'tx_news_domain_model_news'
-        fieldName: 'path_segment'
-      blog-name:
-        type: LocaleValueMapper
+        routeFieldName: 'path_segment'
+        valueFieldName: 'uid'
+      year:
+        type: StaticValueMapper
         map:
-          blog: en
-          block: de
+          2k17: '2011'
+          2k18: '2018'
+          next: '2019'
+      month:
+        type: StaticValueMapper
+        map:
+          Jan: '01'
+          Feb: '02'
+          Mar: '03'
+        localeMap:
+          - locale: 'en_US.*|en_GB.*'
+            map:
+              January: '01'
+              February: '02'
+              March: '03'
+          - locale: 'de_DE.*'
+            map:
+              Januar: '01'
+              Februar: '02'
+              März: '03'
+      blog_name:
+        type: LocaleModifier
+        default: 'some-news'
+        localeMap:
+          - locale: 'en_US.*|en_GB.*'
+            value: 'article'
+          - locale: 'de_DE.*'
+            value: 'beitrag'
   - type: PageTypeEnhancer
     routePath: '{type}'
     defaults:

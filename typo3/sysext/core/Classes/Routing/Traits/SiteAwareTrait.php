@@ -1,7 +1,7 @@
 <?php
 declare(strict_types = 1);
 
-namespace TYPO3\CMS\Core\Routing\Mapper;
+namespace TYPO3\CMS\Core\Routing\Traits;
 
 /*
  * This file is part of the TYPO3 CMS project.
@@ -16,20 +16,22 @@ namespace TYPO3\CMS\Core\Routing\Mapper;
  * The TYPO3 project - inspiring people to share!
  */
 
-use TYPO3\CMS\Core\Routing\SiteContext;
+use TYPO3\CMS\Core\Site\Entity\Site;
 
-abstract class AbstractMapperFactory
+trait SiteAwareTrait
 {
     /**
-     * @return string[] Names or class names this factory can build
+     * @var Site
      */
-    abstract public function builds(): array;
+    protected $site;
 
-    /**
-     * @param SiteContext $context
-     * @param string $name
-     * @param array $settings
-     * @return Mappable
-     */
-    abstract public function build(SiteContext $context, string $name, array $settings): Mappable;
+    public function setSite(Site $site)
+    {
+        $this->site = $site;
+    }
+
+    public function getSite(): Site
+    {
+        return $this->site;
+    }
 }

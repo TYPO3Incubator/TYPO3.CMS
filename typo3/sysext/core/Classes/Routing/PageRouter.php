@@ -22,7 +22,6 @@ use Psr\Http\Message\UriInterface;
 use Symfony\Component\Routing\Exception\MissingMandatoryParametersException;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGenerator;
-use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\RouteCollection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -32,9 +31,10 @@ use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Routing\Enhancer\ExtbasePluginEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PageTypeEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
-use TYPO3\CMS\Core\Routing\Mapper\AbstractMapperFactory;
-use TYPO3\CMS\Core\Routing\Mapper\Mappable;
-use TYPO3\CMS\Core\Routing\Mapper\MapperFactory;
+use TYPO3\CMS\Core\Routing\Aspect\AbstractAspectFactory;
+use TYPO3\CMS\Core\Routing\Aspect\Mappable;
+use TYPO3\CMS\Core\Routing\Aspect\AspectFactory;
+use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -80,9 +80,9 @@ class PageRouter
     protected $configuration;
 
     /**
-     * @var AbstractMapperFactory[]
+     * @var string[]
      */
-    protected $mapperFactories = [];
+    protected $apectFactoryClassNames = [];
 
     /**
      * PageRouter constructor.
@@ -95,8 +95,8 @@ class PageRouter
         $this->configuration = $configuration;
 
         // @todo Move to factory collection/registry
-        $this->mapperFactories = [
-            new MapperFactory(),
+        $this->apectFactoryClassNames = [
+            AspectFactory::class
         ];
     }
 
@@ -110,11 +110,6 @@ class PageRouter
      */
     public function matchRequest(ServerRequestInterface $request, SiteLanguage $language, RouteResult $result): ?RouteResult
     {
-        $context = new SiteContext(
-            $this->site,
-            $language
-        );
-
         $slugCandidates = $this->getCandidateSlugsFromRoutePath($result->getTail());
         if (empty($slugCandidates)) {
             return null;
@@ -129,6 +124,8 @@ class PageRouter
         }
 
         $fullCollection = new RouteCollection();
+        $factories = $this->buildAspectFactories($language);
+
         foreach ($pageCandidates ?? [] as $page) {
             $pageIdForDefaultLanguage = (int)($page['l10n_parent'] ?: $page['uid']);
             $pagePath = $page['slug'];
@@ -141,7 +138,7 @@ class PageRouter
             );
             $pageCollection->add('default', $defaultRouteForPage);
 
-            foreach ($this->getSuitableEnhancersForPage($context, $pageIdForDefaultLanguage) as $enhancer) {
+            foreach ($this->getSuitableEnhancersForPage($pageIdForDefaultLanguage, $factories) as $enhancer) {
                 $enhancer->enhance($pageCollection);
             }
 
@@ -150,7 +147,7 @@ class PageRouter
         }
 
         $context = new RequestContext('/', $request->getMethod(), $request->getUri()->getHost());
-        $matcher = new UrlMatcher($fullCollection, $context);
+        $matcher = new PageUriMatcher($fullCollection, $context);
         try {
             $result = $matcher->match('/' . trim($result->getTail(), '/'));
             $matchedRoute = $fullCollection->get($result['_route']);
@@ -188,7 +185,8 @@ class PageRouter
         );
         $collection->add('default', $defaultRouteForPage);
 
-        foreach ($this->getSuitableEnhancersForPage($pageId) as $enhancer) {
+        $factories = $this->buildAspectFactories($language);
+        foreach ($this->getSuitableEnhancersForPage($pageId, $factories) as $enhancer) {
             $enhancer->enhance($collection);
         }
 
@@ -262,7 +260,7 @@ class PageRouter
         }
 
         $context = new RequestContext('/', $request->getMethod(), $request->getUri()->getHost());
-        $matcher = new UrlMatcher($collection, $context);
+        $matcher = new PageUriMatcher($collection, $context);
         try {
             $result = $matcher->match('/' . ltrim($routePathTail, '/'));
             unset($result['_route']);
@@ -322,72 +320,82 @@ class PageRouter
         return $pages;
     }
 
-    protected function getSuitableEnhancersForPage(SiteContext $context, int $pageId): \Generator
+    protected function getSuitableEnhancersForPage(int $pageId, array $factories): \Generator
     {
         foreach ($this->configuration['routingEnhancers'] as $enhancerConfiguration) {
-            $mappers = $this->buildMappers($context, $enhancerConfiguration['mappings'] ?? []);
             // @todo: Check if there is a restriction to page Ids.
+            $enhancer = null;
             switch ($enhancerConfiguration['type']) {
                 case 'PageTypeEnhancer':
-                    yield new PageTypeEnhancer($enhancerConfiguration, $mappers);
+                    $enhancer = new PageTypeEnhancer($enhancerConfiguration);
                     break;
                 case 'PluginEnhancer':
-                    yield new PluginEnhancer($enhancerConfiguration, $mappers);
+                    $enhancer = new PluginEnhancer($enhancerConfiguration);
                     break;
                 case 'ExtbasePluginEnhancer':
-                    yield new ExtbasePluginEnhancer($enhancerConfiguration, $mappers);
+                    $enhancer = new ExtbasePluginEnhancer($enhancerConfiguration);
+            }
+            if (!empty($enhancerConfiguration['aspects']) && in_array(AspectsAwareTrait::class, class_uses($enhancer), true)) {
+                $aspects = $this->buildMappers($enhancerConfiguration['aspects'], $factories);
+                $enhancer->setAspects($aspects);
+            }
+            if ($enhancer !== null) {
+                yield $enhancer;
             }
         }
     }
 
     /**
-     * @param array $mappings
+     * @param array $aspects
+     * @param AbstractAspectFactory[] $factories
      * @return Mappable[]
      */
-    protected function buildMappers(SiteContext $context, array $mappings): array
+    protected function buildMappers(array $aspects, array $factories): array
     {
         return array_map(
-            function ($mappings) use ($context) {
-                return $this->buildMapper($context, $mappings);
+            function ($settings) use ($factories) {
+                $type = (string)($settings['type'] ?? '');
+
+                if (empty($type)) {
+                    throw new \LogicException(
+                        'Mapper type cannot be empty',
+                        1537298184
+                    );
+                }
+
+                return $this->findApectFactory($type, $factories)->build($settings);
             },
-            $mappings
+            $aspects
         );
     }
 
     /**
-     * @param array $settings
-     * @return Mappable
+     * @param SiteLanguage $language
+     * @return AbstractAspectFactory[]
      */
-    protected function buildMapper(SiteContext $context, array $settings): Mappable
+    protected function buildAspectFactories(SiteLanguage $language)
     {
-        $type = (string)($settings['type'] ?? '');
-
-        if (empty($type)) {
-            throw new \LogicException(
-                'Mapper type cannot be empty',
-                1537298184
-            );
-        }
-
-        return $this->findMapperFactory($type)->build($context, $type, $settings);
+        return array_map(
+            function (string $className) use ($language) {
+                return new $className($this->site, $language);
+            },
+            $this->apectFactoryClassNames
+        );
     }
 
     /**
      * @param string $name
-     * @return AbstractMapperFactory
+     * @param AbstractAspectFactory[] $factories
+     * @return AbstractAspectFactory
      */
-    protected function findMapperFactory(string $name): AbstractMapperFactory
+    protected function findApectFactory(string $name, array $factories): AbstractAspectFactory
     {
         $factories = array_filter(
-            $this->mapperFactories,
-            function (AbstractMapperFactory $factory) use ($name) {
+            $factories,
+            function (AbstractAspectFactory $factory) use ($name) {
                 return in_array($name, $factory->builds(), true);
             }
         );
-
-        if (count($factories) === 1) {
-            return $factories[0];
-        }
         if (empty($factories)) {
             throw new \LogicException(
                 sprintf('No mapper factories found for %s', $name),
@@ -400,6 +408,7 @@ class PageRouter
                 1537298185
             );
         }
+        return $factories[0];
     }
 
     /**

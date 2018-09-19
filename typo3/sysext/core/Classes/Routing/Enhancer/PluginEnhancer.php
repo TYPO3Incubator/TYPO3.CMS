@@ -17,8 +17,8 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  */
 
 use Symfony\Component\Routing\RouteCollection;
-use TYPO3\CMS\Core\Routing\Mapper\Mappable;
-use TYPO3\CMS\Core\Routing\Route;
+use TYPO3\CMS\Core\Routing\Aspect\Modifiable;
+use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
 
 /**
  * Used for plugins like EXT:felogin.
@@ -32,25 +32,21 @@ use TYPO3\CMS\Core\Routing\Route;
  */
 class PluginEnhancer
 {
+    use AspectsAwareTrait;
+
     /**
      * @var array
      */
     protected $configuration;
 
     /**
-     * @var Mappable[]
-     */
-    protected $mappers;
-
-    /**
      * @var string
      */
     protected $namespace;
 
-    public function __construct(array $configuration, array $mappers)
+    public function __construct(array $configuration)
     {
         $this->configuration = $configuration;
-        $this->mappers = $mappers;
         $this->namespace = $this->configuration['namespace'] ?? '';
     }
 
@@ -61,6 +57,7 @@ class PluginEnhancer
     public function enhance(RouteCollection $collection)
     {
         $routePath = $this->getNamespacedRoutePath();
+        $routePath = $this->modifyRoutePath($routePath);
         $defaultPageRoute = $collection->get('default');
         $variant = clone $defaultPageRoute;
         $variant->setPath(rtrim($variant->getPath(), '/') . '/' . ltrim($routePath, '/'));
@@ -69,6 +66,25 @@ class PluginEnhancer
             $variant->addRequirements($this->getNamespacedRequirements());
         }
         $collection->add('enhancer_' . $this->namespace . spl_object_hash($variant), $variant);
+    }
+
+    protected function modifyRoutePath(string $routePath): string
+    {
+        $substitutes = [];
+        foreach ($this->aspects as $variableName => $aspect) {
+            if (!$aspect instanceof Modifiable) {
+                continue;
+            }
+            $value = $aspect->retrieve();
+            if ($value !== null) {
+                $substitutes['{' . $variableName . '}'] = $value;
+            }
+        }
+        return str_replace(
+            array_keys($substitutes),
+            array_values($substitutes),
+            $routePath
+        );
     }
 
     protected function getNamespacedRoutePath()

@@ -17,13 +17,14 @@ namespace TYPO3\CMS\Core\Routing;
  */
 
 use Symfony\Component\Routing\CompiledRoute;
-use TYPO3\CMS\Core\Routing\Mapper\Mappable;
+use Symfony\Component\Routing\Route as SymfonyRoute;
+use TYPO3\CMS\Core\Routing\Aspect\Applicable;
 
 /**
  * TYPO3's route is built on top of Symfony's route with the functionality
- * of "Mappers" built on top of a route
+ * of "Aspects" built on top of a route
  */
-class Route extends \Symfony\Component\Routing\Route
+class Route extends SymfonyRoute
 {
     protected $path = '/';
     protected $host = '';
@@ -40,9 +41,9 @@ class Route extends \Symfony\Component\Routing\Route
     protected $compiled;
 
     /**
-     * @var Mappable[]
+     * @var Applicable[]
      */
-    protected $mappers = [];
+    protected $aspects = [];
 
     public function __construct(
         string $path,
@@ -53,92 +54,141 @@ class Route extends \Symfony\Component\Routing\Route
         $schemes = [],
         $methods = [],
         ?string $condition = '',
-        array $mappers = []
+        array $aspects = []
     ) {
         parent::__construct($path, $defaults, $requirements, $options, $host, $schemes, $methods, $condition);
-        $this->mappers = $mappers;
+        $this->setAspects($aspects);
     }
 
     /**
-     * Returns all mappers.
-     *
-     * @return array The mappers
+     * @deprecated Not used
      */
-    public function getMappers(): array
+    protected function adjustRequirements()
     {
-        return $this->mappers;
-    }
+        foreach ($this->aspects as $variableName => $mapper) {
+            // @todo Use semantic interface
 
-    /**
-     * Sets the mappers and removes existing ones.
-     *
-     * This method implements a fluent interface.
-     *
-     * @param array $mappers The mappers
-     *
-     * @return $this
-     */
-    public function setMappers(array $mappers)
-    {
-        $this->mappers = [];
-        return $this->addMappers($mappers);
-    }
-
-    /**
-     * Adds mappers to the existing maps.
-     *
-     * This method implements a fluent interface.
-     *
-     * @param array $mappers The mappers
-     *
-     * @return $this
-     */
-    public function addMappers(array $mappers)
-    {
-        foreach ($mappers as $key => $mapper) {
-            $this->mappers[$key] = $mapper;
         }
+    }
+
+    public function getConditionValues(): array
+    {
+        return [];
+    }
+
+    public function getConditionExpression(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Returns all aspects.
+     *
+     * @return array The aspects
+     */
+    public function getAspects(): array
+    {
+        return $this->aspects;
+    }
+
+    /**
+     * Sets the aspects and removes existing ones.
+     *
+     * This method implements a fluent interface.
+     *
+     * @param array $aspects The aspects
+     *
+     * @return $this
+     */
+    public function setAspects(array $aspects)
+    {
+        $this->aspects = [];
+        return $this->addAspects($aspects);
+    }
+
+    /**
+     * Adds aspects to the existing maps.
+     *
+     * This method implements a fluent interface.
+     *
+     * @param array $aspects The aspects
+     *
+     * @return $this
+     */
+    public function addAspects(array $aspects)
+    {
+        foreach ($aspects as $key => $aspect) {
+            $this->aspects[$key] = $aspect;
+        }
+        // @todo Same when requirements get adjusted
+        $this->adjustRequirements();
         $this->compiled = null;
 
         return $this;
     }
 
     /**
-     * Returns the mapper for the given key.
+     * Returns the aspect for the given key.
      *
      * @param string $key The key
      *
-     * @return string|null The regex or null when not given
+     * @return Applicable|null The regex or null when not given
      */
-    public function getMapper($key)
+    public function getAspect($key)
     {
-        return $this->mappers[$key] ?? null;
+        return $this->aspects[$key] ?? null;
     }
 
     /**
-     * Checks if a mapper is set for the given key.
+     * Checks if an aspect is set for the given key.
      *
      * @param string $key A variable name
      *
-     * @return bool true if a mapper is specified, false otherwise
+     * @return bool true if a aspect is specified, false otherwise
      */
-    public function hasMapper($key)
+    public function hasAspect($key)
     {
-        return array_key_exists($key, $this->mappers);
+        return array_key_exists($key, $this->aspects);
     }
 
     /**
      * Sets a mapper for the given key.
      *
      * @param string $key   The key
-     * @param Mappable $mapper
+     * @param Applicable $aspect
      *
      * @return $this
      */
-    public function setMapper($key, Mappable $mapper)
+    public function setMapper($key, Applicable $aspect)
     {
-        $this->mappers[$key] = $mapper;
+        $this->aspects[$key] = $aspect;
         $this->compiled = null;
         return $this;
+    }
+
+    /**
+     * @param string $className
+     * @param string[] $variableNames
+     * @return Applicable[]
+     */
+    public function filterAspects(string $className, array $variableNames = []): array
+    {
+        $aspects = $this->aspects;
+        if (!empty($variableNames)) {
+            $aspects = array_filter(
+                $this->aspects,
+                function (string $variableName) use ($variableNames) {
+                    return in_array($variableName, $variableNames, true);
+                },
+                ARRAY_FILTER_USE_KEY
+            );
+        }
+        return array_filter(
+            $aspects,
+            function (Applicable $aspect) use ($className) {
+                return is_a($aspect, $className)
+                    || in_array($className, class_uses($aspect), true);
+            }
+        );
     }
 }
