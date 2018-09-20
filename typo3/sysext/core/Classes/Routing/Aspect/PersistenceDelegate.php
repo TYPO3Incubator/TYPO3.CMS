@@ -62,23 +62,25 @@ class PersistenceDelegate implements Delegable
     /**
      * @return string
      */
-    public function resolve(string $value): string
+    public function resolve(string $value): ?string
     {
         $this->applyValueModifier($this->resolveModifier, $value);
-        return (string)$this->queryBuilder
+        $result = $this->queryBuilder
             ->execute()
             ->fetchColumn(0);
+        return $result !== false ? (string)$result : null;
     }
 
     /**
      * @return string
      */
-    public function generate(string $value): string
+    public function generate(string $value): ?string
     {
         $this->applyValueModifier($this->generateModifier, $value);
-        return (string)$this->queryBuilder
+        $result = $this->queryBuilder
             ->execute()
             ->fetchColumn(0);
+        return $result !== false ? (string)$result : null;
     }
 
     /**

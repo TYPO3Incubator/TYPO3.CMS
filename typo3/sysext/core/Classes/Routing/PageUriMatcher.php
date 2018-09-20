@@ -119,7 +119,7 @@ class PageUriMatcher extends UrlMatcher
             $value = $mapper->resolve(
                 (string)($attributes[$variableName] ?? '')
             );
-            if (!empty($value)) {
+            if ($value !== null) {
                 $values[$variableName] = $value;
             }
         }

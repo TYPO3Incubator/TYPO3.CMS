@@ -19,6 +19,6 @@ namespace TYPO3\CMS\Core\Routing\Aspect;
 interface Delegable
 {
     public function exists(string $value): bool;
-    public function resolve(string $value): string;
-    public function generate(string $value): string;
+    public function resolve(string $value): ?string;
+    public function generate(string $value): ?string;
 }
