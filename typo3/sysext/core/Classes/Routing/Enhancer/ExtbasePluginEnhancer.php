@@ -91,6 +91,7 @@ class ExtbasePluginEnhancer extends PluginEnhancer
     {
         $i = 0;
         $defaultPageRoute = $collection->get('default');
+        $namespacedRequirements = $this->getNamespacedRequirements();
         foreach ($this->routesOfPlugin as $routeDefinition) {
             $routePath = $this->getNamespacedRoutePath($routeDefinition['routePath']);
             $routePath = $this->modifyRoutePath($routePath);
@@ -100,7 +101,15 @@ class ExtbasePluginEnhancer extends PluginEnhancer
             $route = new Route(rtrim($defaultPageRoute->getPath(), '/') . '/' . ltrim($routePath, '/'), $defaults, [], $options);
             $route->setAspects($this->aspects ?? []);
             if ($this->configuration['requirements']) {
-                $route->addRequirements($this->getNamespacedRequirements());
+                $compiledRoute = $route->compile();
+                $variables = $compiledRoute->getPathVariables();
+                $variables = array_flip($variables);
+                $requirements = array_filter($namespacedRequirements, function($key) use ($variables) {
+                    return isset($variables[$key]);
+                }, ARRAY_FILTER_USE_KEY);
+                if (!empty($requirements)) {
+                    $route->addRequirements($requirements);
+                }
             }
             $collection->add($this->namespace . '_' . $i++, $route);
         }
@@ -114,6 +123,7 @@ class ExtbasePluginEnhancer extends PluginEnhancer
      */
     public function unflattenParameters(array $parameters): array
     {
+        $parameters = parent::unflattenParameters($parameters);
         // Invalid if there is no controller given, so this enhancers does not do anything
         if (empty($parameters['_controller'] ?? null)) {
             return $parameters;
@@ -121,7 +131,6 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         list($controllerName, $actionName) = explode('::', $parameters['_controller']);
         $parameters[$this->namespace]['controller'] = $controllerName;
         $parameters[$this->namespace]['action'] = $actionName;
-        $parameters = parent::unflattenParameters($parameters);
         // Now put the "blog_title" back to "news" parameter
         foreach ($parameters['_arguments'] ?? [] as $argumentName => $placeholderName) {
             if (isset($parameters[$this->namespace][$placeholderName])) {
@@ -147,8 +156,25 @@ class ExtbasePluginEnhancer extends PluginEnhancer
     }
 
 
+    /**
+     * Used to narrow down if a route matches this enhancer
+     * @param Route $route
+     * @param array $parameters
+     * @return bool
+     */
     public function verifyRequiredParameters(Route $route, array $parameters) {
-        if (empty($parameters['_controller'] ?? null)) {
+        if (!$route->hasDefault('_controller')) {
+            return false;
+        }
+        if (!isset($parameters[$this->namespace])) {
+            return false;
+        }
+        $controller = $route->getDefault('_controller');
+        list($controllerName, $actionName) = explode('::', $controller);
+        if ($controllerName !== $parameters[$this->namespace]['controller']) {
+            return false;
+        }
+        if ($actionName !== $parameters[$this->namespace]['action']) {
             return false;
         }
         return true;

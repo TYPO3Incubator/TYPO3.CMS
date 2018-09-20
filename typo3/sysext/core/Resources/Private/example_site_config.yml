@@ -10,10 +10,10 @@ routingEnhancers:
     extension: 'News'
     plugin: 'Pi1'
     routes:
-    - { routePath: '/{blog_name}/{page}', '_controller': 'News::listAction' }
-    - { routePath: '/detail/{news_title}', '_controller': 'News::detailAction', '_arguments': {'news_title': 'news'} }
-    - { routePath: '/archive/{year}/{month}', '_controller': 'News::archiveAction' }
-    - { routePath: '/news-test/', '_controller': 'News::listAction' }
+    - { routePath: '/{blog_name}/{page}', '_controller': 'News::benni' }
+    - { routePath: '/detail/{news_title}', '_controller': 'News::detail', '_arguments': {'news_title': 'news'} }
+    - { routePath: '/archive/{year}/{month}', '_controller': 'News::archive' }
+    - { routePath: '/news-test/', '_controller': 'News::list' }
     defaults:
       page: '0'
     requirements:

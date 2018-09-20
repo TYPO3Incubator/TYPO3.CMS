@@ -153,9 +153,7 @@ class PageRouter
             $matchedRoute = $fullCollection->get($result['_route']);
             if ($matchedRoute->hasOption('enhancer')) {
                 $enhancer = $matchedRoute->getOption('enhancer');
-                if (method_exists($enhancer, 'unflattenParameters')) {
-                    $result = $enhancer->unflattenParameters($result);
-                }
+                $result = $enhancer->unflattenParameters($result);
             }
             return new RouteResult($request->getUri(), $this->site, $language, $result['tail'] ?? '', $result);
         } catch (ResourceNotFoundException $e) {
@@ -208,6 +206,7 @@ class PageRouter
 
             // all params must be given, otherwise we exclude this variant
             if ($diff = array_diff_key($variables, $mergedParams)) {
+                $parameters = $originalParameters;
                 continue;
             }
 
@@ -261,6 +260,9 @@ class PageRouter
             } else {
                 $uri = $uri->withQuery(http_build_query($queryParams, '', '&', PHP_QUERY_RFC3986));
             }
+        }
+        if ($uri instanceof UriInterface) {
+            $uri = $uri->withFragment($fragment);
         }
         return $uri;
     }
@@ -361,7 +363,7 @@ class PageRouter
     {
         foreach ($this->configuration['routingEnhancers'] as $enhancerConfiguration) {
             // Check if there is a restriction to page Ids.
-            if (is_array($enhancerConfiguration['limitToPages']) && !in_array($pageId, $enhancerConfiguration['limitToPages'])) {
+            if (is_array($enhancerConfiguration['limitToPages'] ?? null) && !in_array($pageId, $enhancerConfiguration['limitToPages'])) {
                 continue;
             }
             $enhancer = null;
