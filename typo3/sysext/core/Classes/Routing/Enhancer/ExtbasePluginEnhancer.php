@@ -132,11 +132,11 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         $defaultPageRoute = $collection->get('default');
         foreach ($this->routesOfPlugin as $routeDefinition) {
             $variant = $this->getVariant($defaultPageRoute, $routeDefinition);
-            $parameters = $this->remapArgumentNamesToPlaceholderNames($variant, $originalParameters);
             // The enhancer tells us: This given route does not match the parameters
-            if (!$this->verifyRequiredParameters($variant, $parameters)) {
+            if (!$this->verifyRequiredParameters($variant, $originalParameters)) {
                 continue;
             }
+            $parameters = $this->remapArgumentNamesToPlaceholderNames($variant, $originalParameters);
             unset($parameters[$this->namespace]['action']);
             unset($parameters[$this->namespace]['controller']);
             $compiledRoute = $variant->compile();
@@ -147,6 +147,7 @@ class ExtbasePluginEnhancer extends PluginEnhancer
             if ($diff = array_diff_key($variables, $mergedParams)) {
                 continue;
             }
+            $variant->addOptions(['flattenedParameters' => $flattenedParameters]);
             $collection->add($this->namespace . '_' . $i++, $variant);
         }
     }
@@ -167,13 +168,6 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         list($controllerName, $actionName) = explode('::', $parameters['_controller']);
         $parameters[$this->namespace]['controller'] = $controllerName;
         $parameters[$this->namespace]['action'] = $actionName;
-        return $parameters;
-    }
-
-    public function flattenParameters(array $parameters): array
-    {
-        $parameters = parent::flattenParameters($parameters);
-
         return $parameters;
     }
 
@@ -211,12 +205,13 @@ class ExtbasePluginEnhancer extends PluginEnhancer
 
 
     /**
-     * Used to narrow down if a route matches this enhancer
+     * Check if controller+action combination matches
+     *
      * @param Route $route
      * @param array $parameters
      * @return bool
      */
-    public function verifyRequiredParameters(Route $route, array $parameters) {
+    protected function verifyRequiredParameters(Route $route, array $parameters) {
         if (!is_array($parameters[$this->namespace])) {
             return false;
         }

@@ -184,7 +184,6 @@ class PageRouter
         );
         $collection->add('default', $defaultRouteForPage);
 
-        unset($originalParameters['type']);
         unset($originalParameters['cHash']);
         $factories = $this->buildAspectFactories($language);
         foreach ($this->getSuitableEnhancersForPage($pageId, $factories) as $enhancer) {
@@ -201,7 +200,6 @@ class PageRouter
             $scheme === 'https' ? $language->getBase()->getPort() ?? 443 : 443
         );
         $generator = new UrlGenerator($collection, $context);
-        $generator->setStrictRequirements(true);
         $allRoutes = $collection->all();
         $allRoutes = array_reverse($allRoutes, true);
         $matchedRoute = null;
@@ -209,9 +207,8 @@ class PageRouter
         foreach ($allRoutes as $routeName => $route) {
             try {
                 $parameters = $originalParameters;
-                if ($route->hasOption('enhancer')) {
-                    $enhancer = $route->getOption('enhancer');
-                    $parameters = $enhancer->flattenParameters($parameters);
+                if ($route->hasOption('flattenedParameters')) {
+                    $parameters = $route->getOption('flattenedParameters');
                 }
                 $urlAsString = $generator->generate($routeName, $parameters, $type);
                 $uri = new Uri($urlAsString);
@@ -225,6 +222,7 @@ class PageRouter
         if ($matchedRoute && $uri instanceof UriInterface && $uri->getQuery()) {
             $queryParams = [];
             parse_str($uri->getQuery(), $queryParams);
+            // expand the rest of the query parameters again
             if ($matchedRoute->hasOption('enhancer')) {
                 $enhancer = $matchedRoute->getOption('enhancer');
                 $queryParams = $enhancer->unflattenParameters($queryParams);

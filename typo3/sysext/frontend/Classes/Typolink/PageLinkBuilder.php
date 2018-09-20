@@ -360,7 +360,7 @@ class PageLinkBuilder extends AbstractTypolinkBuilder
 
         $targetPageId = (int)($page['l10n_parent'] > 0 ? $page['l10n_parent'] : $page['uid']);
 
-        $queryParameters['type'] = $this->getTypoScriptFrontendController()->type;
+        $queryParameters['type'] = $queryParameters['type'] ?? $this->getTypoScriptFrontendController()->type;
         $router = $siteOfTargetPage->getRouter();
         $uri = $router->generate(
             $targetPageId,

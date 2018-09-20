@@ -62,20 +62,14 @@ class PageTypeEnhancer
 
     public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $parameters)
     {
-        if (!$parameters['type']) {
+        if (!isset($parameters['type'])) {
             return;
         }
-
-    }
-
-
-    public function flattenParameters(array $parameters): array
-    {
-        return $parameters;
-    }
-
-    public function unflattenParameters(array $parameters): array
-    {
-        return $parameters;
+        foreach ($collection->all() as $routeName => $existingRoute) {
+            $variant = clone $existingRoute;
+            $variant->setPath(rtrim($variant->getPath(), '/') . $this->configuration['routePath']);
+            $variant->addDefaults(['type' => 0]);
+            $collection->add($routeName . '_typeNum_' . spl_object_hash($variant), $variant);
+        }
     }
 }

@@ -78,13 +78,13 @@ class PluginEnhancer
 
     public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $parameters)
     {
+        // No parameter for this namespace given, so this route does not fit the requirements
+        if (!is_array($parameters[$this->namespace])) {
+            return;
+        }
         /** @var Route $defaultPageRoute */
         $defaultPageRoute = $collection->get('default');
         $variant = $this->getVariant($defaultPageRoute, $this->configuration);
-        // The enhancer tells us: This given route does not match the parameters
-        if (!$this->verifyRequiredParameters($variant, $parameters)) {
-            return;
-        }
         $compiledRoute = $variant->compile();
         $flattenedParameters = $this->flattenParameters($parameters);
         $variables = array_flip($compiledRoute->getPathVariables());
@@ -93,6 +93,7 @@ class PluginEnhancer
         if ($diff = array_diff_key($variables, $mergedParams)) {
             return;
         }
+        $variant->addOptions(['flattenedParameters' => $flattenedParameters]);
         $collection->add('enhancer_' . $this->namespace . spl_object_hash($variant), $variant);
     }
 
@@ -172,13 +173,5 @@ class PluginEnhancer
             $newParameters[$name] = $v;
         }
         return $newParameters;
-    }
-
-    public function verifyRequiredParameters(Route $route, array $parameters) {
-        // No parameter for this namespace given, so this route does not fit the requirements
-        if (!is_array($parameters[$this->namespace])) {
-            return false;
-        }
-        return true;
     }
 }
