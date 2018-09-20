@@ -4,7 +4,7 @@ routingEnhancers:
     namespace: 'tx_felogin_pi1'
     requirements:
       user: '[0-9]+'
-      hash: '^[a-Z0-9]{32}$'
+      hash: '^[a-zA-Z0-9]{32}$'
   - type: ExtbasePluginEnhancer
     vendor: 'GeorgRinger'
     extension: 'News'
