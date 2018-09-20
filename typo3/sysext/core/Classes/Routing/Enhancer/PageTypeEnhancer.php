@@ -60,12 +60,12 @@ class PageTypeEnhancer
         }
     }
 
-    public function flattenParameters($parameters)
+    public function flattenParameters(array $parameters): array
     {
         return $parameters;
     }
 
-    public function unflattenParameters($parameters)
+    public function unflattenParameters(array $parameters): array
     {
         return $parameters;
     }

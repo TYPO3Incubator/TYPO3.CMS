@@ -110,8 +110,12 @@ class ExtbasePluginEnhancer extends PluginEnhancer
      * @param $parameters
      * @return array
      */
-    public function unflattenParameters($parameters)
+    public function unflattenParameters(array $parameters): array
     {
+        // Invalid if there is no controller given, so this enhancers does not do anything
+        if (empty($parameters['_controller'] ?? null)) {
+            return $parameters;
+        }
         list($controllerName, $actionName) = explode('::', $parameters['_controller']);
         $parameters[$this->namespace]['controller'] = $controllerName;
         $parameters[$this->namespace]['action'] = $actionName;

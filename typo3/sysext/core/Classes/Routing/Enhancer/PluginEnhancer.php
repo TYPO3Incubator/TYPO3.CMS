@@ -103,7 +103,7 @@ class PluginEnhancer
         return $requirements;
     }
 
-    public function flattenParameters(array $parameters)
+    public function flattenParameters(array $parameters): array
     {
         if (empty($this->namespace)) {
             return $parameters;
@@ -128,7 +128,7 @@ class PluginEnhancer
         return $parameters;
     }
 
-    public function unflattenParameters($parameters)
+    public function unflattenParameters(array $parameters): array
     {
         if (empty($this->namespace)) {
             return $parameters;
