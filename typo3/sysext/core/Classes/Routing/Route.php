@@ -61,27 +61,6 @@ class Route extends SymfonyRoute
     }
 
     /**
-     * @deprecated Not used
-     */
-    protected function adjustRequirements()
-    {
-        foreach ($this->aspects as $variableName => $mapper) {
-            // @todo Use semantic interface
-
-        }
-    }
-
-    public function getConditionValues(): array
-    {
-        return [];
-    }
-
-    public function getConditionExpression(): ?string
-    {
-        return null;
-    }
-
-    /**
      * Returns all aspects.
      *
      * @return array The aspects
@@ -120,10 +99,7 @@ class Route extends SymfonyRoute
         foreach ($aspects as $key => $aspect) {
             $this->aspects[$key] = $aspect;
         }
-        // @todo Same when requirements get adjusted
-        $this->adjustRequirements();
         $this->compiled = null;
-
         return $this;
     }
 
