@@ -82,7 +82,7 @@ class PageRouter
     /**
      * @var string[]
      */
-    protected $apectFactoryClassNames = [];
+    protected $aspectFactoryClassNames = [];
 
     /**
      * PageRouter constructor.
@@ -95,7 +95,7 @@ class PageRouter
         $this->configuration = $configuration;
 
         // @todo Move to factory collection/registry
-        $this->apectFactoryClassNames = [
+        $this->aspectFactoryClassNames = [
             AspectFactory::class
         ];
     }
@@ -405,7 +405,7 @@ class PageRouter
                     );
                 }
 
-                return $this->findApectFactory($type, $factories)->build($settings);
+                return $this->findAspectFactory($type, $factories)->build($settings);
             },
             $aspects
         );
@@ -421,7 +421,7 @@ class PageRouter
             function (string $className) use ($language) {
                 return new $className($this->site, $language);
             },
-            $this->apectFactoryClassNames
+            $this->aspectFactoryClassNames
         );
     }
 
@@ -430,7 +430,7 @@ class PageRouter
      * @param AbstractAspectFactory[] $factories
      * @return AbstractAspectFactory
      */
-    protected function findApectFactory(string $name, array $factories): AbstractAspectFactory
+    protected function findAspectFactory(string $name, array $factories): AbstractAspectFactory
     {
         $factories = array_filter(
             $factories,
