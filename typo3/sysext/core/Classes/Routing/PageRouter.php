@@ -217,13 +217,15 @@ class PageRouter
             $filteredRoutes->add($routeName, $route);
         }
 
+        $scheme = $language->getBase()->getScheme();
         $context = new RequestContext(
             $language->getBase()->getPath(),
             'GET',
             $language->getBase()->getHost(),
-            $language->getBase()->getScheme() ?? ''
+            $scheme ?: 'http',
+            $scheme === 'http' ? $language->getBase()->getPort() ?? 80 : 80,
+            $scheme === 'https' ? $language->getBase()->getPort() ?? 443 : 443
         );
-        $parameters['_fragment'] = $fragment;
         $generator = new UrlGenerator($filteredRoutes, $context);
         $generator->setStrictRequirements(true);
         $allRoutes = $filteredRoutes->all();
@@ -234,7 +236,7 @@ class PageRouter
             try {
                 $urlAsString = $generator->generate($routeName, $parameters, $type);
                 $uri = new Uri($urlAsString);
-                $matchedRoute = $collection->get($routeName);
+                $matchedRoute = $filteredRoutes->get($routeName);
                 break;
             } catch (MissingMandatoryParametersException $e) {
                 // no match
