@@ -184,36 +184,11 @@ class PageRouter
         );
         $collection->add('default', $defaultRouteForPage);
 
+        unset($originalParameters['type']);
+        unset($originalParameters['cHash']);
         $factories = $this->buildAspectFactories($language);
         foreach ($this->getSuitableEnhancersForPage($pageId, $factories) as $enhancer) {
-            $enhancer->enhance($collection);
-        }
-
-        $filteredRoutes = new RouteCollection();
-        foreach ($collection->all() as $routeName => $route) {
-            /** @var Route $route */
-            $compiledRoute = $route->compile();
-
-            // No enhancer available, so we can add this option directly
-            if (!$route->hasOption('enhancer')) {
-                $filteredRoutes->add($routeName, $route);
-                continue;
-            }
-            $enhancer = $route->getOption('enhancer');
-            // The enhancer tells us: This given route does not match the parameters
-            if (!$enhancer->verifyRequiredParameters($route, $originalParameters)) {
-                continue;
-            }
-            $parameters = $enhancer->flattenParameters($originalParameters);
-            $variables = array_flip($compiledRoute->getPathVariables());
-            $mergedParams = array_replace($route->getDefaults(), $parameters);
-
-            // all params must be given, otherwise we exclude this variant
-            if ($diff = array_diff_key($variables, $mergedParams)) {
-                continue;
-            }
-
-            $filteredRoutes->add($routeName, $route);
+            $enhancer->addRoutesThatMeetTheRequirements($collection, $originalParameters);
         }
 
         $scheme = $language->getBase()->getScheme();
@@ -225,9 +200,9 @@ class PageRouter
             $scheme === 'http' ? $language->getBase()->getPort() ?? 80 : 80,
             $scheme === 'https' ? $language->getBase()->getPort() ?? 443 : 443
         );
-        $generator = new UrlGenerator($filteredRoutes, $context);
+        $generator = new UrlGenerator($collection, $context);
         $generator->setStrictRequirements(true);
-        $allRoutes = $filteredRoutes->all();
+        $allRoutes = $collection->all();
         $allRoutes = array_reverse($allRoutes, true);
         $matchedRoute = null;
         $uri = null;
@@ -240,7 +215,7 @@ class PageRouter
                 }
                 $urlAsString = $generator->generate($routeName, $parameters, $type);
                 $uri = new Uri($urlAsString);
-                $matchedRoute = $filteredRoutes->get($routeName);
+                $matchedRoute = $collection->get($routeName);
                 break;
             } catch (MissingMandatoryParametersException $e) {
                 // no match

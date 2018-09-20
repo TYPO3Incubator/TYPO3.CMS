@@ -60,6 +60,15 @@ class PageTypeEnhancer
         }
     }
 
+    public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $parameters)
+    {
+        if (!$parameters['type']) {
+            return;
+        }
+
+    }
+
+
     public function flattenParameters(array $parameters): array
     {
         return $parameters;

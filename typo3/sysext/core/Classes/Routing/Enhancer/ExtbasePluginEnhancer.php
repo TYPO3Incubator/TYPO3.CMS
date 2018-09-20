@@ -90,28 +90,64 @@ class ExtbasePluginEnhancer extends PluginEnhancer
     public function enhance(RouteCollection $collection)
     {
         $i = 0;
+        /** @var Route $defaultPageRoute */
         $defaultPageRoute = $collection->get('default');
-        $namespacedRequirements = $this->getNamespacedRequirements();
         foreach ($this->routesOfPlugin as $routeDefinition) {
-            $routePath = $this->getNamespacedRoutePath($routeDefinition['routePath']);
-            $routePath = $this->modifyRoutePath($routePath);
-            unset($routeDefinition['routePath']);
-            $defaults = array_merge_recursive($defaultPageRoute->getDefaults(), $routeDefinition);
-            $options = ['enhancer' => $this, 'utf8' => true];
-            $route = new Route(rtrim($defaultPageRoute->getPath(), '/') . '/' . ltrim($routePath, '/'), $defaults, [], $options);
-            $route->setAspects($this->aspects ?? []);
-            if ($this->configuration['requirements']) {
-                $compiledRoute = $route->compile();
-                $variables = $compiledRoute->getPathVariables();
-                $variables = array_flip($variables);
-                $requirements = array_filter($namespacedRequirements, function($key) use ($variables) {
-                    return isset($variables[$key]);
-                }, ARRAY_FILTER_USE_KEY);
-                if (!empty($requirements)) {
-                    $route->addRequirements($requirements);
-                }
-            }
+            $route = $this->getVariant($defaultPageRoute, $routeDefinition);
             $collection->add($this->namespace . '_' . $i++, $route);
+        }
+    }
+
+    protected function getVariant(Route $defaultPageRoute, array $routeDefinition): Route
+    {
+        $namespacedRequirements = $this->getNamespacedRequirements();
+        $routePath = $this->modifyRoutePath($routeDefinition['routePath']);
+        $routePath = $this->getNamespacedRoutePath($routePath);
+        unset($routeDefinition['routePath']);
+        $defaults = array_merge_recursive($defaultPageRoute->getDefaults(), $routeDefinition);
+        $options = ['enhancer' => $this, 'utf8' => true];
+        $route = new Route(rtrim($defaultPageRoute->getPath(), '/') . '/' . ltrim($routePath, '/'), $defaults, [], $options);
+        $route->setAspects($this->aspects ?? []);
+        if ($namespacedRequirements) {
+            $compiledRoute = $route->compile();
+            $variables = $compiledRoute->getPathVariables();
+            $variables = array_flip($variables);
+            $requirements = array_filter($namespacedRequirements, function($key) use ($variables) {
+                return isset($variables[$key]);
+            }, ARRAY_FILTER_USE_KEY);
+            if (!empty($requirements)) {
+                $route->addRequirements($requirements);
+            }
+        }
+        return $route;
+    }
+
+    public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $originalParameters)
+    {
+        if (!isset($originalParameters[$this->namespace])) {
+            return;
+        }
+        $i = 0;
+        /** @var Route $defaultPageRoute */
+        $defaultPageRoute = $collection->get('default');
+        foreach ($this->routesOfPlugin as $routeDefinition) {
+            $variant = $this->getVariant($defaultPageRoute, $routeDefinition);
+            $parameters = $this->remapArgumentNamesToPlaceholderNames($variant, $originalParameters);
+            // The enhancer tells us: This given route does not match the parameters
+            if (!$this->verifyRequiredParameters($variant, $parameters)) {
+                continue;
+            }
+            unset($parameters[$this->namespace]['action']);
+            unset($parameters[$this->namespace]['controller']);
+            $compiledRoute = $variant->compile();
+            $flattenedParameters = $this->flattenParameters($parameters);
+            $variables = array_flip($compiledRoute->getPathVariables());
+            $mergedParams = array_replace($variant->getDefaults(), $flattenedParameters);
+            // all params must be given, otherwise we exclude this variant
+            if ($diff = array_diff_key($variables, $mergedParams)) {
+                continue;
+            }
+            $collection->add($this->namespace . '_' . $i++, $variant);
         }
     }
 
@@ -131,8 +167,24 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         list($controllerName, $actionName) = explode('::', $parameters['_controller']);
         $parameters[$this->namespace]['controller'] = $controllerName;
         $parameters[$this->namespace]['action'] = $actionName;
+        return $parameters;
+    }
+
+    public function flattenParameters(array $parameters): array
+    {
+        $parameters = parent::flattenParameters($parameters);
+
+        return $parameters;
+    }
+
+    protected function remapArgumentNamesToPlaceholderNames(Route $route, array $parameters)
+    {
+        if (!$route->getDefault('_arguments')) {
+            return $parameters;
+        }
+        $arguments = $route->getDefault('_arguments');
         // Now put the "blog_title" back to "news" parameter
-        foreach ($parameters['_arguments'] ?? [] as $argumentName => $placeholderName) {
+        foreach ($arguments ?? [] as $argumentName => $placeholderName) {
             if (isset($parameters[$this->namespace][$placeholderName])) {
                 $parameters[$this->namespace][$argumentName] = $parameters[$this->namespace][$placeholderName];
                 unset($parameters[$this->namespace][$placeholderName]);
@@ -141,17 +193,19 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         return $parameters;
     }
 
-    public function flattenParameters(array $parameters): array
+    protected function remapPlaceholderNamesToArgumentNames(Route $route, array $parameters)
     {
+        if (!$route->getDefault('_arguments')) {
+            return $parameters;
+        }
+        $arguments = $route->getDefault('_arguments');
         // First put the "news" parameter to the placeholder name
-        foreach ($parameters['_arguments'] ?? [] as $argumentName => $placeholderName) {
+        foreach ($arguments as $argumentName => $placeholderName) {
             if (isset($parameters[$this->namespace][$argumentName])) {
                 $parameters[$this->namespace][$placeholderName] = $parameters[$this->namespace][$argumentName];
                 unset($parameters[$this->namespace][$argumentName]);
             }
         }
-        $parameters = parent::flattenParameters($parameters);
-
         return $parameters;
     }
 

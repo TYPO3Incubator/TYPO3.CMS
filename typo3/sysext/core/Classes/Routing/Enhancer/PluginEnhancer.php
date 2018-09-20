@@ -57,17 +57,46 @@ class PluginEnhancer
      */
     public function enhance(RouteCollection $collection)
     {
-        $routePath = $this->getNamespacedRoutePath($this->configuration['routePath']);
-        $routePath = $this->modifyRoutePath($routePath);
+        /** @var Route $defaultPageRoute */
         $defaultPageRoute = $collection->get('default');
+        $variant = $this->getVariant($defaultPageRoute, $this->configuration);
+        $collection->add('enhancer_' . $this->namespace . spl_object_hash($variant), $variant);
+    }
+
+    protected function getVariant(Route $defaultPageRoute, array $configuration): Route
+    {
+        $routePath = $this->getNamespacedRoutePath($configuration['routePath']);
+        $routePath = $this->modifyRoutePath($routePath);
         $variant = clone $defaultPageRoute;
         $variant->setPath(rtrim($variant->getPath(), '/') . '/' . ltrim($routePath, '/'));
         $variant->addOptions(['enhancer' => $this]);
-        if ($this->configuration['requirements']) {
+        if ($configuration['requirements']) {
             $variant->addRequirements($this->getNamespacedRequirements());
+        }
+        return $variant;
+    }
+
+    public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $parameters)
+    {
+        /** @var Route $defaultPageRoute */
+        $defaultPageRoute = $collection->get('default');
+        $variant = $this->getVariant($defaultPageRoute, $this->configuration);
+        // The enhancer tells us: This given route does not match the parameters
+        if (!$this->verifyRequiredParameters($variant, $parameters)) {
+            return;
+        }
+        $compiledRoute = $variant->compile();
+        $flattenedParameters = $this->flattenParameters($parameters);
+        $variables = array_flip($compiledRoute->getPathVariables());
+        $mergedParams = array_replace($variant->getDefaults(), $flattenedParameters);
+        // all params must be given, otherwise we exclude this variant
+        if ($diff = array_diff_key($variables, $mergedParams)) {
+            return;
         }
         $collection->add('enhancer_' . $this->namespace . spl_object_hash($variant), $variant);
     }
+
+
 
     protected function modifyRoutePath(string $routePath): string
     {
