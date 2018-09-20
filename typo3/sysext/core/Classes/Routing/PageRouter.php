@@ -201,16 +201,15 @@ class PageRouter
             }
             $enhancer = $route->getOption('enhancer');
             // The enhancer tells us: This given route does not match the parameters
-            if (!$enhancer->verifyRequiredParameters($route, $parameters)) {
+            if (!$enhancer->verifyRequiredParameters($route, $originalParameters)) {
                 continue;
             }
-            $parameters = $enhancer->flattenParameters($parameters);
+            $parameters = $enhancer->flattenParameters($originalParameters);
             $variables = array_flip($compiledRoute->getPathVariables());
             $mergedParams = array_replace($route->getDefaults(), $parameters);
 
             // all params must be given, otherwise we exclude this variant
             if ($diff = array_diff_key($variables, $mergedParams)) {
-                $parameters = $originalParameters;
                 continue;
             }
 
@@ -234,6 +233,11 @@ class PageRouter
         $uri = null;
         foreach ($allRoutes as $routeName => $route) {
             try {
+                $parameters = $originalParameters;
+                if ($route->hasOption('enhancer')) {
+                    $enhancer = $route->getOption('enhancer');
+                    $parameters = $enhancer->flattenParameters($parameters);
+                }
                 $urlAsString = $generator->generate($routeName, $parameters, $type);
                 $uri = new Uri($urlAsString);
                 $matchedRoute = $filteredRoutes->get($routeName);
