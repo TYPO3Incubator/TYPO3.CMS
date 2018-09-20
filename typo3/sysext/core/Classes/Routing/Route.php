@@ -26,15 +26,6 @@ use TYPO3\CMS\Core\Routing\Aspect\Applicable;
  */
 class Route extends SymfonyRoute
 {
-    protected $path = '/';
-    protected $host = '';
-    protected $schemes = [];
-    protected $methods = [];
-    protected $defaults = [];
-    protected $requirements = [];
-    protected $options = [];
-    protected $condition = '';
-
     /**
      * @var CompiledRoute|null
      */
