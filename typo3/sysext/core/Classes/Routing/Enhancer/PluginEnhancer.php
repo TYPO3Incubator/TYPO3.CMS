@@ -56,7 +56,7 @@ class PluginEnhancer
      */
     public function enhance(RouteCollection $collection)
     {
-        $routePath = $this->getNamespacedRoutePath();
+        $routePath = $this->getNamespacedRoutePath($this->configuration['routePath']);
         $routePath = $this->modifyRoutePath($routePath);
         $defaultPageRoute = $collection->get('default');
         $variant = clone $defaultPageRoute;
@@ -87,9 +87,8 @@ class PluginEnhancer
         );
     }
 
-    protected function getNamespacedRoutePath()
+    protected function getNamespacedRoutePath(string $routePath)
     {
-        $routePath = $this->configuration['routePath'];
         $routePath = str_replace('{', '{' . $this->namespace . '_', $routePath);
         return $routePath;
     }
