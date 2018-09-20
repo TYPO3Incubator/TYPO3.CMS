@@ -323,7 +323,10 @@ class PageRouter
     protected function getSuitableEnhancersForPage(int $pageId, array $factories): \Generator
     {
         foreach ($this->configuration['routingEnhancers'] as $enhancerConfiguration) {
-            // @todo: Check if there is a restriction to page Ids.
+            // Check if there is a restriction to page Ids.
+            if (is_array($enhancerConfiguration['limitToPages']) && !in_array($pageId, $enhancerConfiguration['limitToPages'])) {
+                continue;
+            }
             $enhancer = null;
             switch ($enhancerConfiguration['type']) {
                 case 'PageTypeEnhancer':
