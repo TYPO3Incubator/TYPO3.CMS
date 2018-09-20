@@ -362,7 +362,13 @@ class PageLinkBuilder extends AbstractTypolinkBuilder
 
         $queryParameters['type'] = $this->getTypoScriptFrontendController()->type;
         $router = $siteOfTargetPage->getRouter();
-        $uri = $router->generate($targetPageId, $siteLanguageOfTargetPage, $queryParameters, $fragment, $useAbsoluteUrl ? PageUriBuilder::ABSOLUTE_URL : PageUriBuilder::ABSOLUTE_PATH);
+        $uri = $router->generate(
+            $targetPageId,
+            $siteLanguageOfTargetPage,
+            $queryParameters,
+            $fragment,
+            $useAbsoluteUrl ? PageUriBuilder::ABSOLUTE_URL : PageUriBuilder::ABSOLUTE_PATH
+        );
         // Override scheme, but only if the site does not define a scheme yet AND the site defines a domain/host
         if ($useAbsoluteUrl && !$uri->getScheme() && $uri->getHost()) {
             $scheme = $conf['forceAbsoluteUrl.']['scheme'] ?? 'https';
