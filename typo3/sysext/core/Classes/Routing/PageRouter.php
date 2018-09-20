@@ -132,7 +132,7 @@ class PageRouter
             $pageCollection = new RouteCollection();
             $defaultRouteForPage = new Route(
                 $pagePath,
-                ['page' => $page],
+                ['_page' => $page],
                 ['tail' => '.*'],
                 ['utf8' => true]
             );
@@ -155,6 +155,8 @@ class PageRouter
                 $enhancer = $matchedRoute->getOption('enhancer');
                 $result = $enhancer->unflattenParameters($result);
             }
+            $result['page'] = $result['_page'];
+            unset($result['_page']);
             return new RouteResult($request->getUri(), $this->site, $language, $result['tail'] ?? '', $result);
         } catch (ResourceNotFoundException $e) {
             // do nothing
@@ -178,12 +180,14 @@ class PageRouter
         $pagePath = ltrim($page['slug'], '/');
         $defaultRouteForPage = new Route(
             '/' . $pagePath,
-            ['page' => $page],
+            ['_page' => $page],
             [],
             ['utf8' => true]
         );
         $collection->add('default', $defaultRouteForPage);
 
+        // @todo: this should be built in a way that cHash is not generated for incoming links
+        // because this is built inside this very method.
         unset($originalParameters['cHash']);
         $factories = $this->buildAspectFactories($language);
         foreach ($this->getSuitableEnhancersForPage($pageId, $factories) as $enhancer) {
