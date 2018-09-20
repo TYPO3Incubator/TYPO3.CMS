@@ -194,13 +194,17 @@ class PageRouter
             /** @var Route $route */
             $compiledRoute = $route->compile();
 
-            if ($route->hasOption('enhancer')) {
-                $enhancer = $route->getOption('enhancer');
-                if (!$enhancer->verifyRequiredParameters($route, $parameters)) {
-                    continue;
-                }
-                $parameters = $enhancer->flattenParameters($parameters);
+            // No enhancer available, so we can add this option directly
+            if (!$route->hasOption('enhancer')) {
+                $filteredRoutes->add($routeName, $route);
+                continue;
             }
+            $enhancer = $route->getOption('enhancer');
+            // The enhancer tells us: This given route does not match the parameters
+            if (!$enhancer->verifyRequiredParameters($route, $parameters)) {
+                continue;
+            }
+            $parameters = $enhancer->flattenParameters($parameters);
             $variables = array_flip($compiledRoute->getPathVariables());
             $mergedParams = array_replace($route->getDefaults(), $parameters);
 
