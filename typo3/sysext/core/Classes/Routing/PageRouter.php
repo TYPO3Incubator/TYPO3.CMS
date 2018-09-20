@@ -172,7 +172,7 @@ class PageRouter
      * @param string $type
      * @return UriInterface
      */
-    public function generate(int $pageId, SiteLanguage $language, array $parameters = [], string $fragment = '', string $type = ''): UriInterface
+    public function generate(int $pageId, SiteLanguage $language, array $parameters = [], string $fragment = '', string $type = ''): ?UriInterface
     {
         $originalParameters = $parameters;
         $collection = new RouteCollection();
@@ -193,32 +193,26 @@ class PageRouter
 
         $filteredRoutes = new RouteCollection();
         foreach ($collection->all() as $routeName => $route) {
-            #$parameters = $originalParameters;
+            /** @var Route $route */
             $compiledRoute = $route->compile();
 
             if ($route->hasOption('enhancer')) {
                 $enhancer = $route->getOption('enhancer');
-                $parameters = $enhancer->flattenParameters($parameters);
                 if (!$enhancer->verifyRequiredParameters($route, $parameters)) {
                     continue;
                 }
+                $parameters = $enhancer->flattenParameters($parameters);
             }
             $variables = array_flip($compiledRoute->getPathVariables());
             $mergedParams = array_replace($route->getDefaults(), $parameters);
 
-            // all params must be given, otherwise we exclude this possibility
+            // all params must be given, otherwise we exclude this variant
             if ($diff = array_diff_key($variables, $mergedParams)) {
                 continue;
             }
+
             $filteredRoutes->add($routeName, $route);
         }
-
-        if (isset($parameters['tx_felogin_pi1'])) {
-            var_dump($filteredRoutes->all());
-            var_dump($parameters);
-            exit;
-        }
-
 
         $context = new RequestContext(
             $language->getBase()->getPath(),
@@ -232,27 +226,41 @@ class PageRouter
         $allRoutes = $filteredRoutes->all();
         $allRoutes = array_reverse($allRoutes, true);
         $matchedRoute = null;
+        $uri = null;
         foreach ($allRoutes as $routeName => $route) {
             try {
-                $result = $generator->generate($routeName, $parameters, $type);
+                $urlAsString = $generator->generate($routeName, $parameters, $type);
+                $uri = new Uri($urlAsString);
                 $matchedRoute = $collection->get($routeName);
                 break;
             } catch (MissingMandatoryParametersException $e) {
                 // no match
             }
         }
-        $uri = new Uri($result);
-        if ($matchedRoute && $uri->getQuery()) {
+
+        if ($matchedRoute && $uri instanceof UriInterface && $uri->getQuery()) {
             $queryParams = [];
             parse_str($uri->getQuery(), $queryParams);
             if ($matchedRoute->hasOption('enhancer')) {
                 $enhancer = $matchedRoute->getOption('enhancer');
-                if (method_exists($enhancer, 'unflattenParameters')) {
-                    $queryParams = $enhancer->unflattenParameters($queryParams);
+                $queryParams = $enhancer->unflattenParameters($queryParams);
+            }
+
+            if (!empty($queryParams)) {
+                // @todo: let#s take the "unstable" parameters that are now part of the URL into account as well.
+                $hashParameters = $queryParams;
+                $hashParameters['id'] = $pageId;
+                $cacheHash = GeneralUtility::makeInstance(CacheHashCalculator::class)
+                    ->generateForParameters(http_build_query($hashParameters, '', '&', PHP_QUERY_RFC3986));
+                if (!empty($cacheHash)) {
+                    $queryParams['cHash'] = $cacheHash;
                 }
             }
-            $cacheHashCalculator = new CacheHashCalculator();
-            $uri = $uri->withQuery(http_build_query($queryParams, '', '&', PHP_QUERY_RFC3986));
+            if (empty($queryParams)) {
+                $uri = $uri->withQuery('');
+            } else {
+                $uri = $uri->withQuery(http_build_query($queryParams, '', '&', PHP_QUERY_RFC3986));
+            }
         }
         return $uri;
     }

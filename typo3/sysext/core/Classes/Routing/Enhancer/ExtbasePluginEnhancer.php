@@ -121,8 +121,31 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         list($controllerName, $actionName) = explode('::', $parameters['_controller']);
         $parameters[$this->namespace]['controller'] = $controllerName;
         $parameters[$this->namespace]['action'] = $actionName;
-        return parent::unflattenParameters($parameters);
+        $parameters = parent::unflattenParameters($parameters);
+        // Now put the "blog_title" back to "news" parameter
+        foreach ($parameters['_arguments'] ?? [] as $argumentName => $placeholderName) {
+            if (isset($parameters[$this->namespace][$placeholderName])) {
+                $parameters[$this->namespace][$argumentName] = $parameters[$this->namespace][$placeholderName];
+                unset($parameters[$this->namespace][$placeholderName]);
+            }
+        }
+        return $parameters;
     }
+
+    public function flattenParameters(array $parameters): array
+    {
+        // First put the "news" parameter to the placeholder name
+        foreach ($parameters['_arguments'] ?? [] as $argumentName => $placeholderName) {
+            if (isset($parameters[$this->namespace][$argumentName])) {
+                $parameters[$this->namespace][$placeholderName] = $parameters[$this->namespace][$argumentName];
+                unset($parameters[$this->namespace][$argumentName]);
+            }
+        }
+        $parameters = parent::flattenParameters($parameters);
+
+        return $parameters;
+    }
+
 
     public function verifyRequiredParameters(Route $route, array $parameters) {
         if (empty($parameters['_controller'] ?? null)) {
