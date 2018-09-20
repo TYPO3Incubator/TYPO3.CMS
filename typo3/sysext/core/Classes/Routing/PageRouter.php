@@ -174,6 +174,7 @@ class PageRouter
      */
     public function generate(int $pageId, SiteLanguage $language, array $parameters = [], string $fragment = '', string $type = ''): UriInterface
     {
+        $originalParameters = $parameters;
         $collection = new RouteCollection();
         $page = GeneralUtility::makeInstance(PageRepository::class)->getPage($pageId, true);
         $pagePath = ltrim($page['slug'], '/');
@@ -190,6 +191,35 @@ class PageRouter
             $enhancer->enhance($collection);
         }
 
+        $filteredRoutes = new RouteCollection();
+        foreach ($collection->all() as $routeName => $route) {
+            #$parameters = $originalParameters;
+            $compiledRoute = $route->compile();
+
+            if ($route->hasOption('enhancer')) {
+                $enhancer = $route->getOption('enhancer');
+                $parameters = $enhancer->flattenParameters($parameters);
+                if (!$enhancer->verifyRequiredParameters($route, $parameters)) {
+                    continue;
+                }
+            }
+            $variables = array_flip($compiledRoute->getPathVariables());
+            $mergedParams = array_replace($route->getDefaults(), $parameters);
+
+            // all params must be given, otherwise we exclude this possibility
+            if ($diff = array_diff_key($variables, $mergedParams)) {
+                continue;
+            }
+            $filteredRoutes->add($routeName, $route);
+        }
+
+        if (isset($parameters['tx_felogin_pi1'])) {
+            var_dump($filteredRoutes->all());
+            var_dump($parameters);
+            exit;
+        }
+
+
         $context = new RequestContext(
             $language->getBase()->getPath(),
             'GET',
@@ -197,9 +227,9 @@ class PageRouter
             $language->getBase()->getScheme() ?? ''
         );
         $parameters['_fragment'] = $fragment;
-        $generator = new UrlGenerator($collection, $context);
+        $generator = new UrlGenerator($filteredRoutes, $context);
         $generator->setStrictRequirements(true);
-        $allRoutes = $collection->all();
+        $allRoutes = $filteredRoutes->all();
         $allRoutes = array_reverse($allRoutes, true);
         $matchedRoute = null;
         foreach ($allRoutes as $routeName => $route) {
@@ -208,8 +238,7 @@ class PageRouter
                 $matchedRoute = $collection->get($routeName);
                 break;
             } catch (MissingMandatoryParametersException $e) {
-                var_dump($e);
-                exit;
+                // no match
             }
         }
         $uri = new Uri($result);

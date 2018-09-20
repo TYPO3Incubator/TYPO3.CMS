@@ -18,6 +18,7 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
 
 use Symfony\Component\Routing\RouteCollection;
 use TYPO3\CMS\Core\Routing\Aspect\Modifiable;
+use TYPO3\CMS\Core\Routing\Route;
 use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
 
 /**
@@ -142,5 +143,9 @@ class PluginEnhancer
             $newParameters[$name] = $v;
         }
         return $newParameters;
+    }
+
+    public function verifyRequiredParameters(Route $route, array $parameters) {
+        return true;
     }
 }

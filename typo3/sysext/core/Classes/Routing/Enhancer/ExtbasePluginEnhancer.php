@@ -123,4 +123,12 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         $parameters[$this->namespace]['action'] = $actionName;
         return parent::unflattenParameters($parameters);
     }
+
+    public function verifyRequiredParameters(Route $route, array $parameters) {
+        if (empty($parameters['_controller'] ?? null)) {
+            return false;
+        }
+        return true;
+    }
+
 }
