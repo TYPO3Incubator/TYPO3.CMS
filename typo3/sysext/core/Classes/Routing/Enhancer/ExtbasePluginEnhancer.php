@@ -163,10 +163,10 @@ class ExtbasePluginEnhancer extends PluginEnhancer
      * @return bool
      */
     public function verifyRequiredParameters(Route $route, array $parameters) {
-        if (!$route->hasDefault('_controller')) {
+        if (!is_array($parameters[$this->namespace])) {
             return false;
         }
-        if (!isset($parameters[$this->namespace])) {
+        if (!$route->hasDefault('_controller')) {
             return false;
         }
         $controller = $route->getDefault('_controller');

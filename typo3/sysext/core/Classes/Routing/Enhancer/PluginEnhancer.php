@@ -146,6 +146,10 @@ class PluginEnhancer
     }
 
     public function verifyRequiredParameters(Route $route, array $parameters) {
+        // No parameter for this namespace given, so this route does not fit the requirements
+        if (!is_array($parameters[$this->namespace])) {
+            return false;
+        }
         return true;
     }
 }
