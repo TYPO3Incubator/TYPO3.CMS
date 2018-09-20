@@ -51,12 +51,12 @@ class PageTypeEnhancer
      */
     public function enhance(RouteCollection $collection)
     {
-        foreach ($collection->all() as $existingRoute) {
+        foreach ($collection->all() as $routeName => $existingRoute) {
             $variant = clone $existingRoute;
             $variant->setPath(rtrim($variant->getPath(), '/') . $this->configuration['routePath']);
             $variant->addDefaults(['type' => 0]);
             $variant->addRequirements($this->configuration['requirements'] ?? ['type' => '.*']);
-            $collection->add('enhancer_' . spl_object_hash($this) . spl_object_hash($existingRoute), $variant);
+            $collection->add($routeName . '_typeNum_' . spl_object_hash($variant), $variant);
         }
     }
 
