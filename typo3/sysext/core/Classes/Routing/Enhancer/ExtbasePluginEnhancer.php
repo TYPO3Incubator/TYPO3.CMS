@@ -52,7 +52,9 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         parent::__construct($configuration);
         $extensionName = $this->configuration['extension'];
         $pluginName = $this->configuration['plugin'];
-        $this->namespace = 'tx_' . strtolower($extensionName) . '_' . strtolower($pluginName);
+        $extensionName = str_replace(' ', '', ucwords(str_replace('_', ' ', $extensionName)));
+        $pluginSignature = strtolower($extensionName . '_' . $pluginName);
+        $this->namespace = 'tx_' . $pluginSignature;
         $this->routesOfPlugin = $this->configuration['routes'] ?? [];
         return;
         // we should do this somewhere else.
