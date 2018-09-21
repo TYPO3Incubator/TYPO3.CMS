@@ -233,7 +233,7 @@ class PageRouter
             // expand the rest of the query parameters again
             if ($matchedRoute->hasOption('enhancer')) {
                 $enhancer = $matchedRoute->getOption('enhancer');
-                $queryParams = $enhancer->unflattenParameters($queryParams);
+                $queryParams = $enhancer->inflateParameters($matchedRoute, $queryParams);
             }
 
             if (!empty($queryParams)) {
