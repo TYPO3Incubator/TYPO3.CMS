@@ -88,7 +88,7 @@ class PluginEnhancer extends AbstractEnhancer
         $defaultPageRoute = $collection->get('default');
         $variant = $this->getVariant($defaultPageRoute, $this->configuration);
         $compiledRoute = $variant->compile();
-        $flattenedParameters = $this->flattenParameters($parameters);
+        $flattenedParameters = $this->getVariableProcessor()->deflateParameters($parameters, $variant->getArguments(), $this->namespace);
         $variables = array_flip($compiledRoute->getPathVariables());
         $mergedParams = array_replace($variant->getDefaults(), $flattenedParameters);
         // all params must be given, otherwise we exclude this variant
@@ -120,12 +120,6 @@ class PluginEnhancer extends AbstractEnhancer
         );
     }
 
-    protected function getNamespacedRoutePath(string $routePath)
-    {
-        $routePath = str_replace('{', '{' . $this->namespace . '_', $routePath);
-        return $routePath;
-    }
-
     protected function getNamespacedRequirements()
     {
         $requirements = [];
@@ -135,45 +129,14 @@ class PluginEnhancer extends AbstractEnhancer
         return $requirements;
     }
 
-    public function flattenParameters(array $parameters): array
+    /**
+     * @param Route $route
+     * @param array $parameters
+     * @return array
+     */
+    public function inflateParameters(Route $route, array $parameters): array
     {
-        if (empty($this->namespace)) {
-            return $parameters;
-        }
-        if (isset($parameters[$this->namespace])) {
-            $newParameters = [];
-            foreach ($parameters as $name => $v) {
-                if ($name === $this->namespace) {
-                    if (is_array($v)) {
-                        foreach ($v as $k2 => $v2) {
-                            $newParameters[$this->namespace . '_' . $k2] = $v2;
-                        }
-                    } else {
-                        $newParameters[$this->namespace . '_' . $name] = $v;
-                    }
-                    continue;
-                }
-                $newParameters[$name] = $v;
-            }
-            return $newParameters;
-        }
-        return $parameters;
-    }
-
-    public function unflattenParameters(array $parameters): array
-    {
-        if (empty($this->namespace)) {
-            return $parameters;
-        }
-        $newParameters = [];
-        foreach ($parameters as $name => $v) {
-            if ($name !== $this->namespace && strpos($name, $this->namespace) === 0) {
-                $name = substr($name, strlen($this->namespace)+1);
-                $newParameters[$this->namespace][$name] = $v;
-                continue;
-            }
-            $newParameters[$name] = $v;
-        }
-        return $newParameters;
+        return $this->getVariableProcessor()
+            ->inflateParameters($parameters, $route->getArguments(), $this->namespace);
     }
 }

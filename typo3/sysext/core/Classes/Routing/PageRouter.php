@@ -155,7 +155,7 @@ class PageRouter
             $matchedRoute = $fullCollection->get($result['_route']);
             if ($matchedRoute->hasOption('enhancer')) {
                 $enhancer = $matchedRoute->getOption('enhancer');
-                $result = $enhancer->unflattenParameters($result);
+                $result = $enhancer->inflateParameters($matchedRoute, $result);
             }
             $result['page'] = $result['_page'];
             unset($result['_page']);

@@ -52,6 +52,15 @@ class Route extends SymfonyRoute
     }
 
     /**
+     * @return array
+     * @todo '_arguments' are added implicitly, make it explicit in enhancers
+     */
+    public function getArguments(): array
+    {
+        return $this->getDefault('_arguments') ?? [];
+    }
+
+    /**
      * Returns all aspects.
      *
      * @return array The aspects

@@ -139,11 +139,11 @@ class ExtbasePluginEnhancer extends PluginEnhancer
             if (!$this->verifyRequiredParameters($variant, $originalParameters)) {
                 continue;
             }
-            $parameters = $this->remapArgumentNamesToPlaceholderNames($variant, $originalParameters);
+            $parameters = $originalParameters;
             unset($parameters[$this->namespace]['action']);
             unset($parameters[$this->namespace]['controller']);
             $compiledRoute = $variant->compile();
-            $flattenedParameters = $this->flattenParameters($parameters);
+            $flattenedParameters = $this->getVariableProcessor()->deflateParameters($parameters, $variant->getArguments(), $this->namespace);
             $variables = array_flip($compiledRoute->getPathVariables());
             $mergedParams = array_replace($variant->getDefaults(), $flattenedParameters);
             // all params must be given, otherwise we exclude this variant
@@ -158,12 +158,15 @@ class ExtbasePluginEnhancer extends PluginEnhancer
     /**
      * A route has matched the controller/action combination, so ensure that these properties
      * are set to tx_blogexample_pi1[controller] and tx_blogexample_pi1[action].
-     * @param $parameters
+     *
+     * @param Route $route
+     * @param array $parameters
      * @return array
      */
-    public function unflattenParameters(array $parameters): array
+    public function inflateParameters(Route $route, array $parameters): array
     {
-        $parameters = parent::unflattenParameters($parameters);
+        $parameters = $this->getVariableProcessor()
+            ->inflateParameters($parameters, $route->getArguments(), $this->namespace);
         // Invalid if there is no controller given, so this enhancers does not do anything
         if (empty($parameters['_controller'] ?? null)) {
             return $parameters;
@@ -173,39 +176,6 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         $parameters[$this->namespace]['action'] = $actionName;
         return $parameters;
     }
-
-    protected function remapArgumentNamesToPlaceholderNames(Route $route, array $parameters)
-    {
-        if (!$route->getDefault('_arguments')) {
-            return $parameters;
-        }
-        $arguments = $route->getDefault('_arguments');
-        // Now put the "blog_title" back to "news" parameter
-        foreach ($arguments ?? [] as $argumentName => $placeholderName) {
-            if (isset($parameters[$this->namespace][$placeholderName])) {
-                $parameters[$this->namespace][$argumentName] = $parameters[$this->namespace][$placeholderName];
-                unset($parameters[$this->namespace][$placeholderName]);
-            }
-        }
-        return $parameters;
-    }
-
-    protected function remapPlaceholderNamesToArgumentNames(Route $route, array $parameters)
-    {
-        if (!$route->getDefault('_arguments')) {
-            return $parameters;
-        }
-        $arguments = $route->getDefault('_arguments');
-        // First put the "news" parameter to the placeholder name
-        foreach ($arguments as $argumentName => $placeholderName) {
-            if (isset($parameters[$this->namespace][$argumentName])) {
-                $parameters[$this->namespace][$placeholderName] = $parameters[$this->namespace][$argumentName];
-                unset($parameters[$this->namespace][$argumentName]);
-            }
-        }
-        return $parameters;
-    }
-
 
     /**
      * Check if controller+action combination matches
@@ -231,5 +201,4 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         }
         return true;
     }
-
 }
