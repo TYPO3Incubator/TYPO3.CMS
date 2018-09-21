@@ -28,6 +28,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\FrontendWorkspaceRestriction;
 use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Routing\Aspect\MappableProcessor;
 use TYPO3\CMS\Core\Routing\Enhancer\ExtbasePluginEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PageTypeEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
@@ -146,8 +147,9 @@ class PageRouter
             $fullCollection->addCollection($pageCollection);
         }
 
+        $mappableProcessor = new MappableProcessor();
         $context = new RequestContext('/', $request->getMethod(), $request->getUri()->getHost());
-        $matcher = new PageUriMatcher($fullCollection, $context);
+        $matcher = new PageUriMatcher($fullCollection, $context, $mappableProcessor);
         try {
             $result = $matcher->match('/' . trim($result->getTail(), '/'));
             $matchedRoute = $fullCollection->get($result['_route']);
@@ -285,8 +287,9 @@ class PageRouter
             $collection->add('page_' . $page['uid'], $route);
         }
 
+        $mappableProcessor = new MappableProcessor();
         $context = new RequestContext('/', $request->getMethod(), $request->getUri()->getHost());
-        $matcher = new PageUriMatcher($collection, $context);
+        $matcher = new PageUriMatcher($collection, $context, $mappableProcessor);
         try {
             $result = $matcher->match('/' . ltrim($routePathTail, '/'));
             unset($result['_route']);

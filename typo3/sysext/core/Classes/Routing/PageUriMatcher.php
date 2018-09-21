@@ -20,12 +20,26 @@ use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 use Symfony\Component\Routing\Exception\NoConfigurationException;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
-use Symfony\Component\Routing\Route as SymfonyRoute;
+use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\RouteCollection;
-use TYPO3\CMS\Core\Routing\Aspect\Mappable;
+use TYPO3\CMS\Core\Routing\Aspect\MappableProcessor;
 
 class PageUriMatcher extends UrlMatcher
 {
+    /**
+     * @var MappableProcessor
+     */
+    protected $mappableProcessor;
+
+    public function __construct(
+        RouteCollection $routes,
+        RequestContext $context,
+        MappableProcessor $mappableProcessor
+    ) {
+        parent::__construct($routes, $context);
+        $this->mappableProcessor = $mappableProcessor;
+    }
+
     /**
      * Tries to match a URL with a set of routes.
      *
@@ -85,50 +99,13 @@ class PageUriMatcher extends UrlMatcher
                 continue;
             }
 
+            // custom handling of Mappable instances
             $attributes = array_replace($matches, $hostMatches, $status[1] ?? []);
-            if (!$this->processMappers($route, $attributes)) {
+            if (!$this->mappableProcessor->resolve($route, $attributes)) {
                 continue;
             }
 
             return $this->getAttributes($route, $name, $attributes);
         }
-    }
-
-    /**
-     * @param SymfonyRoute $route
-     * @param array $attributes
-     * @return bool
-     */
-    protected function processMappers(SymfonyRoute $route, array &$attributes): bool
-    {
-        if (!$route instanceof Route) {
-            return true;
-        }
-
-        /** @var Mappable[] $mappers */
-        $mappers = $route->filterAspects(
-            Mappable::class,
-            array_keys($attributes)
-        );
-        if (empty($mappers)) {
-            return true;
-        }
-
-        $values = [];
-        foreach ($mappers as $variableName => $mapper) {
-            $value = $mapper->resolve(
-                (string)($attributes[$variableName] ?? '')
-            );
-            if ($value !== null) {
-                $values[$variableName] = $value;
-            }
-        }
-
-        if (count($mappers) !== count($values)) {
-            return false;
-        }
-
-        $attributes = array_merge($attributes, $values);
-        return true;
     }
 }
