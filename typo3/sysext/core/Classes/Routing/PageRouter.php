@@ -198,7 +198,8 @@ class PageRouter
         $scheme = $language->getBase()->getScheme();
         $mappableProcessor = new MappableProcessor();
         $context = new RequestContext(
-            $language->getBase()->getPath(),
+            // page segment (slug & enhanced part) is supposed to start with '/'
+            rtrim($language->getBase()->getPath(), '/'),
             'GET',
             $language->getBase()->getHost(),
             $scheme ?: 'http',
