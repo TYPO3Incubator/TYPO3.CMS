@@ -31,7 +31,7 @@ use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
  *     hash: '[A-z]{0-6}'
  *   namespace: "tx_felogin_pi1"
  */
-class PluginEnhancer
+class PluginEnhancer extends AbstractEnhancer
 {
     use AspectsAwareTrait;
 
@@ -65,11 +65,13 @@ class PluginEnhancer
 
     protected function getVariant(Route $defaultPageRoute, array $configuration): Route
     {
-        $routePath = $this->getNamespacedRoutePath($configuration['routePath']);
-        $routePath = $this->modifyRoutePath($routePath);
+        $arguments = $configuration['_arguments'] ?? [];
+        $routePath = $this->modifyRoutePath($configuration['routePath']);
+        $routePath = $this->getVariableProcessor()->deflateRoutePath($routePath, $arguments, $this->namespace);
         $variant = clone $defaultPageRoute;
         $variant->setPath(rtrim($variant->getPath(), '/') . '/' . ltrim($routePath, '/'));
         $variant->addOptions(['enhancer' => $this]);
+        $this->applyRouteAspects($variant, $this->aspects ?? [], $this->namespace);
         if ($configuration['requirements']) {
             $variant->addRequirements($this->getNamespacedRequirements());
         }

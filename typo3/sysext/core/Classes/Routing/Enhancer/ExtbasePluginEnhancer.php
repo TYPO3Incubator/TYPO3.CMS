@@ -102,14 +102,15 @@ class ExtbasePluginEnhancer extends PluginEnhancer
 
     protected function getVariant(Route $defaultPageRoute, array $routeDefinition): Route
     {
+        $arguments = $routeDefinition['_arguments'] ?? [];
         $namespacedRequirements = $this->getNamespacedRequirements();
         $routePath = $this->modifyRoutePath($routeDefinition['routePath']);
-        $routePath = $this->getNamespacedRoutePath($routePath);
+        $routePath = $this->getVariableProcessor()->deflateRoutePath($routePath, $arguments, $this->namespace);
         unset($routeDefinition['routePath']);
         $defaults = array_merge_recursive($defaultPageRoute->getDefaults(), $routeDefinition);
         $options = ['enhancer' => $this, 'utf8' => true];
         $route = new Route(rtrim($defaultPageRoute->getPath(), '/') . '/' . ltrim($routePath, '/'), $defaults, [], $options);
-        $route->setAspects($this->aspects ?? []);
+        $this->applyRouteAspects($route, $this->aspects ?? [], $this->namespace);
         if ($namespacedRequirements) {
             $compiledRoute = $route->compile();
             $variables = $compiledRoute->getPathVariables();
