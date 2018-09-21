@@ -110,7 +110,7 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         $routePath = $this->getVariableProcessor()->deflateRoutePath($routePath, $arguments, $this->namespace);
         unset($routeDefinition['routePath']);
         $defaults = array_merge_recursive($defaultPageRoute->getDefaults(), $routeDefinition);
-        $options = array_merge($defaultPageRoute->getOptions(), ['enhancer' => $this, 'utf8' => true, '_arguments' => $arguments]);
+        $options = array_merge($defaultPageRoute->getOptions(), ['_enhancer' => $this, 'utf8' => true, '_arguments' => $arguments]);
         $route = new Route(rtrim($defaultPageRoute->getPath(), '/') . '/' . ltrim($routePath, '/'), $defaults, [], $options);
         $this->applyRouteAspects($route, $this->aspects ?? [], $this->namespace);
         if ($namespacedRequirements) {

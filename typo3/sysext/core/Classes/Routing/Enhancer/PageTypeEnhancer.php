@@ -55,6 +55,7 @@ class PageTypeEnhancer
             $variant = clone $existingRoute;
             $variant->setPath(rtrim($variant->getPath(), '/') . $this->configuration['routePath']);
             $variant->addDefaults(['type' => 0]);
+            $variant->setOptions(['_enhancer' => $this]);
             $variant->addRequirements($this->configuration['requirements'] ?? ['type' => '.*']);
             $collection->add($routeName . '_typeNum_' . spl_object_hash($variant), $variant);
         }

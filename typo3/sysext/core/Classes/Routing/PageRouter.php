@@ -155,9 +155,9 @@ class PageRouter
             $result = $matcher->match('/' . trim($result->getTail(), '/'));
             /** @var Route $matchedRoute */
             $matchedRoute = $fullCollection->get($result['_route']);
-            if ($matchedRoute->hasOption('enhancer')) {
-                $enhancer = $matchedRoute->getOption('enhancer');
                 $result = $enhancer->inflateParameters($matchedRoute, $result);
+            $enhancer = $matchedRoute->getEnhancer();
+            if ($enhancer !== null) {
             }
             return $this->buildRouteResult($request->getUri(), $this->site, $language, $matchedRoute, $result);
         } catch (ResourceNotFoundException $e) {
@@ -221,6 +221,7 @@ class PageRouter
                 $mappableProcessor->generate($route, $parameters);
                 $urlAsString = $generator->generate($routeName, $parameters, $type);
                 $uri = new Uri($urlAsString);
+                /** @var Route $matchedRoute */
                 $matchedRoute = $collection->get($routeName);
                 break;
             } catch (MissingMandatoryParametersException $e) {
@@ -232,9 +233,9 @@ class PageRouter
             $queryParams = [];
             parse_str($uri->getQuery(), $queryParams);
             // expand the rest of the query parameters again
-            if ($matchedRoute->hasOption('enhancer')) {
-                $enhancer = $matchedRoute->getOption('enhancer');
                 $queryParams = $enhancer->inflateParameters($matchedRoute, $queryParams);
+            $enhancer = $matchedRoute->getEnhancer();
+            if ($enhancer !== null) {
             }
 
             if (!empty($queryParams)) {

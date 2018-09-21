@@ -72,7 +72,7 @@ class PluginEnhancer extends AbstractEnhancer
         $routePath = $this->getVariableProcessor()->deflateRoutePath($routePath, $arguments, $this->namespace);
         $variant = clone $defaultPageRoute;
         $variant->setPath(rtrim($variant->getPath(), '/') . '/' . ltrim($routePath, '/'));
-        $variant->addOptions(['enhancer' => $this, '_arguments' => $arguments]);
+        $variant->addOptions(['_enhancer' => $this, '_arguments' => $arguments]);
         $this->applyRouteAspects($variant, $this->aspects ?? [], $this->namespace);
         if ($configuration['requirements']) {
             $variant->addRequirements($this->getNamespacedRequirements());

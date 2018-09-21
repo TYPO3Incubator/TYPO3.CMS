@@ -19,6 +19,7 @@ namespace TYPO3\CMS\Core\Routing;
 use Symfony\Component\Routing\CompiledRoute;
 use Symfony\Component\Routing\Route as SymfonyRoute;
 use TYPO3\CMS\Core\Routing\Aspect\Applicable;
+use TYPO3\CMS\Core\Routing\Enhancer\AbstractEnhancer;
 
 /**
  * TYPO3's route is built on top of Symfony's route with the functionality
@@ -58,6 +59,14 @@ class Route extends SymfonyRoute
     public function getArguments(): array
     {
         return $this->getOption('_arguments') ?? [];
+    }
+
+    /**
+     * @return null|AbstractEnhancer
+     */
+    public function getEnhancer(): ?AbstractEnhancer
+    {
+        return $this->getOption('_enhancer') ?? null;
     }
 
     /**
