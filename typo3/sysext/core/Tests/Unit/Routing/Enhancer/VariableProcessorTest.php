@@ -38,6 +38,66 @@ class VariableProcessorTest extends UnitTestCase
         parent::tearDown();
     }
 
+    public function routePathDataProvider(): array
+    {
+        return [
+            'no arguments, no namespace' => [
+                [],
+                null,
+                '/static/{aa}/{bb}/{some_cc}/tail'
+            ],
+            'aa -> zz, no namespace' => [
+                ['aa' => 'zz'],
+                null,
+                '/static/{zz}/{bb}/{some_cc}/tail'
+            ],
+            'no arguments, first' => [
+                [],
+                'first',
+                '/static/{first__aa}/{first__bb}/{first__some_cc}/tail'
+            ],
+            'aa -> zz, first' => [
+                ['aa' => 'zz'],
+                'first',
+                '/static/{first__zz}/{first__bb}/{first__some_cc}/tail'
+            ],
+        ];
+    }
+
+    /**
+     * @param array $arguments
+     * @param null|string $namespace
+     * @param string $expectation
+     *
+     * @test
+     * @dataProvider routePathDataProvider
+     */
+    public function isRoutePathDeflated(array $arguments, ?string $namespace, string $expectation)
+    {
+        $routePath = '/static/{aa}/{bb}/{some_cc}/tail';
+        static::assertSame(
+            $expectation,
+            $this->subject->deflateRoutePath($routePath, $arguments, $namespace)
+        );
+    }
+
+    /**
+     * @param array $arguments
+     * @param null|string $namespace
+     * @param string $routePath
+     *
+     * @test
+     * @dataProvider routePathDataProvider
+     */
+    public function isRoutePathInflated(array $arguments, ?string $namespace, string $routePath)
+    {
+        $expectation = '/static/{aa}/{bb}/{some_cc}/tail';
+        static::assertSame(
+            $expectation,
+            $this->subject->inflateRoutePath($routePath, $arguments, $namespace)
+        );
+    }
+
     public function parametersDataProvider(): array
     {
         return [

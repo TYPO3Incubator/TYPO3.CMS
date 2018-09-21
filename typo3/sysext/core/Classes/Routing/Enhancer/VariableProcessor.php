@@ -20,6 +20,41 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
 class VariableProcessor
 {
     protected const LEVEL_DELIMITER = '__';
+    protected const VARIABLE_PATTERN = '#\{(?P<name>[^}]+)\}#';
+
+    public function deflateRoutePath(string $routePath, array $arguments = [], string $namespace = null): string
+    {
+        if (!preg_match_all(static::VARIABLE_PATTERN, $routePath, $matches)) {
+            return $routePath;
+        }
+
+        $search = array_values($matches[0]);
+        $replace = array_map(
+            function (string $name) {
+                return '{' . $name . '}';
+            },
+            $this->deflateValues($matches['name'], $arguments, $namespace)
+        );
+
+        return str_replace($search, $replace, $routePath);
+    }
+
+    public function inflateRoutePath(string $routePath, array $arguments = [], string $namespace = null): string
+    {
+        if (!preg_match_all(static::VARIABLE_PATTERN, $routePath, $matches)) {
+            return $routePath;
+        }
+
+        $search = array_values($matches[0]);
+        $replace = array_map(
+            function (string $name) {
+                return '{' . $name . '}';
+            },
+            $this->inflateValues($matches['name'], $arguments, $namespace)
+        );
+
+        return str_replace($search, $replace, $routePath);
+    }
 
     /**
      * Deflates (flattens) route/request parameters.
@@ -71,58 +106,90 @@ class VariableProcessor
      * Deflates keys names on the first level, now recursion into sub-arrays.
      * Can be used to adjust key names of route requirements, mappers, etc.
      *
-     * @param array $values
+     * @param array $items
      * @param array $arguments
      * @param string|null $namespace
      * @return array
      */
-    public function deflateKeys(array $values, array $arguments = [], string $namespace = null): array
+    public function deflateKeys(array $items, array $arguments = [], string $namespace = null): array
     {
-        if (empty($values) || empty($arguments) && empty($namespace)) {
-            return $values;
+        if (empty($items) || empty($arguments) && empty($namespace)) {
+            return $items;
         }
-        $namespacePrefix = $namespace ? $namespace . static::LEVEL_DELIMITER : '';
-        $keys = array_map(
-            function (string $key) use ($arguments, $namespacePrefix) {
-                $key = $arguments[$key] ?? $key;
-                return $namespacePrefix . $key;
-            },
-            array_keys($values)
-        );
+        $keys = $this->deflateValues(array_keys($items), $arguments, $namespace);
         return array_combine(
             $keys,
-            array_values($values)
+            array_values($items)
         );
     }
 
     /**
      * Inflates keys names on the first level, now recursion into sub-arrays.
      * Can be used to adjust key names of route requirements, mappers, etc.
-
-     * @param array $values
+     *
+     * @param array $items
      * @param array $arguments
      * @param string|null $namespace
      * @return array
      */
-    public function inflateKeys(array $values, array $arguments = [], string $namespace = null): array
+    public function inflateKeys(array $items, array $arguments = [], string $namespace = null): array
+    {
+        if (empty($items) || empty($arguments) && empty($namespace)) {
+            return $items;
+        }
+        $keys = $this->inflateValues(array_keys($items), $arguments, $namespace);
+        return array_combine(
+            $keys,
+            array_values($items)
+        );
+    }
+
+    /**
+     * Deflates plain values.
+     *
+     * @param array $values
+     * @param array $arguments
+     * @param null $namespace
+     * @return array
+     */
+    public function deflateValues(array $values, array $arguments = [], $namespace = null): array
     {
         if (empty($values) || empty($arguments) && empty($namespace)) {
             return $values;
         }
         $namespacePrefix = $namespace ? $namespace . static::LEVEL_DELIMITER : '';
-        $keys = array_map(
-            function (string $key) use ($arguments, $namespacePrefix) {
-                if (!empty($namespacePrefix) && strpos($key, $namespacePrefix) === 0) {
-                    $key = substr($key, strlen($namespacePrefix));
-                }
-                $index = array_search($key, $arguments);
-                return $index !== false ? $index : $key;
+        return array_map(
+            function (string $value) use ($arguments, $namespacePrefix) {
+                $value = $arguments[$value] ?? $value;
+                return $namespacePrefix . $value;
             },
-            array_keys($values)
+            $values
         );
-        return array_combine(
-            $keys,
-            array_values($values)
+    }
+
+    /**
+     * Inflates plain values.
+     *
+     * @param array $values
+     * @param array $arguments
+     * @param null $namespace
+     * @return array
+     */
+    public function inflateValues(array $values, array $arguments = [], $namespace = null): array
+    {
+        if (empty($values) || empty($arguments) && empty($namespace)) {
+            return $values;
+        }
+        $namespacePrefix = $namespace ? $namespace . static::LEVEL_DELIMITER : '';
+        return array_map(
+            function (string $value) use ($arguments, $namespacePrefix) {
+                if (!empty($namespacePrefix) && strpos($value, $namespacePrefix) === 0) {
+                    $value = substr($value, strlen($namespacePrefix));
+                }
+                $index = array_search($value, $arguments);
+                return $index !== false ? $index : $value;
+            },
+            $values
         );
     }
 
