@@ -69,6 +69,21 @@ class MappableProcessor
             return true;
         }
 
+        $values = [];
+        foreach ($mappers as $variableName => $mapper) {
+            $value = $mapper->generate(
+                (string)($attributes[$variableName] ?? '')
+            );
+            if ($value !== null) {
+                $values[$variableName] = $value;
+            }
+        }
+
+        if (count($mappers) !== count($values)) {
+            return false;
+        }
+
+        $attributes = array_merge($attributes, $values);
         return true;
     }
 

@@ -197,6 +197,7 @@ class PageRouter
         }
 
         $scheme = $language->getBase()->getScheme();
+        $mappableProcessor = new MappableProcessor();
         $context = new RequestContext(
             $language->getBase()->getPath(),
             'GET',
@@ -216,6 +217,7 @@ class PageRouter
                 if ($route->hasOption('flattenedParameters')) {
                     $parameters = $route->getOption('flattenedParameters');
                 }
+                $mappableProcessor->generate($route, $parameters);
                 $urlAsString = $generator->generate($routeName, $parameters, $type);
                 $uri = new Uri($urlAsString);
                 $matchedRoute = $collection->get($routeName);

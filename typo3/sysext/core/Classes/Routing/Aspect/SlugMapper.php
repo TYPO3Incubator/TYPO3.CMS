@@ -86,7 +86,10 @@ class SlugMapper implements Mappable
      */
     public function generate(string $value): ?string
     {
-        return $this->getPersistenceDelegate()->generate($value);
+        $result = $this->getPersistenceDelegate()->generate($value);
+        // @todo UrlGenerator does not allow variables containing slashes
+        $result = trim($result, '/');
+        return $result;
     }
 
     /**
@@ -95,6 +98,7 @@ class SlugMapper implements Mappable
      */
     public function resolve(string $value): ?string
     {
+        $value = '/' . ltrim($value, '/');
         return $this->getPersistenceDelegate()->resolve($value);
     }
 
@@ -112,7 +116,6 @@ class SlugMapper implements Mappable
         // @todo Restrictions (Hidden? Workspace?)
 
         $resolveModifier = function(QueryBuilder $queryBuilder, string $value) {
-            $value = '/' . ltrim($value, '/');
             return $queryBuilder->select($this->valueFieldName)->where(
                 $queryBuilder->expr()->eq(
                     $this->routeFieldName,
@@ -121,7 +124,6 @@ class SlugMapper implements Mappable
             );
         };
         $generateModifier = function(QueryBuilder $queryBuilder, string $value) {
-            $value = '/' . ltrim($value, '/');
             return $queryBuilder->select($this->routeFieldName)->where(
                 $queryBuilder->expr()->eq(
                     $this->valueFieldName,
