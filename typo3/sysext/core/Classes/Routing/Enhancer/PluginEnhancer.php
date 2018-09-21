@@ -55,7 +55,7 @@ class PluginEnhancer extends AbstractEnhancer
      * Used when a URL is matched.
      * @param RouteCollection $collection
      */
-    public function enhance(RouteCollection $collection)
+    public function enhance(RouteCollection $collection): void
     {
         /** @var Route $defaultPageRoute */
         $defaultPageRoute = $collection->get('default');

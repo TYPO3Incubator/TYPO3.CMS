@@ -16,9 +16,9 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  * The TYPO3 project - inspiring people to share!
  */
 
+use Symfony\Component\Routing\RouteCollection;
 use TYPO3\CMS\Core\Routing\Aspect\Applicable;
 use TYPO3\CMS\Core\Routing\Route;
-use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
 
 abstract class AbstractEnhancer
 {
@@ -28,11 +28,17 @@ abstract class AbstractEnhancer
     protected $variableProcessor;
 
     /**
+     * @param RouteCollection $collection
+     * @return void
+     */
+    abstract public function enhance(RouteCollection $collection): void;
+
+    /**
      * @param Route $route
      * @param Applicable[] $aspects
      * @param string|null $namespace
      */
-    public function applyRouteAspects(Route $route, array $aspects, string $namespace = null)
+    protected function applyRouteAspects(Route $route, array $aspects, string $namespace = null)
     {
         if (empty($aspects)) {
             return;

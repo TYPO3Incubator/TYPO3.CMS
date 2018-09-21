@@ -89,7 +89,7 @@ class ExtbasePluginEnhancer extends PluginEnhancer
      * Used when a URL is matched.
      * @param RouteCollection $collection
      */
-    public function enhance(RouteCollection $collection)
+    public function enhance(RouteCollection $collection): void
     {
         $i = 0;
         /** @var Route $defaultPageRoute */

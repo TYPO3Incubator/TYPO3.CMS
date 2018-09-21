@@ -29,6 +29,7 @@ use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\FrontendWorkspaceRestriction;
 use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Routing\Aspect\MappableProcessor;
+use TYPO3\CMS\Core\Routing\Enhancer\AbstractEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\ExtbasePluginEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PageTypeEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
@@ -352,6 +353,11 @@ class PageRouter
         return $pages;
     }
 
+    /**
+     * @param int $pageId
+     * @param array $factories
+     * @return \Generator|AbstractEnhancer[]
+     */
     protected function getSuitableEnhancersForPage(int $pageId, array $factories): \Generator
     {
         foreach ($this->configuration['routingEnhancers'] as $enhancerConfiguration) {
