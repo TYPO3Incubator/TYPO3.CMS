@@ -224,7 +224,8 @@ class VariableProcessor
      */
     protected function deflateArray(array $array, string $prefix): array
     {
-        if ($prefix !== '' && substr($prefix, -2) !== static::LEVEL_DELIMITER) {
+        $delimiter = static::LEVEL_DELIMITER;
+        if ($prefix !== '' && substr($prefix, -strlen($delimiter)) !== $delimiter) {
             $prefix .= static::LEVEL_DELIMITER;
         }
 
