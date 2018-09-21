@@ -57,7 +57,7 @@ class Route extends SymfonyRoute
      */
     public function getArguments(): array
     {
-        return $this->getDefault('_arguments') ?? [];
+        return $this->getOption('_arguments') ?? [];
     }
 
     /**

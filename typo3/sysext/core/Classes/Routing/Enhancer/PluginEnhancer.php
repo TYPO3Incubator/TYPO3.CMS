@@ -66,11 +66,13 @@ class PluginEnhancer extends AbstractEnhancer
     protected function getVariant(Route $defaultPageRoute, array $configuration): Route
     {
         $arguments = $configuration['_arguments'] ?? [];
+        unset($configuration['_arguments']);
+
         $routePath = $this->modifyRoutePath($configuration['routePath']);
         $routePath = $this->getVariableProcessor()->deflateRoutePath($routePath, $arguments, $this->namespace);
         $variant = clone $defaultPageRoute;
         $variant->setPath(rtrim($variant->getPath(), '/') . '/' . ltrim($routePath, '/'));
-        $variant->addOptions(['enhancer' => $this]);
+        $variant->addOptions(['enhancer' => $this, '_arguments' => $arguments]);
         $this->applyRouteAspects($variant, $this->aspects ?? [], $this->namespace);
         if ($configuration['requirements']) {
             $variant->addRequirements($this->getNamespacedRequirements());

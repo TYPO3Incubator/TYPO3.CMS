@@ -37,9 +37,8 @@ abstract class AbstractEnhancer
         if (empty($aspects)) {
             return;
         }
-        $arguments = $route->getDefault('_arguments') ?? [];
         $aspects = $this->getVariableProcessor()
-            ->deflateKeys($aspects, $arguments, $namespace);
+            ->deflateKeys($aspects, $route->getArguments(), $namespace);
         $route->setAspects($aspects);
     }
 

@@ -133,9 +133,9 @@ class PageRouter
             $pageCollection = new RouteCollection();
             $defaultRouteForPage = new Route(
                 $pagePath,
-                ['_page' => $page],
+                [],
                 ['tail' => '.*'],
-                ['utf8' => true]
+                ['utf8' => true, '_page' => $page]
             );
             $pageCollection->add('default', $defaultRouteForPage);
 
@@ -152,14 +152,13 @@ class PageRouter
         $matcher = new PageUriMatcher($fullCollection, $context, $mappableProcessor);
         try {
             $result = $matcher->match('/' . trim($result->getTail(), '/'));
+            /** @var Route $matchedRoute */
             $matchedRoute = $fullCollection->get($result['_route']);
             if ($matchedRoute->hasOption('enhancer')) {
                 $enhancer = $matchedRoute->getOption('enhancer');
                 $result = $enhancer->inflateParameters($matchedRoute, $result);
             }
-            $result['page'] = $result['_page'];
-            unset($result['_page']);
-            return new RouteResult($request->getUri(), $this->site, $language, $result['tail'] ?? '', $result);
+            return $this->buildRouteResult($request->getUri(), $this->site, $language, $matchedRoute, $result);
         } catch (ResourceNotFoundException $e) {
             // do nothing
         }
@@ -182,9 +181,9 @@ class PageRouter
         $pagePath = ltrim($page['slug'], '/');
         $defaultRouteForPage = new Route(
             '/' . $pagePath,
-            ['_page' => $page],
             [],
-            ['utf8' => true]
+            [],
+            ['utf8' => true, '_page' => $page]
         );
         $collection->add('default', $defaultRouteForPage);
 
@@ -282,9 +281,9 @@ class PageRouter
             $path = $page['slug'];
             $route = new Route(
                 $path . '{tail}',
-                ['page' => $page, 'tail' => ''],
+                ['tail' => ''],
                 ['tail' => '.*'],
-                ['utf8' => true]
+                ['utf8' => true, '_page' => $page]
             );
             $collection->add('page_' . $page['uid'], $route);
         }
@@ -294,8 +293,9 @@ class PageRouter
         $matcher = new PageUriMatcher($collection, $context, $mappableProcessor);
         try {
             $result = $matcher->match('/' . ltrim($routePathTail, '/'));
-            unset($result['_route']);
-            return new RouteResult($request->getUri(), $site, $language, $result['tail'], $result);
+            /** @var Route $matchedRoute */
+            $matchedRoute = $collection->get($result['_route']);
+            return $this->buildRouteResult($request->getUri(), $site, $language, $matchedRoute, $result);
         } catch (ResourceNotFoundException $e) {
             // do nothing
         }
@@ -481,5 +481,25 @@ class PageRouter
             array_pop($pathParts);
         }
         return $candidatePathParts;
+    }
+
+    protected function buildRouteResult(UriInterface $uri, Site $site, SiteLanguage $language = null, Route $route = null, array $results = []): RouteResult
+    {
+        $tail = $results['tail'] ?? '';
+        $data = ['_internal' => [], 'arguments' => []];
+
+        if (!empty($route) && $route->hasOption('_page')) {
+            $data['page'] = $route->getOption('_page');
+        }
+
+        foreach ($results as $key => $value) {
+            if (strpos($key, '_') === 0) {
+                $data['_internal'][$key] = $value;
+                unset($results[$key]);
+            }
+        }
+        $data['arguments'] = $results;
+
+        return new RouteResult($uri, $site, $language, $tail, $data);
     }
 }
