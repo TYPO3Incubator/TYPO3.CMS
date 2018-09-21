@@ -155,9 +155,9 @@ class PageRouter
             $result = $matcher->match('/' . trim($result->getTail(), '/'));
             /** @var Route $matchedRoute */
             $matchedRoute = $fullCollection->get($result['_route']);
-                $result = $enhancer->inflateParameters($matchedRoute, $result);
             $enhancer = $matchedRoute->getEnhancer();
             if ($enhancer !== null) {
+                $result = $enhancer->inflateParameters($result);
             }
             return $this->buildRouteResult($request->getUri(), $this->site, $language, $matchedRoute, $result);
         } catch (ResourceNotFoundException $e) {
@@ -233,9 +233,9 @@ class PageRouter
             $queryParams = [];
             parse_str($uri->getQuery(), $queryParams);
             // expand the rest of the query parameters again
-                $queryParams = $enhancer->inflateParameters($matchedRoute, $queryParams);
             $enhancer = $matchedRoute->getEnhancer();
             if ($enhancer !== null) {
+                $queryParams = $enhancer->inflateParameters($queryParams);
             }
 
             if (!empty($queryParams)) {

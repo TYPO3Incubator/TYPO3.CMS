@@ -132,13 +132,14 @@ class PluginEnhancer extends AbstractEnhancer
     }
 
     /**
-     * @param Route $route
      * @param array $parameters
+     * @param Route|null $route
      * @return array
      */
-    public function inflateParameters(Route $route, array $parameters): array
+    public function inflateParameters(array $parameters, Route $route = null): array
     {
+        $arguments = $route !== null ? $route->getArguments() : [];
         return $this->getVariableProcessor()
-            ->inflateParameters($parameters, $route->getArguments(), $this->namespace);
+            ->inflateParameters($parameters, $arguments, $this->namespace);
     }
 }

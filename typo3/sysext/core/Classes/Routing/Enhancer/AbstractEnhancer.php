@@ -58,4 +58,14 @@ abstract class AbstractEnhancer
         }
         return $this->variableProcessor = new VariableProcessor();
     }
+
+    /**
+     * @param array $parameters
+     * @param Route|null $route @todo Probably remove
+     * @return array
+     */
+    public function inflateParameters(array $parameters, Route $route = null): array
+    {
+        return $parameters;
+    }
 }
