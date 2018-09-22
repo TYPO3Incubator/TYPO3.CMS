@@ -52,6 +52,7 @@ use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\PageTitle\PageTitleProviderManager;
 use TYPO3\CMS\Core\Resource\StorageRepository;
+use TYPO3\CMS\Core\Routing\PageRouteArguments;
 use TYPO3\CMS\Core\Service\DependencyOrderingService;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
@@ -866,6 +867,19 @@ class TypoScriptFrontendController implements LoggerAwareInterface
         $this->initCaches();
         // Use the global context for now
         $this->context = GeneralUtility::makeInstance(Context::class);
+    }
+
+    /**
+     * @param null|ServerRequestInterface $request
+     * @return array
+     */
+    protected function retrieveDynamicArguments(ServerRequestInterface $request = null): array
+    {
+        $routeArguments = $request !== null ? $request->getAttribute('pageRouteArguments') : null;
+        if ($routeArguments instanceof PageRouteArguments) {
+            return $routeArguments->getDynamicArguments();
+        }
+        return $request !== null ? $request->getQueryParams() : GeneralUtility::_GET();
     }
 
     /**
@@ -2220,11 +2234,7 @@ class TypoScriptFrontendController implements LoggerAwareInterface
         if ($this->no_cache && !$GLOBALS['TYPO3_CONF_VARS']['FE']['pageNotFoundOnCHashError']) {
             return;
         }
-        if ($request === null) {
-            $GET = GeneralUtility::_GET();
-        } else {
-            $GET = $request->getQueryParams();
-        }
+        $GET = $this->retrieveDynamicArguments($request);
         if ($this->cHash && is_array($GET)) {
             // Make sure we use the page uid and not the page alias
             $GET['id'] = $this->id;
@@ -2251,28 +2261,30 @@ class TypoScriptFrontendController implements LoggerAwareInterface
     }
 
     /**
-     * Will disable caching if the cHash value was not set.
+     * Will disable caching if the cHash value was not set when having dynamic arguments in GET query parameters.
      * This function should be called to check the _existence_ of "&cHash" whenever a plugin generating cacheable output is using extra GET variables. If there _is_ a cHash value the validation of it automatically takes place in makeCacheHash() (see above)
      *
      * @see makeCacheHash(), \TYPO3\CMS\Frontend\Plugin\AbstractPlugin::pi_cHashCheck()
      */
     public function reqCHash()
     {
-        if (!$this->cHash) {
-            if ($GLOBALS['TYPO3_CONF_VARS']['FE']['pageNotFoundOnCHashError']) {
-                if ($this->tempContent) {
-                    $this->clearPageCacheContent();
-                }
-                $response = GeneralUtility::makeInstance(ErrorController::class)->pageNotFoundAction(
-                    $GLOBALS['TYPO3_REQUEST'],
-                    'Request parameters could not be validated (&cHash empty)',
-                    ['code' => PageAccessFailureReasons::CACHEHASH_EMPTY]
-                );
-                throw new ImmediateResponseException($response, 1533931354);
-            }
-            $this->disableCache();
-            $this->getTimeTracker()->setTSlogMessage('TSFE->reqCHash(): No &cHash parameter was sent for GET vars though required so caching is disabled', 2);
+        $dynamicArguments = $this->retrieveDynamicArguments();
+        if ($this->cHash || empty($dynamicArguments)) {
+            return;
         }
+        if ($GLOBALS['TYPO3_CONF_VARS']['FE']['pageNotFoundOnCHashError']) {
+            if ($this->tempContent) {
+                $this->clearPageCacheContent();
+            }
+            $response = GeneralUtility::makeInstance(ErrorController::class)->pageNotFoundAction(
+                $GLOBALS['TYPO3_REQUEST'],
+                'Request parameters could not be validated (&cHash empty)',
+                ['code' => PageAccessFailureReasons::CACHEHASH_EMPTY]
+            );
+            throw new ImmediateResponseException($response, 1533931354);
+        }
+        $this->disableCache();
+        $this->getTimeTracker()->setTSlogMessage('TSFE->reqCHash(): No &cHash parameter was sent for GET vars though required so caching is disabled', 2);
     }
 
     /**
@@ -2489,6 +2501,9 @@ class TypoScriptFrontendController implements LoggerAwareInterface
         // is not cached properly as we don't have any language-specific conditions anymore
         $siteBase = $this->getCurrentSiteLanguage() ? (string)$this->getCurrentSiteLanguage()->getBase() : '';
 
+        /** @var PageRouteArguments $routeArguments */
+        $routeArguments = $GLOBALS['TYPO3_REQUEST']->getAttribute('pageRouteArguments');
+
         // Fetch the list of user groups
         /** @var UserAspect $userAspect */
         $userAspect = $this->context->getAspect('frontend.user');
@@ -2498,7 +2513,10 @@ class TypoScriptFrontendController implements LoggerAwareInterface
             'gr_list' => (string)implode(',', $userAspect->getGroupIds()),
             'MP' => (string)$this->MP,
             'siteBase' => $siteBase,
+            // cHash_array includes dynamic route arguments (if route was resolved)
             'cHash' => $this->cHash_array,
+            // additional variation trigger for static routes
+            'staticRouteArguments' => $routeArguments ? $routeArguments->getStaticArguments() : null,
             'domainStartPage' => $this->domainStartPage
         ];
         // Include the template information if we shouldn't create a lock hash
