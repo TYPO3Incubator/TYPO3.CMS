@@ -14,6 +14,8 @@ routingEnhancers:
     - { routePath: '/detail/{news_title}', '_controller': 'News::detail', '_arguments': {'news_title': 'news'} }
     - { routePath: '/archive/{year}/{month}', '_controller': 'News::archive' }
     - { routePath: '/list-all-the-news/', '_controller': 'News::list' }
+    - { routePath: '/list-test/{news_title}', '_controller': 'News::list', '_arguments': {'news_title': 'news'}}
+    defaultController: 'News::list'
     defaults:
       page: '0'
     requirements:

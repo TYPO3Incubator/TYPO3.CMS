@@ -129,9 +129,19 @@ class ExtbasePluginEnhancer extends PluginEnhancer
 
     public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $originalParameters)
     {
-        if (!isset($originalParameters[$this->namespace])) {
+        if (!is_array($originalParameters[$this->namespace] ?? null)) {
             return;
         }
+        // apply default controller and action names if not set in parameters
+        if (!$this->hasControllerActionValues($originalParameters[$this->namespace])
+            && !empty($this->configuration['defaultController'])
+        ) {
+            $this->applyControllerActionValues(
+                $this->configuration['defaultController'],
+                $originalParameters[$this->namespace]
+            );
+        }
+
         $i = 0;
         /** @var Route $defaultPageRoute */
         $defaultPageRoute = $collection->get('default');
@@ -173,9 +183,10 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         if (empty($internals['_controller'] ?? null)) {
             return $parameters;
         }
-        list($controllerName, $actionName) = explode('::', $internals['_controller']);
-        $parameters[$this->namespace]['controller'] = $controllerName;
-        $parameters[$this->namespace]['action'] = $actionName;
+        $this->applyControllerActionValues(
+            $internals['_controller'],
+            $parameters[$this->namespace]
+        );
         return $parameters;
     }
 
@@ -202,5 +213,20 @@ class ExtbasePluginEnhancer extends PluginEnhancer
             return false;
         }
         return true;
+    }
+
+    protected function hasControllerActionValues(array $target): bool
+    {
+        return (!empty($target['controller']) && !empty($target['action']));
+    }
+
+    protected function applyControllerActionValues(string $controllerActionValue, array &$target)
+    {
+        if (strpos($controllerActionValue, '::') === false) {
+            return;
+        }
+        list($controllerName, $actionName) = explode('::', $controllerActionValue, 2);
+        $target['controller'] = $controllerName;
+        $target['action'] = $actionName;
     }
 }
