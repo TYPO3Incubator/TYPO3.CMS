@@ -54,7 +54,7 @@ class VariableProcessorTest extends UnitTestCase
             'aa -> @any/nested, no namespace' => [
                 null,
                 ['aa' => '@any/nested'],
-                '/static/{9e3b73c3fcc6e4245a477041dad1c59b}/{bb}/{some_cc}/tail'
+                '/static/{qbeced67e6b340abc67a397f6e90bb0e}/{bb}/{some_cc}/tail'
             ],
             'no arguments, first' => [
                 'first',
@@ -66,10 +66,15 @@ class VariableProcessorTest extends UnitTestCase
                 ['aa' => 'zz'],
                 '/static/{first__zz}/{first__bb}/{first__some_cc}/tail'
             ],
+            'aa -> any/nested, first' => [
+                'first',
+                ['aa' => 'any/nested'],
+                '/static/{first__any__nested}/{first__bb}/{first__some_cc}/tail'
+            ],
             'aa -> @any/nested, first' => [
                 'first',
                 ['aa' => '@any/nested'],
-                '/static/{6b20f126a13b6fa75188af9b4b54f4af}/{first__bb}/{first__some_cc}/tail'
+                '/static/{ab0ce8f9f822228b4f324ec38b9c0388}/{first__bb}/{first__some_cc}/tail'
             ],
         ];
     }
@@ -128,17 +133,22 @@ class VariableProcessorTest extends UnitTestCase
             'first, second -> newSecond' => [
                 'first',
                 ['second' => 'newSecond'],
-                ['a' => 'a', 'first__aa' => 'aa', 'first__newSecond__aaa' => 'aaa', '27aded81f5d1607191c695720db7ab23' => '@any']
+                ['a' => 'a', 'first__aa' => 'aa', 'first__newSecond__aaa' => 'aaa', 'q7aded81f5d1607191c695720db7ab23' => '@any']
+            ],
+            'first, aa -> any/nested' => [
+                'first',
+                ['aa' => 'any/nested'],
+                ['a' => 'a', 'first__any__nested' => 'aa', 'first__second__aaa' => 'aaa', 'a9d66412d169b85537e11d9e49b75f9b' => '@any']
             ],
             'first, aa -> @any/nested' => [
                 'first',
                 ['aa' => '@any/nested'],
-                ['a' => 'a', '6b20f126a13b6fa75188af9b4b54f4af' => 'aa', 'first__second__aaa' => 'aaa', 'a9d66412d169b85537e11d9e49b75f9b' => '@any']
+                ['a' => 'a', 'ab0ce8f9f822228b4f324ec38b9c0388' => 'aa', 'first__second__aaa' => 'aaa', 'a9d66412d169b85537e11d9e49b75f9b' => '@any']
             ],
             'first, aa -> newAA, second => newSecond' => [
                 'first',
                 ['aa' => 'newAA', 'second' => 'newSecond'],
-                ['a' => 'a', 'first__newAA' => 'aa', 'first__newSecond__aaa' => 'aaa', '27aded81f5d1607191c695720db7ab23' => '@any']
+                ['a' => 'a', 'first__newAA' => 'aa', 'first__newSecond__aaa' => 'aaa', 'q7aded81f5d1607191c695720db7ab23' => '@any']
             ],
         ];
     }
@@ -180,7 +190,7 @@ class VariableProcessorTest extends UnitTestCase
             'a -> @any/nested, no namespace' => [
                 null,
                 ['a' => '@any/nested'],
-                ['9e3b73c3fcc6e4245a477041dad1c59b' => 'a', 'b' => 'b', 'c' => ['d' => 'd', 'e' => 'e']]
+                ['qbeced67e6b340abc67a397f6e90bb0e' => 'a', 'b' => 'b', 'c' => ['d' => 'd', 'e' => 'e']]
             ],
             'no arguments, first' => [
                 'first',
@@ -192,10 +202,15 @@ class VariableProcessorTest extends UnitTestCase
                 ['a' => 'newA'],
                 ['first__newA' => 'a', 'first__b' => 'b', 'first__c' => ['d' => 'd', 'e' => 'e']]
             ],
+            'a -> any/nested, first' => [
+                'first',
+                ['a' => 'any/nested'],
+                ['first__any__nested' => 'a', 'first__b' => 'b', 'first__c' => ['d' => 'd', 'e' => 'e']]
+            ],
             'a -> @any/nested, first' => [
                 'first',
                 ['a' => '@any/nested'],
-                ['6b20f126a13b6fa75188af9b4b54f4af' => 'a', 'first__b' => 'b', 'first__c' => ['d' => 'd', 'e' => 'e']]
+                ['ab0ce8f9f822228b4f324ec38b9c0388' => 'a', 'first__b' => 'b', 'first__c' => ['d' => 'd', 'e' => 'e']]
             ],
             'd -> newD, first' => [
                 'first',

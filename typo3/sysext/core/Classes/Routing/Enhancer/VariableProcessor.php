@@ -20,6 +20,7 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
 class VariableProcessor
 {
     protected const LEVEL_DELIMITER = '__';
+    protected const ARGUMENT_SEPARATOR = '/';
     protected const VARIABLE_PATTERN = '#\{(?P<name>[^}]+)\}#';
 
     /**
@@ -28,15 +29,28 @@ class VariableProcessor
     protected $hashes = [];
 
     /**
+     * @var array
+     */
+    protected $nestedValues = [];
+
+    /**
      * @param string $value
      * @return string
      */
-    protected function createHash(string $value): string
+    protected function addHash(string $value): string
     {
         if (strlen($value) < 32 && !preg_match('#[^\w]#', $value)) {
             return $value;
         }
         $hash = md5($value);
+        // Symfony Route Compiler requires first literal to be non-integer
+        if ($hash{0} === (string)(int)$hash{0}) {
+            $hash{0} = str_replace(
+                range('0', '9'),
+                range('o', 'x'),
+                $hash{0}
+            );
+        }
         $this->hashes[$hash] = $value;
         return $hash;
     }
@@ -57,6 +71,28 @@ class VariableProcessor
             );
         }
         return $this->hashes[$hash];
+    }
+
+    protected function addNestedValue(string $value): string
+    {
+        if (strpos($value, static::ARGUMENT_SEPARATOR) === false) {
+            return $value;
+        }
+        $nestedValue = str_replace(
+            static::ARGUMENT_SEPARATOR,
+            static::LEVEL_DELIMITER,
+            $value
+        );
+        $this->nestedValues[$nestedValue] = $value;
+        return $nestedValue;
+    }
+
+    protected function resolveNestedValue(string $value): string
+    {
+        if (strpos($value, static::LEVEL_DELIMITER) === false) {
+            return $value;
+        }
+        return $this->nestedValues[$value] ?? $value;
     }
 
     /**
@@ -140,7 +176,8 @@ class VariableProcessor
         if (empty($namespace) || empty($parameters)) {
             return $parameters;
         }
-        $parameters = $this->inflateArray($parameters);
+
+        $parameters = $this->inflateArray($parameters, $namespace, $arguments);
         // apply argument mapping on items of inflated namespace parameters
         if (!empty($parameters[$namespace]) && !empty($arguments)) {
             $parameters[$namespace] = $this->inflateKeys($parameters[$namespace], null, $arguments, false);
@@ -210,11 +247,12 @@ class VariableProcessor
         return array_map(
             function (string $value) use ($arguments, $namespacePrefix, $hash) {
                 $value = $arguments[$value] ?? $value;
+                $value = $this->addNestedValue($value);
                 $value = $namespacePrefix . $value;
                 if (!$hash) {
                     return $value;
                 }
-                return $this->createHash($value);
+                return $this->addHash($value);
             },
             $values
         );
@@ -243,6 +281,7 @@ class VariableProcessor
                 if (!empty($namespacePrefix) && strpos($value, $namespacePrefix) === 0) {
                     $value = substr($value, strlen($namespacePrefix));
                 }
+                $value = $this->resolveNestedValue($value);
                 $index = array_search($value, $arguments);
                 return $index !== false ? $index : $value;
             },
@@ -297,7 +336,7 @@ class VariableProcessor
                     )
                 );
             } else {
-                $deflatedKey = $this->createHash($prefix . $key);
+                $deflatedKey = $this->addHash($prefix . $key);
                 $result[$deflatedKey] = $value;
             }
         }
@@ -308,13 +347,17 @@ class VariableProcessor
      * Inflates (unflattens) an array into nested structures.
      *
      * @param array $array
+     * @param string $namespace
+     * @param array $arguments
      * @return array
      */
-    protected function inflateArray(array $array): array
+    protected function inflateArray(array $array, string $namespace, array $arguments): array
     {
         $result = [];
         foreach ($array as $key => $value) {
             $inflatedKey = $this->resolveHash($key);
+            // inflate nested values `namespace__any__neste` -> `namespace__any/nested`
+            $inflatedKey = $this->inflateNestedValue($inflatedKey, $namespace, $arguments);
             $steps = explode(static::LEVEL_DELIMITER, $inflatedKey);
             $pointer = &$result;
             foreach ($steps as $step) {
@@ -324,5 +367,25 @@ class VariableProcessor
             unset($pointer);
         }
         return $result;
+    }
+
+    /**
+     * @param string $value
+     * @param string $namespace
+     * @param array $arguments
+     * @return string
+     */
+    protected function inflateNestedValue(string $value, string $namespace, array $arguments): string
+    {
+        $namespacePrefix = $namespace ? $namespace . static::LEVEL_DELIMITER : '';
+        if (strpos($value, $namespacePrefix) !== 0) {
+            return $value;
+        }
+        $possibleNestedValueKey = substr($value, strlen($namespacePrefix));
+        $possibleNestedValue = $this->nestedValues[$possibleNestedValueKey] ?? null;
+        if (!$possibleNestedValue || !in_array($possibleNestedValue, $arguments, true)) {
+            return $value;
+        }
+        return $namespacePrefix . $possibleNestedValue;
     }
 }

@@ -15,11 +15,13 @@ routingEnhancers:
     - { routePath: '/archive/{year}/{month}', '_controller': 'News::archive' }
     - { routePath: '/list-all-the-news/', '_controller': 'News::list' }
     - { routePath: '/list-test/{news_title}', '_controller': 'News::list', '_arguments': {'news_title': 'news'}}
+    - { routePath: '/list/{paging_widget}', '_controller': 'News::list', '_arguments': {'paging_widget': '@widget_0/currentPage'}}
     defaultController: 'News::list'
     defaults:
       page: '0'
     requirements:
       page: '[0-9]+'
+      paging_widget: '\d+'
     aspects:
       # Placeholder Name
       news_title:
