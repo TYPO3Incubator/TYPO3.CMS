@@ -42,56 +42,56 @@ class VariableProcessorTest extends UnitTestCase
     {
         return [
             'no arguments, no namespace' => [
-                [],
                 null,
+                [],
                 '/static/{aa}/{bb}/{some_cc}/tail'
             ],
             'aa -> zz, no namespace' => [
-                ['aa' => 'zz'],
                 null,
+                ['aa' => 'zz'],
                 '/static/{zz}/{bb}/{some_cc}/tail'
             ],
             'aa -> @any/nested, no namespace' => [
-                ['aa' => '@any/nested'],
                 null,
+                ['aa' => '@any/nested'],
                 '/static/{9e3b73c3fcc6e4245a477041dad1c59b}/{bb}/{some_cc}/tail'
             ],
             'no arguments, first' => [
-                [],
                 'first',
+                [],
                 '/static/{first__aa}/{first__bb}/{first__some_cc}/tail'
             ],
             'aa -> zz, first' => [
-                ['aa' => 'zz'],
                 'first',
+                ['aa' => 'zz'],
                 '/static/{first__zz}/{first__bb}/{first__some_cc}/tail'
             ],
             'aa -> @any/nested, first' => [
-                ['aa' => '@any/nested'],
                 'first',
+                ['aa' => '@any/nested'],
                 '/static/{6b20f126a13b6fa75188af9b4b54f4af}/{first__bb}/{first__some_cc}/tail'
             ],
         ];
     }
 
     /**
-     * @param array $arguments
      * @param null|string $namespace
+     * @param array $arguments
      * @param string $deflatedRoutePath
      *
      * @test
      * @dataProvider routePathDataProvider
      */
-    public function isRoutePathProcessed(array $arguments, ?string $namespace, string $deflatedRoutePath)
+    public function isRoutePathProcessed(?string $namespace, array $arguments, string $deflatedRoutePath)
     {
         $inflatedRoutePath = '/static/{aa}/{bb}/{some_cc}/tail';
         static::assertSame(
             $deflatedRoutePath,
-            $this->subject->deflateRoutePath($inflatedRoutePath, $arguments, $namespace)
+            $this->subject->deflateRoutePath($inflatedRoutePath, $namespace, $arguments)
         );
         static::assertSame(
             $inflatedRoutePath,
-            $this->subject->inflateRoutePath($deflatedRoutePath, $arguments, $namespace)
+            $this->subject->inflateRoutePath($deflatedRoutePath, $namespace, $arguments)
         );
     }
 
@@ -164,82 +164,65 @@ class VariableProcessorTest extends UnitTestCase
         );
     }
 
-    public function namespaceParametersAreProcessed()
-    {
-        $deflatedParameters = [
-            'aa' => 'aa',
-            'this' => ['aaa' => 'aaa'],
-            'tx_news_pi1' => [
-                'news' => 1,
-                '@widget_0' => [
-                    'currentPage' => 3,
-                ],
-            ],
-        ];
-        $inflatedParameters = [
-
-        ];
-    }
-
     public function keysDataProvider(): array
     {
         return [
             'no arguments, no namespace' => [
-                [],
                 null,
+                [],
                 ['a' => 'a', 'b' => 'b', 'c' => ['d' => 'd', 'e' => 'e']]
             ],
             'a -> newA, no namespace' => [
-                ['a' => 'newA'],
                 null,
+                ['a' => 'newA'],
                 ['newA' => 'a', 'b' => 'b', 'c' => ['d' => 'd', 'e' => 'e']]
             ],
             'a -> @any/nested, no namespace' => [
-                ['a' => '@any/nested'],
                 null,
+                ['a' => '@any/nested'],
                 ['9e3b73c3fcc6e4245a477041dad1c59b' => 'a', 'b' => 'b', 'c' => ['d' => 'd', 'e' => 'e']]
             ],
             'no arguments, first' => [
-                [],
                 'first',
+                [],
                 ['first__a' => 'a', 'first__b' => 'b', 'first__c' => ['d' => 'd', 'e' => 'e']]
             ],
             'a -> newA, first' => [
-                ['a' => 'newA'],
                 'first',
+                ['a' => 'newA'],
                 ['first__newA' => 'a', 'first__b' => 'b', 'first__c' => ['d' => 'd', 'e' => 'e']]
             ],
             'a -> @any/nested, first' => [
-                ['a' => '@any/nested'],
                 'first',
+                ['a' => '@any/nested'],
                 ['6b20f126a13b6fa75188af9b4b54f4af' => 'a', 'first__b' => 'b', 'first__c' => ['d' => 'd', 'e' => 'e']]
             ],
             'd -> newD, first' => [
-                ['d' => 'newD'], // not substituted, which is expected
                 'first',
+                ['d' => 'newD'], // not substituted, which is expected
                 ['first__a' => 'a', 'first__b' => 'b', 'first__c' => ['d' => 'd', 'e' => 'e']]
             ],
         ];
     }
 
     /**
-     * @param array $arguments
      * @param null|string $namespace
+     * @param array $arguments
      * @param array $deflatedKeys
      *
      * @test
      * @dataProvider keysDataProvider
      */
-    public function keysAreDeflated(array $arguments, ?string $namespace, array $deflatedKeys)
+    public function keysAreDeflated(?string $namespace, array $arguments, array $deflatedKeys)
     {
         $inflatedKeys = ['a' => 'a', 'b' => 'b', 'c' => ['d' => 'd', 'e' => 'e']];
         static::assertEquals(
             $deflatedKeys,
-            $this->subject->deflateKeys($inflatedKeys, $arguments, $namespace)
+            $this->subject->deflateKeys($inflatedKeys, $namespace, $arguments)
         );
         static::assertEquals(
             $inflatedKeys,
-            $this->subject->inflateKeys($deflatedKeys, $arguments, $namespace)
+            $this->subject->inflateKeys($deflatedKeys, $namespace, $arguments)
         );
     }
 }

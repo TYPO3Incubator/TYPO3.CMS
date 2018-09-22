@@ -53,7 +53,7 @@ abstract class AbstractEnhancer
             return;
         }
         $aspects = $this->getVariableProcessor()
-            ->deflateKeys($aspects, $route->getArguments(), $namespace);
+            ->deflateKeys($aspects, $namespace, $route->getArguments());
         $route->setAspects($aspects);
     }
 
