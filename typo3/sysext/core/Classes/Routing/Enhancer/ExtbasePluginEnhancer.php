@@ -155,14 +155,14 @@ class ExtbasePluginEnhancer extends PluginEnhancer
             unset($parameters[$this->namespace]['action']);
             unset($parameters[$this->namespace]['controller']);
             $compiledRoute = $variant->compile();
-            $flattenedParameters = $this->getVariableProcessor()->deflateParameters($parameters, $variant->getArguments(), $this->namespace);
+            $deflatedParameters = $this->deflateParameters($variant, $parameters);
             $variables = array_flip($compiledRoute->getPathVariables());
-            $mergedParams = array_replace($variant->getDefaults(), $flattenedParameters);
+            $mergedParams = array_replace($variant->getDefaults(), $deflatedParameters);
             // all params must be given, otherwise we exclude this variant
             if ($diff = array_diff_key($variables, $mergedParams)) {
                 continue;
             }
-            $variant->addOptions(['flattenedParameters' => $flattenedParameters]);
+            $variant->addOptions(['deflatedParameters' => $deflatedParameters]);
             $collection->add($this->namespace . '_' . $i++, $variant);
         }
     }
@@ -175,10 +175,10 @@ class ExtbasePluginEnhancer extends PluginEnhancer
      * @param array $internals Internal instructions (_route, _controller, ...)
      * @return array
      */
-    public function inflateParameters(array $parameters, array $internals = []): array
+    protected function inflateParameters(array $parameters, array $internals = []): array
     {
         $parameters = $this->getVariableProcessor()
-            ->inflateParameters($parameters, [], $this->namespace);
+            ->inflateNamespaceParameters($parameters, $this->namespace);
         // Invalid if there is no controller given, so this enhancers does not do anything
         if (empty($internals['_controller'] ?? null)) {
             return $parameters;

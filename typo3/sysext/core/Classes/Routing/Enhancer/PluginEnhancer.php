@@ -79,11 +79,13 @@ class PluginEnhancer extends AbstractEnhancer
         // all route arguments
         $routeArguments = $this->inflateParameters($parameters, $internals);
         // dynamic arguments, that don't have a static mapper
-        $dynamicArguments = $variableProcessor->inflateParameters($dynamicCandidates, [], $this->namespace);
+        $dynamicArguments = $variableProcessor
+            ->inflateNamespaceParameters($dynamicCandidates, $this->namespace);
         // static arguments, that don't appear in dynamic arguments
         $staticArguments = ArrayUtility::arrayDiffAssocRecursive($routeArguments, $dynamicArguments);
         // inflate remaining query arguments that could not be applied to the route
-        $remainingQueryParameters = $variableProcessor->inflateParameters($remainingQueryParameters, [], $this->namespace);
+        $remainingQueryParameters = $variableProcessor
+            ->inflateNamespaceParameters($remainingQueryParameters, $this->namespace);
 
         return (new PageRouteArguments($routeArguments, $staticArguments))
             ->withQueryArguments($remainingQueryParameters);
@@ -128,14 +130,14 @@ class PluginEnhancer extends AbstractEnhancer
         $defaultPageRoute = $collection->get('default');
         $variant = $this->getVariant($defaultPageRoute, $this->configuration);
         $compiledRoute = $variant->compile();
-        $flattenedParameters = $this->getVariableProcessor()->deflateParameters($parameters, $variant->getArguments(), $this->namespace);
+        $deflatedParameters = $this->deflateParameters($variant, $parameters);
         $variables = array_flip($compiledRoute->getPathVariables());
-        $mergedParams = array_replace($variant->getDefaults(), $flattenedParameters);
+        $mergedParams = array_replace($variant->getDefaults(), $deflatedParameters);
         // all params must be given, otherwise we exclude this variant
         if ($diff = array_diff_key($variables, $mergedParams)) {
             return;
         }
-        $variant->addOptions(['flattenedParameters' => $flattenedParameters]);
+        $variant->addOptions(['deflatedParameters' => $deflatedParameters]);
         $collection->add('enhancer_' . $this->namespace . spl_object_hash($variant), $variant);
     }
 
@@ -170,13 +172,27 @@ class PluginEnhancer extends AbstractEnhancer
     }
 
     /**
+     * @param Route $route
+     * @param array $parameters
+     * @return array
+     */
+    protected function deflateParameters(Route $route, array $parameters): array
+    {
+        return $this->getVariableProcessor()->deflateNamespaceParameters(
+            $parameters,
+            $this->namespace,
+            $route->getArguments()
+        );
+    }
+
+    /**
      * @param array $parameters Actual parameter payload to be used
      * @param array $internals Internal instructions (_route, _controller, ...)
      * @return array
      */
-    public function inflateParameters(array $parameters, array $internals = []): array
+    protected function inflateParameters(array $parameters, array $internals = []): array
     {
         return $this->getVariableProcessor()
-            ->inflateParameters($parameters, [], $this->namespace);
+            ->inflateNamespaceParameters($parameters, $this->namespace);
     }
 }

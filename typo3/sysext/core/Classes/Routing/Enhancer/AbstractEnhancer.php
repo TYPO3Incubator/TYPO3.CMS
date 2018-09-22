@@ -67,14 +67,4 @@ abstract class AbstractEnhancer
         }
         return $this->variableProcessor = new VariableProcessor();
     }
-
-    /**
-     * @param array $parameters Actual parameter payload to be used
-     * @param array $internals Internal instructions (_route, _controller, ...)
-     * @return array
-     */
-    public function inflateParameters(array $parameters, array $internals = []): array
-    {
-        return $parameters;
-    }
 }

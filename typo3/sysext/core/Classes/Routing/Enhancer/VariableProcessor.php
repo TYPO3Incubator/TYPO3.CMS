@@ -22,6 +22,49 @@ class VariableProcessor
     protected const LEVEL_DELIMITER = '__';
     protected const VARIABLE_PATTERN = '#\{(?P<name>[^}]+)\}#';
 
+    /**
+     * @var array
+     */
+    protected $hashes = [];
+
+    /**
+     * @param string $value
+     * @return string
+     */
+    protected function createHash(string $value): string
+    {
+        if (strlen($value) < 32 && !preg_match('#[^\w]#', $value)) {
+            return $value;
+        }
+        $hash = md5($value);
+        $this->hashes[$hash] = $value;
+        return $hash;
+    }
+
+    /**
+     * @param string $hash
+     * @return string
+     */
+    protected function resolveHash(string $hash): string
+    {
+        if (strlen($hash) < 32) {
+            return $hash;
+        }
+        if (!isset($this->hashes[$hash])) {
+            throw new \LogicException(
+                'Hash not resolvable',
+                1537633463
+            );
+        }
+        return $this->hashes[$hash];
+    }
+
+    /**
+     * @param string $routePath
+     * @param array $arguments
+     * @param string|null $namespace
+     * @return string
+     */
     public function deflateRoutePath(string $routePath, array $arguments = [], string $namespace = null): string
     {
         if (!preg_match_all(static::VARIABLE_PATTERN, $routePath, $matches)) {
@@ -39,6 +82,12 @@ class VariableProcessor
         return str_replace($search, $replace, $routePath);
     }
 
+    /**
+     * @param string $routePath
+     * @param array $arguments
+     * @param string|null $namespace
+     * @return string
+     */
     public function inflateRoutePath(string $routePath, array $arguments = [], string $namespace = null): string
     {
         if (!preg_match_all(static::VARIABLE_PATTERN, $routePath, $matches)) {
@@ -57,49 +106,46 @@ class VariableProcessor
     }
 
     /**
-     * Deflates (flattens) route/request parameters.
+     * Deflates (flattens) route/request parameters for a given namespace.
      *
-     * @param array $values
+     * @param array $parameters
+     * @param string $namespace
      * @param array $arguments
-     * @param string|null $namespace
      * @return array
      */
-    public function deflateParameters(array $values, array $arguments = [], string $namespace = null): array
+    public function deflateNamespaceParameters(array $parameters, string $namespace, array $arguments = []): array
     {
-        if (empty($values) || empty($arguments) && empty($namespace)) {
-            return $values;
+        if (empty($namespace) || empty($parameters[$namespace])) {
+            return $parameters;
         }
-        // deflate candidates and prefix namespace
-        if (!empty($namespace) && !empty($values[$namespace])) {
-            $candidates = $this->deflateKeys($values[$namespace], $arguments);
-            unset($values[$namespace]);
-            $candidates = $this->deflateArray($candidates, $namespace);
-        }
-        $values = $this->deflateKeys($values, $arguments);
-        return array_merge($values, $candidates ?? []);
+        // prefix items of namespace parameters and apply argument mapping
+        $namespaceParameters = $this->deflateKeys($parameters[$namespace], $arguments, $namespace, false);
+        // deflate those array items
+        $namespaceParameters = $this->deflateArray($namespaceParameters);
+        unset($parameters[$namespace]);
+        // merge with remaining array items
+        return array_merge($parameters, $namespaceParameters);
     }
 
     /**
      * Inflates (unflattens) route/request parameters.
      *
-     * @param array $values
+     * @param array $parameters
+     * @param string $namespace
      * @param array $arguments
-     * @param string|null $namespace
      * @return array
      */
-    public function inflateParameters(array $values, array $arguments = [], string $namespace = null): array
+    public function inflateNamespaceParameters(array $parameters, string $namespace, array $arguments = []): array
     {
-        if (empty($values) || empty($arguments) && empty($namespace)) {
-            return $values;
+        if (empty($namespace) || empty($parameters)) {
+            return $parameters;
         }
-        if (!empty($namespace)) {
-            $candidates = $this->filterArray($values, $namespace);
-            $values = array_diff_key($values, $candidates);
-            $candidates = $this->inflateKeys($candidates, $arguments, $namespace);
-            $candidates = [$namespace => $this->inflateArray($candidates)];
+        $parameters = $this->inflateArray($parameters);
+        // apply argument mapping on items of inflated namespace parameters
+        if (!empty($parameters[$namespace]) && !empty($arguments)) {
+            $parameters[$namespace] = $this->inflateKeys($parameters[$namespace], $arguments, null, false);
         }
-        $values = $this->inflateKeys($values, $arguments);
-        return array_merge($values, $candidates ?? []);
+        return $parameters;
     }
 
     /**
@@ -109,14 +155,15 @@ class VariableProcessor
      * @param array $items
      * @param array $arguments
      * @param string|null $namespace
+     * @param bool $hash = true
      * @return array
      */
-    public function deflateKeys(array $items, array $arguments = [], string $namespace = null): array
+    public function deflateKeys(array $items, array $arguments = [], string $namespace = null, bool $hash = true): array
     {
         if (empty($items) || empty($arguments) && empty($namespace)) {
             return $items;
         }
-        $keys = $this->deflateValues(array_keys($items), $arguments, $namespace);
+        $keys = $this->deflateValues(array_keys($items), $arguments, $namespace, $hash);
         return array_combine(
             $keys,
             array_values($items)
@@ -130,14 +177,15 @@ class VariableProcessor
      * @param array $items
      * @param array $arguments
      * @param string|null $namespace
+     * @param bool $hash = true
      * @return array
      */
-    public function inflateKeys(array $items, array $arguments = [], string $namespace = null): array
+    public function inflateKeys(array $items, array $arguments = [], string $namespace = null, bool $hash = true): array
     {
         if (empty($items) || empty($arguments) && empty($namespace)) {
             return $items;
         }
-        $keys = $this->inflateValues(array_keys($items), $arguments, $namespace);
+        $keys = $this->inflateValues(array_keys($items), $arguments, $namespace, $hash);
         return array_combine(
             $keys,
             array_values($items)
@@ -150,18 +198,23 @@ class VariableProcessor
      * @param array $values
      * @param array $arguments
      * @param null $namespace
+     * @param bool bool $hash
      * @return array
      */
-    public function deflateValues(array $values, array $arguments = [], $namespace = null): array
+    public function deflateValues(array $values, array $arguments = [], $namespace = null, bool $hash = true): array
     {
         if (empty($values) || empty($arguments) && empty($namespace)) {
             return $values;
         }
         $namespacePrefix = $namespace ? $namespace . static::LEVEL_DELIMITER : '';
         return array_map(
-            function (string $value) use ($arguments, $namespacePrefix) {
+            function (string $value) use ($arguments, $namespacePrefix, $hash) {
                 $value = $arguments[$value] ?? $value;
-                return $namespacePrefix . $value;
+                $value = $namespacePrefix . $value;
+                if (!$hash) {
+                    return $value;
+                }
+                return $this->createHash($value);
             },
             $values
         );
@@ -173,16 +226,20 @@ class VariableProcessor
      * @param array $values
      * @param array $arguments
      * @param null $namespace
+     * @param bool $hash
      * @return array
      */
-    public function inflateValues(array $values, array $arguments = [], $namespace = null): array
+    public function inflateValues(array $values, array $arguments = [], $namespace = null, bool $hash = true): array
     {
         if (empty($values) || empty($arguments) && empty($namespace)) {
             return $values;
         }
         $namespacePrefix = $namespace ? $namespace . static::LEVEL_DELIMITER : '';
         return array_map(
-            function (string $value) use ($arguments, $namespacePrefix) {
+            function (string $value) use ($arguments, $namespacePrefix, $hash) {
+                if ($hash) {
+                    $value = $this->resolveHash($value);
+                }
                 if (!empty($namespacePrefix) && strpos($value, $namespacePrefix) === 0) {
                     $value = substr($value, strlen($namespacePrefix));
                 }
@@ -222,7 +279,7 @@ class VariableProcessor
      * @param string $prefix
      * @return array
      */
-    protected function deflateArray(array $array, string $prefix): array
+    protected function deflateArray(array $array, string $prefix = ''): array
     {
         $delimiter = static::LEVEL_DELIMITER;
         if ($prefix !== '' && substr($prefix, -strlen($delimiter)) !== $delimiter) {
@@ -240,7 +297,8 @@ class VariableProcessor
                     )
                 );
             } else {
-                $result[$prefix . $key] = $value;
+                $deflatedKey = $this->createHash($prefix . $key);
+                $result[$deflatedKey] = $value;
             }
         }
         return $result;
@@ -256,7 +314,8 @@ class VariableProcessor
     {
         $result = [];
         foreach ($array as $key => $value) {
-            $steps = explode(static::LEVEL_DELIMITER, $key);
+            $inflatedKey = $this->resolveHash($key);
+            $steps = explode(static::LEVEL_DELIMITER, $inflatedKey);
             $pointer = &$result;
             foreach ($steps as $step) {
                 $pointer = &$pointer[$step];

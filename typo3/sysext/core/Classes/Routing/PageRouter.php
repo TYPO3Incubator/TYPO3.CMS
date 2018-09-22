@@ -209,12 +209,15 @@ class PageRouter
         $matchedRoute = null;
         $routeArguments = null;
         $uri = null;
+        /**
+         * @var string $routeName
+         * @var Route $route
+         */
         foreach ($allRoutes as $routeName => $route) {
             try {
                 $parameters = $originalParameters;
-                if ($route->hasOption('flattenedParameters')) {
-                    // @todo Make explicit
-                    $parameters = $route->getOption('flattenedParameters');
+                if ($route->hasOption('deflatedParameters')) {
+                    $parameters = $route->getOption('deflatedParameters');
                 }
                 $mappableProcessor->generate($route, $parameters);
                 $urlAsString = $generator->generate($routeName, $parameters, $type);
