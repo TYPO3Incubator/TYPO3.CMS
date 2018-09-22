@@ -116,6 +116,23 @@ class PageResolver implements MiddlewareInterface
                     ['code' => PageAccessFailureReasons::PAGE_NOT_FOUND]
                 );
             }
+            /** @var \TYPO3\CMS\Core\Routing\PageRouteArguments $pageRouteArguments */
+            $pageRouteArguments = $routeResult['pageRouteArguments'] ?? null;
+            // stop in case arguments are dirty (=defined twice in route and GET query parameters)
+            if ($pageRouteArguments && $pageRouteArguments->areDirty()) {
+                return GeneralUtility::makeInstance(ErrorController::class)->pageNotFoundAction(
+                    $request,
+                    'The requested URL is not distinct',
+                    ['code' => PageAccessFailureReasons::PAGE_NOT_FOUND]
+                );
+            }
+            // Add page route arguments to request object
+            if ($pageRouteArguments) {
+                $request = $request->withAttribute(
+                    'pageRouteArguments',
+                    $pageRouteArguments
+                );
+            }
             // At this point, we later get further route modifiers
             // for bw-compat we update $GLOBALS[TYPO3_REQUEST] to be used later in TSFE.
             $GLOBALS['TYPO3_REQUEST'] = $request;
