@@ -18,6 +18,7 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
 
 use Symfony\Component\Routing\RouteCollection;
 use TYPO3\CMS\Core\Routing\Aspect\Applicable;
+use TYPO3\CMS\Core\Routing\PageRouteArguments;
 use TYPO3\CMS\Core\Routing\Route;
 
 abstract class AbstractEnhancer
@@ -32,6 +33,14 @@ abstract class AbstractEnhancer
      * @return void
      */
     abstract public function enhance(RouteCollection $collection): void;
+
+    /**
+     * @param Route $route
+     * @param array $results
+     * @param array $remainingQueryParameters
+     * @return PageRouteArguments
+     */
+    abstract public function buildRouteArguments(Route $route, array $results, array $remainingQueryParameters = []): PageRouteArguments;
 
     /**
      * @param Route $route
@@ -60,11 +69,11 @@ abstract class AbstractEnhancer
     }
 
     /**
-     * @param array $parameters
-     * @param Route|null $route @todo Probably remove
+     * @param array $parameters Actual parameter payload to be used
+     * @param array $internals Internal instructions (_route, _controller, ...)
      * @return array
      */
-    public function inflateParameters(array $parameters, Route $route = null): array
+    public function inflateParameters(array $parameters, array $internals = []): array
     {
         return $parameters;
     }

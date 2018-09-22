@@ -21,7 +21,7 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Routing\Traits\SiteLanguageAwareTrait;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class SlugMapper implements Mappable
+class SlugMapper implements Mappable, StaticMappable
 {
     use SiteLanguageAwareTrait;
 

@@ -161,20 +161,19 @@ class ExtbasePluginEnhancer extends PluginEnhancer
      * A route has matched the controller/action combination, so ensure that these properties
      * are set to tx_blogexample_pi1[controller] and tx_blogexample_pi1[action].
      *
-     * @param array $parameters
-     * @param Route $route
+     * @param array $parameters Actual parameter payload to be used
+     * @param array $internals Internal instructions (_route, _controller, ...)
      * @return array
      */
-    public function inflateParameters(array $parameters, Route $route = null): array
+    public function inflateParameters(array $parameters, array $internals = []): array
     {
-        $arguments = $route !== null ? $route->getArguments() : [];
         $parameters = $this->getVariableProcessor()
-            ->inflateParameters($parameters, $arguments, $this->namespace);
+            ->inflateParameters($parameters, [], $this->namespace);
         // Invalid if there is no controller given, so this enhancers does not do anything
-        if (empty($parameters['_controller'] ?? null)) {
+        if (empty($internals['_controller'] ?? null)) {
             return $parameters;
         }
-        list($controllerName, $actionName) = explode('::', $parameters['_controller']);
+        list($controllerName, $actionName) = explode('::', $internals['_controller']);
         $parameters[$this->namespace]['controller'] = $controllerName;
         $parameters[$this->namespace]['action'] = $actionName;
         return $parameters;

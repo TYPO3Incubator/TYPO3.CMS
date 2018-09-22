@@ -18,7 +18,7 @@ namespace TYPO3\CMS\Core\Routing\Aspect;
 
 use TYPO3\CMS\Core\Routing\Traits\SiteLanguageAwareTrait;
 
-class StaticValueMapper implements Mappable
+class StaticValueMapper implements Mappable, StaticMappable
 {
     use SiteLanguageAwareTrait;
 

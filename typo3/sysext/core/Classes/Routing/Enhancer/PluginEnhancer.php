@@ -17,9 +17,13 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  */
 
 use Symfony\Component\Routing\RouteCollection;
+use TYPO3\CMS\Core\Routing\Aspect\MappableProcessor;
 use TYPO3\CMS\Core\Routing\Aspect\Modifiable;
+use TYPO3\CMS\Core\Routing\Aspect\StaticMappable;
+use TYPO3\CMS\Core\Routing\PageRouteArguments;
 use TYPO3\CMS\Core\Routing\Route;
 use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
+use TYPO3\CMS\Core\Utility\ArrayUtility;
 
 /**
  * Used for plugins like EXT:felogin.
@@ -49,6 +53,40 @@ class PluginEnhancer extends AbstractEnhancer
     {
         $this->configuration = $configuration;
         $this->namespace = $this->configuration['namespace'] ?? '';
+    }
+
+    /**
+     * @param Route $route
+     * @param array $results
+     * @param array $remainingQueryParameters
+     * @return PageRouteArguments
+     */
+    public function buildRouteArguments(Route $route, array $results, array $remainingQueryParameters = []): PageRouteArguments
+    {
+        $mappableProcessor = new MappableProcessor();
+        $variableProcessor = $this->getVariableProcessor();
+        // determine those parameters that have been processed
+        $parameters = array_intersect_key(
+            $results,
+            array_flip($route->compile()->getPathVariables())
+        );
+        // strip of those that where not processed (internals like _route, etc.)
+        $internals = array_diff_key($results, $parameters);
+
+        $staticMappers = $mappableProcessor->fetchMappers($route, $parameters, StaticMappable::class);
+        $dynamicCandidates = array_diff_key($parameters, $staticMappers);
+
+        // all route arguments
+        $routeArguments = $this->inflateParameters($parameters, $internals);
+        // dynamic arguments, that don't have a static mapper
+        $dynamicArguments = $variableProcessor->inflateParameters($dynamicCandidates, [], $this->namespace);
+        // static arguments, that don't appear in dynamic arguments
+        $staticArguments = ArrayUtility::arrayDiffAssocRecursive($routeArguments, $dynamicArguments);
+        // inflate remaining query arguments that could not be applied to the route
+        $remainingQueryParameters = $variableProcessor->inflateParameters($remainingQueryParameters, [], $this->namespace);
+
+        return (new PageRouteArguments($routeArguments, $staticArguments))
+            ->withQueryArguments($remainingQueryParameters);
     }
 
     /**
@@ -132,14 +170,13 @@ class PluginEnhancer extends AbstractEnhancer
     }
 
     /**
-     * @param array $parameters
-     * @param Route|null $route
+     * @param array $parameters Actual parameter payload to be used
+     * @param array $internals Internal instructions (_route, _controller, ...)
      * @return array
      */
-    public function inflateParameters(array $parameters, Route $route = null): array
+    public function inflateParameters(array $parameters, array $internals = []): array
     {
-        $arguments = $route !== null ? $route->getArguments() : [];
         return $this->getVariableProcessor()
-            ->inflateParameters($parameters, $arguments, $this->namespace);
+            ->inflateParameters($parameters, [], $this->namespace);
     }
 }

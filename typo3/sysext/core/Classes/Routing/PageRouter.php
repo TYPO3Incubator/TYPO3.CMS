@@ -155,11 +155,7 @@ class PageRouter
             $result = $matcher->match('/' . trim($result->getTail(), '/'));
             /** @var Route $matchedRoute */
             $matchedRoute = $fullCollection->get($result['_route']);
-            $enhancer = $matchedRoute->getEnhancer();
-            if ($enhancer !== null) {
-                $result = $enhancer->inflateParameters($result);
-            }
-            return $this->buildRouteResult($request->getUri(), $this->site, $language, $matchedRoute, $result);
+            return $this->buildRouteResult($request, $this->site, $language, $matchedRoute, $result);
         } catch (ResourceNotFoundException $e) {
             // do nothing
         }
@@ -211,11 +207,13 @@ class PageRouter
         $allRoutes = $collection->all();
         $allRoutes = array_reverse($allRoutes, true);
         $matchedRoute = null;
+        $routeArguments = null;
         $uri = null;
         foreach ($allRoutes as $routeName => $route) {
             try {
                 $parameters = $originalParameters;
                 if ($route->hasOption('flattenedParameters')) {
+                    // @todo Make explicit
                     $parameters = $route->getOption('flattenedParameters');
                 }
                 $mappableProcessor->generate($route, $parameters);
@@ -223,36 +221,31 @@ class PageRouter
                 $uri = new Uri($urlAsString);
                 /** @var Route $matchedRoute */
                 $matchedRoute = $collection->get($routeName);
+                parse_str($uri->getQuery() ?? '', $remainingQueryParameters);
+                $routeArguments = $this->buildRouteArguments($route, $parameters, $remainingQueryParameters);
                 break;
             } catch (MissingMandatoryParametersException $e) {
                 // no match
             }
         }
 
-        if ($matchedRoute && $uri instanceof UriInterface && $uri->getQuery()) {
-            $queryParams = [];
-            parse_str($uri->getQuery(), $queryParams);
-            // expand the rest of the query parameters again
-            $enhancer = $matchedRoute->getEnhancer();
-            if ($enhancer !== null) {
-                $queryParams = $enhancer->inflateParameters($queryParams);
+        if ($routeArguments && $routeArguments->areDirty()) {
+            // for generating URLs this should(!) never happen
+            // if it does happen, generator logic has flaws
+            throw new \LogicException('Route arguments are dirty', 1537613247);
+        }
+
+        if ($matchedRoute && $routeArguments && $uri instanceof UriInterface && $uri->getQuery()) {
+            $signer = new PageRouteSigner();
+            $cacheHash = $signer->getCacheHash($pageId, $routeArguments);
+
+            if (!empty($cacheHash)) {
+                $queryArguments = $routeArguments->getQueryArguments();
+                $queryArguments['cHash'] = $cacheHash;
+                $uri = $uri->withQuery(http_build_query($queryArguments, '', '&', PHP_QUERY_RFC3986));
             }
 
-            if (!empty($queryParams)) {
-                // @todo: let#s take the "unstable" parameters that are now part of the URL into account as well.
-                $hashParameters = $queryParams;
-                $hashParameters['id'] = $pageId;
-                $cacheHash = GeneralUtility::makeInstance(CacheHashCalculator::class)
-                    ->generateForParameters(http_build_query($hashParameters, '', '&', PHP_QUERY_RFC3986));
-                if (!empty($cacheHash)) {
-                    $queryParams['cHash'] = $cacheHash;
-                }
-            }
-            if (empty($queryParams)) {
-                $uri = $uri->withQuery('');
-            } else {
-                $uri = $uri->withQuery(http_build_query($queryParams, '', '&', PHP_QUERY_RFC3986));
-            }
+            // @todo Check remaining query parameters again, e.g. when cHash was provided already
         }
         if ($uri instanceof UriInterface) {
             $uri = $uri->withFragment($fragment);
@@ -266,6 +259,7 @@ class PageRouter
      * @param Site $site
      * @param SiteLanguage $language
      * @return RouteResult|null
+     * @deprecated Probably not required any more, correct?
      */
     public function matchRoute(ServerRequestInterface $request, string $routePathTail, Site $site, SiteLanguage $language): ?RouteResult
     {
@@ -298,7 +292,7 @@ class PageRouter
             $result = $matcher->match('/' . ltrim($routePathTail, '/'));
             /** @var Route $matchedRoute */
             $matchedRoute = $collection->get($result['_route']);
-            return $this->buildRouteResult($request->getUri(), $site, $language, $matchedRoute, $result);
+            return $this->buildRouteResult($request, $site, $language, $matchedRoute, $result);
         } catch (ResourceNotFoundException $e) {
             // do nothing
         }
@@ -491,23 +485,75 @@ class PageRouter
         return $candidatePathParts;
     }
 
-    protected function buildRouteResult(UriInterface $uri, Site $site, SiteLanguage $language = null, Route $route = null, array $results = []): RouteResult
+    /**
+     * @param ServerRequestInterface $request
+     * @param Site $site
+     * @param SiteLanguage|null $language
+     * @param Route|null $route
+     * @param array $results
+     * @return RouteResult
+     */
+    protected function buildRouteResult(ServerRequestInterface $request, Site $site, SiteLanguage $language = null, Route $route = null, array $results = []): RouteResult
     {
-        $tail = $results['tail'] ?? '';
-        $data = ['_internal' => [], 'arguments' => []];
-
-        if (!empty($route) && $route->hasOption('_page')) {
-            $data['page'] = $route->getOption('_page');
-        }
-
-        foreach ($results as $key => $value) {
-            if (strpos($key, '_') === 0) {
-                $data['_internal'][$key] = $value;
-                unset($results[$key]);
+        $data = [];
+        if (!empty($route)) {
+            // internal values, like _route, _controller, etc.
+            $data['internals'] = $this->filterInternalParameters(
+                $route,
+                $results
+            );
+            // page route arguments separated by static and dynamic values
+            $data['pageRouteArguments'] = $this->buildRouteArguments(
+                $route,
+                $results,
+                $request->getQueryParams()
+            );
+            // page record the route has been applied for
+            if ($route->hasOption('_page')) {
+                $data['page'] = $route->getOption('_page');
             }
         }
-        $data['arguments'] = $results;
+        $tail = $results['tail'] ?? '';
+        return new RouteResult($request->getUri(), $site, $language, $tail, $data);
+    }
 
-        return new RouteResult($uri, $site, $language, $tail, $data);
+    /**
+     * @param Route $route
+     * @param array $results
+     * @param array $remainingQueryParameters
+     * @return PageRouteArguments
+     */
+    protected function buildRouteArguments(Route $route, array $results, array $remainingQueryParameters = []): PageRouteArguments
+    {
+        $enhancer = $route->getEnhancer();
+        if ($enhancer === null) {
+            $routeArguments = $this->filterProcessedParameters($route, $results);
+            return (new PageRouteArguments($routeArguments))
+                ->withQueryArguments($remainingQueryParameters);
+        }
+        if ($enhancer !== null) {
+            $arguments = $enhancer->buildRouteArguments($route, $results, $remainingQueryParameters);
+        }
+        return $arguments;
+    }
+
+    protected function filterProcessedParameters(Route $route, $results): array
+    {
+        // determine those parameters that have been processed
+        $parameters = array_intersect_key(
+            $results,
+            array_flip($route->compile()->getPathVariables())
+        );
+        return $parameters;
+    }
+
+    protected function filterInternalParameters(Route $route, $results): array
+    {
+        // strip those parameters that have not been processed
+        $internals = array_diff_key(
+            $results,
+            array_flip($route->compile()->getPathVariables())
+        );
+        return $internals;
     }
 }
