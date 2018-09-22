@@ -16,6 +16,7 @@ routingEnhancers:
     - { routePath: '/list-all-the-news/', '_controller': 'News::list' }
     - { routePath: '/list-test/{news_title}', '_controller': 'News::list', '_arguments': {'news_title': 'news'}}
     - { routePath: '/list/{paging_widget}', '_controller': 'News::list', '_arguments': {'paging_widget': '@widget_0/currentPage'}}
+    - { routePath: '/tag/{tag_name}', '_controller': 'News::list', '_arguments': {'tag_name': 'overwriteDemand/tags'}}
     defaultController: 'News::list'
     defaults:
       page: '0'
@@ -28,6 +29,11 @@ routingEnhancers:
         type: SlugMapper
         tableName: 'tx_news_domain_model_news'
         routeFieldName: 'path_segment'
+        valueFieldName: 'uid'
+      tag_name:
+        type: SlugMapper
+        tableName: 'tx_news_domain_model_tag'
+        routeFieldName: 'title'
         valueFieldName: 'uid'
       year:
         type: StaticValueMapper
