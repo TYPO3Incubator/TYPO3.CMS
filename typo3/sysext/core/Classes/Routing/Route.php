@@ -19,7 +19,7 @@ namespace TYPO3\CMS\Core\Routing;
 use Symfony\Component\Routing\CompiledRoute;
 use Symfony\Component\Routing\Route as SymfonyRoute;
 use TYPO3\CMS\Core\Routing\Aspect\Applicable;
-use TYPO3\CMS\Core\Routing\Enhancer\AbstractEnhancer;
+use TYPO3\CMS\Core\Routing\Enhancer\Enhancable;
 
 /**
  * TYPO3's route is built on top of Symfony's route with the functionality
@@ -62,9 +62,9 @@ class Route extends SymfonyRoute
     }
 
     /**
-     * @return null|AbstractEnhancer
+     * @return null|Enhancable
      */
-    public function getEnhancer(): ?AbstractEnhancer
+    public function getEnhancer(): ?Enhancable
     {
         return $this->getOption('_enhancer') ?? null;
     }

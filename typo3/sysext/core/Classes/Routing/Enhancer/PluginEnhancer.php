@@ -35,7 +35,7 @@ use TYPO3\CMS\Core\Utility\ArrayUtility;
  *     hash: '[A-z]{0-6}'
  *   namespace: "tx_felogin_pi1"
  */
-class PluginEnhancer extends AbstractEnhancer
+class PluginEnhancer extends AbstractEnhancer implements Resulting
 {
     use AspectsAwareTrait;
 
@@ -120,7 +120,7 @@ class PluginEnhancer extends AbstractEnhancer
         return $variant;
     }
 
-    public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $parameters)
+    public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $parameters): void
     {
         // No parameter for this namespace given, so this route does not fit the requirements
         if (!is_array($parameters[$this->namespace])) {

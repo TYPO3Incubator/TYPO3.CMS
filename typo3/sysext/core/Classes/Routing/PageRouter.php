@@ -29,13 +29,14 @@ use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\FrontendWorkspaceRestriction;
 use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Routing\Aspect\MappableProcessor;
-use TYPO3\CMS\Core\Routing\Enhancer\AbstractEnhancer;
+use TYPO3\CMS\Core\Routing\Enhancer\Enhancable;
 use TYPO3\CMS\Core\Routing\Enhancer\ExtbasePluginEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PageTypeEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
 use TYPO3\CMS\Core\Routing\Aspect\AbstractAspectFactory;
 use TYPO3\CMS\Core\Routing\Aspect\Mappable;
 use TYPO3\CMS\Core\Routing\Aspect\AspectFactory;
+use TYPO3\CMS\Core\Routing\Enhancer\Resulting;
 use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
@@ -354,7 +355,7 @@ class PageRouter
     /**
      * @param int $pageId
      * @param array $factories
-     * @return \Generator|AbstractEnhancer[]
+     * @return \Generator|Enhancable[]
      */
     protected function getSuitableEnhancersForPage(int $pageId, array $factories): \Generator
     {
@@ -521,6 +522,15 @@ class PageRouter
     }
 
     /**
+     * Builds route arguments. The important part here is to distinguish between
+     * static and dynamic arguments. Per default all arguments are dynamic until
+     * aspects can be used to really consider them as static (= 1:1 mapping between
+     * route value and resulting arguments).
+     *
+     * Besides that, internal arguments (_route, _controller, _custom, ..) have
+     * to be separated since those values are not meant to be used for later
+     * processing. Not separating those values might result in invalid cHash.
+     *
      * @param Route $route
      * @param array $results
      * @param array $remainingQueryParameters
@@ -529,15 +539,15 @@ class PageRouter
     protected function buildRouteArguments(Route $route, array $results, array $remainingQueryParameters = []): PageRouteArguments
     {
         $enhancer = $route->getEnhancer();
-        if ($enhancer === null) {
-            $routeArguments = $this->filterProcessedParameters($route, $results);
-            return (new PageRouteArguments($routeArguments))
-                ->withQueryArguments($remainingQueryParameters);
+        // delegate result handling to enhancer
+        if ($enhancer instanceof Resulting) {
+            return $enhancer->buildRouteArguments($route, $results, $remainingQueryParameters);
         }
-        if ($enhancer !== null) {
-            $arguments = $enhancer->buildRouteArguments($route, $results, $remainingQueryParameters);
-        }
-        return $arguments;
+        // only use parameters that actually have been processed
+        // (thus stripping internals like _route, _controller, ...)
+        $routeArguments = $this->filterProcessedParameters($route, $results);
+        return (new PageRouteArguments($routeArguments))
+            ->withQueryArguments($remainingQueryParameters);
     }
 
     protected function filterProcessedParameters(Route $route, $results): array

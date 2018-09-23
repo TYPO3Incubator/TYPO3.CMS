@@ -16,31 +16,15 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  * The TYPO3 project - inspiring people to share!
  */
 
-use Symfony\Component\Routing\RouteCollection;
 use TYPO3\CMS\Core\Routing\Aspect\Applicable;
-use TYPO3\CMS\Core\Routing\PageRouteArguments;
 use TYPO3\CMS\Core\Routing\Route;
 
-abstract class AbstractEnhancer
+abstract class AbstractEnhancer implements Enhancable
 {
     /**
      * @var VariableProcessor
      */
     protected $variableProcessor;
-
-    /**
-     * @param RouteCollection $collection
-     * @return void
-     */
-    abstract public function enhance(RouteCollection $collection): void;
-
-    /**
-     * @param Route $route
-     * @param array $results
-     * @param array $remainingQueryParameters
-     * @return PageRouteArguments
-     */
-    abstract public function buildRouteArguments(Route $route, array $results, array $remainingQueryParameters = []): PageRouteArguments;
 
     /**
      * @param Route $route

@@ -127,7 +127,7 @@ class ExtbasePluginEnhancer extends PluginEnhancer
         return $route;
     }
 
-    public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $originalParameters)
+    public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $originalParameters): void
     {
         if (!is_array($originalParameters[$this->namespace] ?? null)) {
             return;

@@ -28,7 +28,7 @@ use TYPO3\CMS\Core\Routing\Aspect\Mappable;
  *   requirements:
  *     type: '.json|.html'
  */
-class PageTypeEnhancer
+class PageTypeEnhancer implements Enhancable
 {
     /**
      * @var array
@@ -49,7 +49,7 @@ class PageTypeEnhancer
      * Used when a URL is matched.
      * @param RouteCollection $collection
      */
-    public function enhance(RouteCollection $collection)
+    public function enhance(RouteCollection $collection): void
     {
         foreach ($collection->all() as $routeName => $existingRoute) {
             $variant = clone $existingRoute;
@@ -61,7 +61,11 @@ class PageTypeEnhancer
         }
     }
 
-    public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $parameters)
+    /**
+     * @param RouteCollection $collection
+     * @param array $parameters
+     */
+    public function addRoutesThatMeetTheRequirements(RouteCollection $collection, array $parameters): void
     {
         if (!isset($parameters['type'])) {
             return;
