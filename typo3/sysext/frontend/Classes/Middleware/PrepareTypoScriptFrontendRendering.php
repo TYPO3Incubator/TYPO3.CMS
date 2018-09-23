@@ -72,6 +72,7 @@ class PrepareTypoScriptFrontendRendering implements MiddlewareInterface
         // This is done in getConfigArray as well, but does not override the current middleware request object
         // Since we want to stay in sync with this, the option needs to be set as well.
         if (!empty($this->controller->config['config']['defaultGetVars.'] ?? null)) {
+            // @todo Merge with PageRouteArguments -> systemInternal (no cHash verification)
             $modifiedGetVars = GeneralUtility::removeDotsFromTS($this->controller->config['config']['defaultGetVars.']);
             if (!empty($request->getQueryParams())) {
                 ArrayUtility::mergeRecursiveWithOverrule($modifiedGetVars, $request->getQueryParams());
