@@ -18,7 +18,7 @@ namespace TYPO3\CMS\Core\Routing\Aspect;
 
 use TYPO3\CMS\Core\Routing\Traits\SiteLanguageAwareTrait;
 
-class StaticValueMapper implements Mappable, StaticMappable
+class StaticValueMapper implements Mappable, StaticMappable, \Countable
 {
     use SiteLanguageAwareTrait;
 
@@ -40,6 +40,11 @@ class StaticValueMapper implements Mappable, StaticMappable
     {
         $this->map = $map;
         $this->localeMap = $localeMap;
+    }
+
+    public function count(): int
+    {
+        return count($this->retrieveLocaleMap() ?? $this->map);
     }
 
     /**
