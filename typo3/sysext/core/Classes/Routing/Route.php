@@ -152,13 +152,17 @@ class Route extends SymfonyRoute
     }
 
     /**
-     * @param string $className
-     * @param string[] $variableNames
+     * @param string[] $classNames All (logical AND) class names that must match
+     *                 (including interfaces, abstract classes and traits)
+     * @param string[] $variableNames Variable names to be filtered
      * @return Applicable[]
      */
-    public function filterAspects(string $className, array $variableNames = []): array
+    public function filterAspects(array $classNames, array $variableNames = []): array
     {
         $aspects = $this->aspects;
+        if (empty($classNames) && empty($variableNames)) {
+            return $aspects;
+        }
         if (!empty($variableNames)) {
             $aspects = array_filter(
                 $this->aspects,
@@ -170,9 +174,16 @@ class Route extends SymfonyRoute
         }
         return array_filter(
             $aspects,
-            function (Applicable $aspect) use ($className) {
-                return is_a($aspect, $className)
-                    || in_array($className, class_uses($aspect), true);
+            function (Applicable $aspect) use ($classNames) {
+                $uses = class_uses($aspect);
+                foreach ($classNames as $className) {
+                    if (!is_a($aspect, $className)
+                        && !in_array($className, $uses, true)
+                    ) {
+                        return false;
+                    }
+                }
+                return true;
             }
         );
     }

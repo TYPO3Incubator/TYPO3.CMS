@@ -17,7 +17,6 @@ namespace TYPO3\CMS\Core\Routing\Enhancer;
  */
 
 use Symfony\Component\Routing\RouteCollection;
-use TYPO3\CMS\Core\Routing\Aspect\MappableProcessor;
 use TYPO3\CMS\Core\Routing\Aspect\Modifiable;
 use TYPO3\CMS\Core\Routing\Aspect\StaticMappable;
 use TYPO3\CMS\Core\Routing\PageRouteArguments;
@@ -63,7 +62,6 @@ class PluginEnhancer extends AbstractEnhancer implements Resulting
      */
     public function buildRouteArguments(Route $route, array $results, array $remainingQueryParameters = []): PageRouteArguments
     {
-        $mappableProcessor = new MappableProcessor();
         $variableProcessor = $this->getVariableProcessor();
         // determine those parameters that have been processed
         $parameters = array_intersect_key(
@@ -72,8 +70,9 @@ class PluginEnhancer extends AbstractEnhancer implements Resulting
         );
         // strip of those that where not processed (internals like _route, etc.)
         $internals = array_diff_key($results, $parameters);
+        $matchedVariableNames = array_keys($parameters);
 
-        $staticMappers = $mappableProcessor->fetchMappers($route, $parameters, StaticMappable::class);
+        $staticMappers = $route->filterAspects([StaticMappable::class], $matchedVariableNames);
         $dynamicCandidates = array_diff_key($parameters, $staticMappers);
 
         // all route arguments

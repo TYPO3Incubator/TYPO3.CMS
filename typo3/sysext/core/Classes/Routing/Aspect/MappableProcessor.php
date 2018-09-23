@@ -93,11 +93,11 @@ class MappableProcessor
      * @param string $type
      * @return Mappable[]
      */
-    public function fetchMappers(CoreRoute $route, array $attributes, string $type = Mappable::class): array
+    protected function fetchMappers(CoreRoute $route, array $attributes, string $type = Mappable::class): array
     {
         if (empty($attributes)) {
             return [];
         }
-        return $route->filterAspects($type, array_keys($attributes));
+        return $route->filterAspects([$type], array_keys($attributes));
     }
 }
