@@ -72,6 +72,7 @@ class PluginEnhancer extends AbstractEnhancer implements Resulting
         $internals = array_diff_key($results, $parameters);
         $matchedVariableNames = array_keys($parameters);
 
+        $this->assertMaximumStaticMappableAmount($route, $matchedVariableNames);
         $staticMappers = $route->filterAspects([StaticMappable::class], $matchedVariableNames);
         $dynamicCandidates = array_diff_key($parameters, $staticMappers);
 
