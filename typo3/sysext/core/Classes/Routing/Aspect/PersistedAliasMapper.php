@@ -21,7 +21,7 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Routing\Traits\SiteLanguageAwareTrait;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class SlugMapper implements Mappable, StaticMappable
+class PersistedAliasMapper implements Mappable, StaticMappable
 {
     use SiteLanguageAwareTrait;
 
@@ -41,6 +41,11 @@ class SlugMapper implements Mappable, StaticMappable
     protected $valueFieldName;
 
     /**
+     * @var string
+     */
+    protected $routeValuePrefix;
+
+    /**
      * @var PersistenceDelegate
      */
     protected $persistenceDelegate;
@@ -49,12 +54,14 @@ class SlugMapper implements Mappable, StaticMappable
      * @param string $tableName
      * @param string $routeFieldName
      * @param string $valueFieldName
+     * @param string $routeValuePrefix
      */
-    public function __construct(string $tableName, string $routeFieldName, string $valueFieldName)
+    public function __construct(string $tableName, string $routeFieldName, string $valueFieldName, string $routeValuePrefix = '')
     {
         $this->tableName = $tableName;
         $this->routeFieldName = $routeFieldName;
         $this->valueFieldName = $valueFieldName;
+        $this->routeValuePrefix = $routeValuePrefix;
     }
 
     /**
@@ -66,6 +73,7 @@ class SlugMapper implements Mappable, StaticMappable
             'tableName' => $this->tableName,
             'routeFieldName' => $this->routeFieldName,
             'valueFieldName' => $this->valueFieldName,
+            'routeValuePrefix' => $this->routeValuePrefix,
         ]);
     }
 
@@ -78,6 +86,7 @@ class SlugMapper implements Mappable, StaticMappable
         $this->tableName = $data['tableName'] ?? '';
         $this->routeFieldName = $data['routeFieldName'] ?? '';
         $this->valueFieldName = $data['valueFieldName'] ?? '';
+        $this->routeValuePrefix = $data['routeValuePrefix'] ?? '';
     }
 
     /**
@@ -87,8 +96,7 @@ class SlugMapper implements Mappable, StaticMappable
     public function generate(string $value): ?string
     {
         $result = $this->getPersistenceDelegate()->generate($value);
-        // @todo UrlGenerator does not allow variables containing slashes
-        $result = trim($result, '/');
+        $result = $this->purgeRouteValuePrefix($result);
         return $result;
     }
 
@@ -98,8 +106,20 @@ class SlugMapper implements Mappable, StaticMappable
      */
     public function resolve(string $value): ?string
     {
-        $value = '/' . ltrim($value, '/');
+        $value = $this->routeValuePrefix . $this->purgeRouteValuePrefix($value);
         return $this->getPersistenceDelegate()->resolve($value);
+    }
+
+    /**
+     * @param string $value
+     * @return string
+     */
+    protected function purgeRouteValuePrefix(string $value): string
+    {
+        if (empty($this->routeValuePrefix)) {
+            return $value;
+        }
+        return ltrim($value, $this->routeValuePrefix);
     }
 
     /**

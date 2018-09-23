@@ -26,12 +26,13 @@ routingEnhancers:
     aspects:
       # Placeholder Name
       news_title:
-        type: SlugMapper
+        type: PersistedAliasMapper
         tableName: 'tx_news_domain_model_news'
         routeFieldName: 'path_segment'
         valueFieldName: 'uid'
+        routeValuePrefix: '/'
       tag_name:
-        type: SlugMapper
+        type: PersistedAliasMapper
         tableName: 'tx_news_domain_model_tag'
         routeFieldName: 'title'
         valueFieldName: 'uid'

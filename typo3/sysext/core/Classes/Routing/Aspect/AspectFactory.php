@@ -45,7 +45,7 @@ class AspectFactory extends AbstractAspectFactory
     public function builds(): array
     {
         $classNames = [
-            SlugMapper::class,
+            PersistedAliasMapper::class,
             StaticValueMapper::class,
             LocaleModifier::class,
         ];
@@ -97,13 +97,14 @@ class AspectFactory extends AbstractAspectFactory
 
     /**
      * @param array $settings
-     * @return SlugMapper
+     * @return PersistedAliasMapper
      */
-    protected function buildSlugMapper(array $settings): SlugMapper
+    protected function buildPersistedAliasMapper(array $settings): PersistedAliasMapper
     {
         $tableName = $settings['tableName'] ?? null;
         $routeFieldName = $settings['routeFieldName'] ?? null;
         $valueFieldName = $settings['valueFieldName'] ?? null;
+        $routeValuePrefix = $settings['routeValuePrefix'] ?? '';
 
         if (!is_string($tableName)) {
             throw new \LogicException('tableName must be string', 1537277133);
@@ -114,8 +115,11 @@ class AspectFactory extends AbstractAspectFactory
         if (!is_string($valueFieldName)) {
             throw new \LogicException('valueFieldName name must be string', 1537277135);
         }
+        if (!is_string($routeValuePrefix) || strlen($routeValuePrefix) > 1) {
+            throw new \LogicException('$routeValuePrefix name must be string with one character', 1537277136);
+        }
 
-        return new SlugMapper($tableName, $routeFieldName, $valueFieldName);
+        return new PersistedAliasMapper($tableName, $routeFieldName, $valueFieldName, $routeValuePrefix);
     }
 
     /**
