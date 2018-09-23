@@ -106,7 +106,9 @@ class StaticRangeMapper implements Mappable, StaticMappable, \Countable
 
     /**
      * Builds range based on given settings and ensures each item is string.
-     * The amount of items is limited to 1000 to avoid brute-force scenarios.
+     * The amount of items is limited to 1000 in order to avoid brute-force
+     * scenarios and the risk of cache-flooding.
+     *
      * In case that is not enough, creating a custom and more specific mapper
      * is encouraged. Using high values that are not distinct exposes the site
      * to the risk of cache-flooding.
@@ -118,7 +120,7 @@ class StaticRangeMapper implements Mappable, StaticMappable, \Countable
         $range = array_map('strval', range($this->start, $this->end));
         if (count($range) > 1000) {
             throw new \LogicException(
-                'Range is larger than 1000 elements',
+                'Range is larger than 1000 items',
                 1537696771
             );
         }

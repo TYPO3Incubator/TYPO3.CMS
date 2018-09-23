@@ -533,6 +533,8 @@ class PageRouter
      * to be separated since those values are not meant to be used for later
      * processing. Not separating those values might result in invalid cHash.
      *
+     * This method is used during resolving and generation of URLs.
+     *
      * @param Route $route
      * @param array $results
      * @param array $remainingQueryParameters
