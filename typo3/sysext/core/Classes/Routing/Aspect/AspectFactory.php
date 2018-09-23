@@ -47,6 +47,7 @@ class AspectFactory extends AbstractAspectFactory
         $classNames = [
             PersistedAliasMapper::class,
             StaticValueMapper::class,
+            StaticRangeMapper::class,
             LocaleModifier::class,
         ];
         // remove namespace prefix
@@ -139,6 +140,25 @@ class AspectFactory extends AbstractAspectFactory
         }
 
         return new StaticValueMapper($map, $localeMap);
+    }
+
+    /**
+     * @param array $settings
+     * @return StaticRangeMapper
+     */
+    protected function buildStaticRangeMapper(array $settings): StaticRangeMapper
+    {
+        $start = $settings['start'] ?? null;
+        $end = $settings['end'] ?? null;
+
+        if (!is_string($start)) {
+            throw new \LogicException('start must be string', 1537277163);
+        }
+        if (!is_string($end)) {
+            throw new \LogicException('end must be string', 1537277164);
+        }
+
+        return new StaticRangeMapper($start, $end);
     }
 
     /**
