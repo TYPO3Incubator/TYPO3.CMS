@@ -239,7 +239,9 @@ class PageRouter
             throw new \LogicException('Route arguments are dirty', 1537613247);
         }
 
-        if ($matchedRoute && $routeArguments && $uri instanceof UriInterface && $uri->getQuery()) {
+        if ($matchedRoute && $routeArguments && $uri instanceof UriInterface
+            && !empty($routeArguments->getDynamicArguments())
+        ) {
             $signer = new PageRouteSigner();
             $cacheHash = $signer->getCacheHash($pageId, $routeArguments);
 
