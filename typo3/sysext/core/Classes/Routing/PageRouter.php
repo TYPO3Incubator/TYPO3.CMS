@@ -30,9 +30,6 @@ use TYPO3\CMS\Core\Database\Query\Restriction\FrontendWorkspaceRestriction;
 use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Routing\Aspect\MappableProcessor;
 use TYPO3\CMS\Core\Routing\Enhancer\Enhancable;
-use TYPO3\CMS\Core\Routing\Enhancer\ExtbasePluginEnhancer;
-use TYPO3\CMS\Core\Routing\Enhancer\PageTypeEnhancer;
-use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
 use TYPO3\CMS\Core\Routing\Aspect\Mappable;
 use TYPO3\CMS\Core\Routing\Enhancer\Resulting;
 use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
@@ -122,7 +119,8 @@ class PageRouter
         }
 
         $fullCollection = new RouteCollection();
-        $factories = $this->objectManager->getAspectFactories($this->site, $language);
+        $enhancerFactories = $this->objectManager->getEnhancerFactories($this->site, $language);
+        $aspectFactories = $this->objectManager->getAspectFactories($this->site, $language);
 
         foreach ($pageCandidates ?? [] as $page) {
             $pageIdForDefaultLanguage = (int)($page['l10n_parent'] ?: $page['uid']);
@@ -136,7 +134,7 @@ class PageRouter
             );
             $pageCollection->add('default', $defaultRouteForPage);
 
-            foreach ($this->getSuitableEnhancersForPage($pageIdForDefaultLanguage, $factories) as $enhancer) {
+            foreach ($this->getSuitableEnhancersForPage($pageIdForDefaultLanguage, $enhancerFactories, $aspectFactories) as $enhancer) {
                 $enhancer->enhance($pageCollection);
             }
 
@@ -183,8 +181,9 @@ class PageRouter
         // @todo: this should be built in a way that cHash is not generated for incoming links
         // because this is built inside this very method.
         unset($originalParameters['cHash']);
-        $factories = $this->objectManager->getAspectFactories($this->site, $language);
-        foreach ($this->getSuitableEnhancersForPage($pageId, $factories) as $enhancer) {
+        $enhancerFactories = $this->objectManager->getEnhancerFactories($this->site, $language);
+        $aspectFactories = $this->objectManager->getAspectFactories($this->site, $language);
+        foreach ($this->getSuitableEnhancersForPage($pageId, $enhancerFactories, $aspectFactories) as $enhancer) {
             $enhancer->addRoutesThatMeetTheRequirements($collection, $originalParameters);
         }
 
@@ -351,34 +350,27 @@ class PageRouter
 
     /**
      * @param int $pageId
-     * @param array $factories
+     * @param array $enhancerFactories
+     * @param array $aspectFactories
      * @return \Generator|Enhancable[]
      */
-    protected function getSuitableEnhancersForPage(int $pageId, array $factories): \Generator
+    protected function getSuitableEnhancersForPage(int $pageId, array $enhancerFactories, array $aspectFactories): \Generator
     {
         foreach ($this->configuration['routingEnhancers'] as $enhancerConfiguration) {
             // Check if there is a restriction to page Ids.
             if (is_array($enhancerConfiguration['limitToPages'] ?? null) && !in_array($pageId, $enhancerConfiguration['limitToPages'])) {
                 continue;
             }
-            $enhancer = null;
-            switch ($enhancerConfiguration['type']) {
-                case 'PageTypeEnhancer':
-                    $enhancer = new PageTypeEnhancer($enhancerConfiguration);
-                    break;
-                case 'PluginEnhancer':
-                    $enhancer = new PluginEnhancer($enhancerConfiguration);
-                    break;
-                case 'ExtbasePluginEnhancer':
-                    $enhancer = new ExtbasePluginEnhancer($enhancerConfiguration);
-            }
+            $enhancerType = $enhancerConfiguration['type'] ?? '';
+            /** @var Enhancable $enhancer */
+            $enhancer = $this->findFactory($enhancerType, $enhancerFactories)
+                ->build($enhancerConfiguration);
             if (!empty($enhancerConfiguration['aspects']) && in_array(AspectsAwareTrait::class, class_uses($enhancer), true)) {
-                $aspects = $this->buildMappers($enhancerConfiguration['aspects'], $factories);
+                $aspects = $this->buildMappers($enhancerConfiguration['aspects'], $aspectFactories);
+                /** @var $enhancer AspectsAwareTrait */
                 $enhancer->setAspects($aspects);
             }
-            if ($enhancer !== null) {
-                yield $enhancer;
-            }
+            yield $enhancer;
         }
     }
 

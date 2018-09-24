@@ -25,7 +25,9 @@ class ObjectManager
     /**
      * @var string[]
      */
-    protected $enhancerFactoryClassNames = [];
+    protected $enhancerFactoryClassNames = [
+        Enhancer\EnhancerFactory::class,
+    ];
 
     /**
      * @var string[]
