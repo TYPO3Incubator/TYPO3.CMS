@@ -33,7 +33,6 @@ use TYPO3\CMS\Core\Routing\Enhancer\Enhancable;
 use TYPO3\CMS\Core\Routing\Enhancer\ExtbasePluginEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PageTypeEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
-use TYPO3\CMS\Core\Routing\Aspect\AbstractAspectFactory;
 use TYPO3\CMS\Core\Routing\Aspect\Mappable;
 use TYPO3\CMS\Core\Routing\Enhancer\Resulting;
 use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
@@ -385,7 +384,7 @@ class PageRouter
 
     /**
      * @param array $aspects
-     * @param AbstractAspectFactory[] $factories
+     * @param Aspect\Buildable[] $factories
      * @return Mappable[]
      */
     protected function buildMappers(array $aspects, array $factories): array

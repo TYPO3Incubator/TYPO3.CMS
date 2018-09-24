@@ -18,13 +18,13 @@ namespace TYPO3\CMS\Core\Routing\Aspect;
 
 use TYPO3\CMS\Core\Routing\Traits\SiteAwareTrait;
 use TYPO3\CMS\Core\Routing\Traits\SiteLanguageAwareTrait;
-use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 
-class AspectFactory extends AbstractAspectFactory
+class AspectFactory implements Buildable
 {
     /**
-     * @var Site
+     * @var SiteInterface
      */
     protected $site;
 
@@ -33,7 +33,7 @@ class AspectFactory extends AbstractAspectFactory
      */
     protected $siteLanguage;
 
-    public function __construct(Site $site, SiteLanguage $siteLanguage)
+    public function __construct(SiteInterface $site, SiteLanguage $siteLanguage)
     {
         $this->site = $site;
         $this->siteLanguage = $siteLanguage;
@@ -182,16 +182,17 @@ class AspectFactory extends AbstractAspectFactory
 
     /**
      * @param Applicable $object
-     * @param string $identifier|null
      * @return Applicable|mixed
      */
     protected function enrich(Applicable $object): Applicable
     {
         $uses = class_uses($object);
         if (in_array(SiteAwareTrait::class, $uses, true)) {
+            /** @var $object SiteAwareTrait */
             $object->setSite($this->site);
         }
         if (in_array(SiteLanguageAwareTrait::class, $uses, true)) {
+            /** @var $object SiteLanguageAwareTrait */
             $object->setSiteLanguage($this->siteLanguage);
         }
         return $object;

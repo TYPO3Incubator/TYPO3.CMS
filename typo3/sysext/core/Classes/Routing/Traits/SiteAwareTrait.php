@@ -16,21 +16,21 @@ namespace TYPO3\CMS\Core\Routing\Traits;
  * The TYPO3 project - inspiring people to share!
  */
 
-use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
 trait SiteAwareTrait
 {
     /**
-     * @var Site
+     * @var SiteInterface
      */
     protected $site;
 
-    public function setSite(Site $site)
+    public function setSite(SiteInterface $site)
     {
         $this->site = $site;
     }
 
-    public function getSite(): Site
+    public function getSite(): SiteInterface
     {
         return $this->site;
     }
