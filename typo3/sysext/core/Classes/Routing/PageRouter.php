@@ -35,13 +35,11 @@ use TYPO3\CMS\Core\Routing\Enhancer\PageTypeEnhancer;
 use TYPO3\CMS\Core\Routing\Enhancer\PluginEnhancer;
 use TYPO3\CMS\Core\Routing\Aspect\AbstractAspectFactory;
 use TYPO3\CMS\Core\Routing\Aspect\Mappable;
-use TYPO3\CMS\Core\Routing\Aspect\AspectFactory;
 use TYPO3\CMS\Core\Routing\Enhancer\Resulting;
 use TYPO3\CMS\Core\Routing\Traits\AspectsAwareTrait;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Frontend\Page\CacheHashCalculator;
 use TYPO3\CMS\Frontend\Page\PageRepository;
 
 /**
@@ -83,9 +81,9 @@ class PageRouter
     protected $configuration;
 
     /**
-     * @var string[]
+     * @var ObjectManager
      */
-    protected $aspectFactoryClassNames = [];
+    protected $objectManager;
 
     /**
      * PageRouter constructor.
@@ -96,11 +94,9 @@ class PageRouter
     {
         $this->site = $site;
         $this->configuration = $configuration;
-
-        // @todo Move to factory collection/registry
-        $this->aspectFactoryClassNames = [
-            AspectFactory::class
-        ];
+        $this->objectManager = GeneralUtility::makeInstance(
+            ObjectManager::class
+        );
     }
 
     /**
@@ -127,7 +123,7 @@ class PageRouter
         }
 
         $fullCollection = new RouteCollection();
-        $factories = $this->buildAspectFactories($language);
+        $factories = $this->objectManager->getAspectFactories($this->site, $language);
 
         foreach ($pageCandidates ?? [] as $page) {
             $pageIdForDefaultLanguage = (int)($page['l10n_parent'] ?: $page['uid']);
@@ -188,7 +184,7 @@ class PageRouter
         // @todo: this should be built in a way that cHash is not generated for incoming links
         // because this is built inside this very method.
         unset($originalParameters['cHash']);
-        $factories = $this->buildAspectFactories($language);
+        $factories = $this->objectManager->getAspectFactories($this->site, $language);
         foreach ($this->getSuitableEnhancersForPage($pageId, $factories) as $enhancer) {
             $enhancer->addRoutesThatMeetTheRequirements($collection, $originalParameters);
         }
@@ -405,48 +401,38 @@ class PageRouter
                     );
                 }
 
-                return $this->findAspectFactory($type, $factories)->build($settings);
+                return $this->findFactory($type, $factories)->build($settings);
             },
             $aspects
         );
     }
 
     /**
-     * @param SiteLanguage $language
-     * @return AbstractAspectFactory[]
-     */
-    protected function buildAspectFactories(SiteLanguage $language)
-    {
-        return array_map(
-            function (string $className) use ($language) {
-                return new $className($this->site, $language);
-            },
-            $this->aspectFactoryClassNames
-        );
-    }
-
-    /**
      * @param string $name
-     * @param AbstractAspectFactory[] $factories
-     * @return AbstractAspectFactory
+     * @param Enhancer\Buildable[]|Aspect\Buildable[] $factories
+     * @return Enhancer\Buildable|Aspect\Buildable
      */
-    protected function findAspectFactory(string $name, array $factories): AbstractAspectFactory
+    protected function findFactory(string $name, array $factories)
     {
         $factories = array_filter(
             $factories,
-            function (AbstractAspectFactory $factory) use ($name) {
+            /**
+             * @param Enhancer\Buildable|Aspect\Buildable $factory
+             * @return bool
+             */
+            function ($factory) use ($name): bool {
                 return in_array($name, $factory->builds(), true);
             }
         );
         if (empty($factories)) {
             throw new \LogicException(
-                sprintf('No mapper factories found for %s', $name),
+                sprintf('No factories found for %s', $name),
                 1537298185
             );
         }
         if (count($factories) > 1) {
             throw new \LogicException(
-                sprintf('Multiple mapper factories found for %s', $name),
+                sprintf('Multiple factories found for %s', $name),
                 1537298185
             );
         }
