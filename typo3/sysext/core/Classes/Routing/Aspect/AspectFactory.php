@@ -46,6 +46,7 @@ class AspectFactory implements Buildable
     {
         $classNames = [
             PersistedAliasMapper::class,
+            PersistedPatternMapper::class,
             StaticValueMapper::class,
             StaticRangeMapper::class,
             LocaleModifier::class,
@@ -121,6 +122,29 @@ class AspectFactory implements Buildable
         }
 
         return new PersistedAliasMapper($tableName, $routeFieldName, $valueFieldName, $routeValuePrefix);
+    }
+
+    /**
+     * @param array $settings
+     * @return PersistedPatternMapper
+     */
+    protected function buildPersistedPatternMapper(array $settings): PersistedPatternMapper
+    {
+        $tableName = $settings['tableName'] ?? null;
+        $routeFieldPattern = $settings['routeFieldPattern'] ?? null;
+        $routeFieldResult = $settings['routeFieldResult'] ?? null;
+
+        if (!is_string($tableName)) {
+            throw new \LogicException('tableName must be string', 1537277173);
+        }
+        if (!is_string($routeFieldPattern)) {
+            throw new \LogicException('routeFieldPattern name must be string', 1537277174);
+        }
+        if (!is_string($routeFieldResult)) {
+            throw new \LogicException('routeFieldResult name must be string', 1537277175);
+        }
+
+        return new PersistedPatternMapper($tableName, $routeFieldPattern, $routeFieldResult);
     }
 
     /**

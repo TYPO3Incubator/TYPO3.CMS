@@ -10,13 +10,13 @@ routingEnhancers:
     extension: 'News'
     plugin: 'Pi1'
     routes:
-    - { routePath: '/{blog_name}/{page}', '_controller': 'News::benni' }
-    - { routePath: '/detail/{news_title}', '_controller': 'News::detail', '_arguments': {'news_title': 'news'} }
-    - { routePath: '/archive/{year}/{month}', '_controller': 'News::archive' }
-    - { routePath: '/list-all-the-news/', '_controller': 'News::list' }
-    - { routePath: '/list-test/{news_title}', '_controller': 'News::list', '_arguments': {'news_title': 'news'}}
-    - { routePath: '/list/{paging_widget}', '_controller': 'News::list', '_arguments': {'paging_widget': '@widget_0/currentPage'}}
-    - { routePath: '/tag/{tag_name}', '_controller': 'News::list', '_arguments': {'tag_name': 'overwriteDemand/tags'}}
+#      - { routePath: '/{news_combination}', '_controller': 'News::detail', '_arguments': {'news_combination': 'news'} }
+      - { routePath: '/{blog_name}/{page}', '_controller': 'News::benni' }
+      - { routePath: '/detail/{news_title}', '_controller': 'News::detail', '_arguments': {'news_title': 'news'} }
+      - { routePath: '/archive/{year}/{month}', '_controller': 'News::archive' }
+      - { routePath: '/list-all-the-news/', '_controller': 'News::list' }
+      - { routePath: '/list/{paging_widget}', '_controller': 'News::list', '_arguments': {'paging_widget': '@widget_0/currentPage'}}
+      - { routePath: '/tag/{tag_name}', '_controller': 'News::list', '_arguments': {'tag_name': 'overwriteDemand/tags'}}
     defaultController: 'News::list'
     defaults:
       page: '0'
@@ -31,6 +31,12 @@ routingEnhancers:
         routeFieldName: 'path_segment'
         valueFieldName: 'uid'
         routeValuePrefix: '/'
+      news_combination:
+        # cave: title is not prepared for slugs and used raw...
+        type: PersistedPatternMapper
+        tableName: 'tx_news_domain_model_news'
+        routeFieldPattern: '^(?P<title>.+)-(?P<uid>\d+)$'
+        routeFieldResult: '{title}-{uid}'
       tag_name:
         type: PersistedAliasMapper
         tableName: 'tx_news_domain_model_tag'
