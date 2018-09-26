@@ -16,9 +16,33 @@ namespace TYPO3\CMS\Core\Routing\Aspect;
  * The TYPO3 project - inspiring people to share!
  */
 
+/**
+ * Interface that describes delegations of tasks to different processors
+ * when resolving or generating parameters for URLs.
+ */
 interface Delegable
 {
-    public function exists(string $value): bool;
-    public function resolve(string $value): ?string;
-    public function generate(string $value): ?string;
+    /**
+     * Determines whether the given value can be resolved.
+     *
+     * @param array $values
+     * @return bool
+     */
+    public function exists(array $values): bool;
+
+    /**
+     * Resolves system-internal value of parameter value submitted in URL.
+     *
+     * @param array $values
+     * @return array|null
+     */
+    public function resolve(array $values): ?array;
+
+    /**
+     * Generates URL parameter value from system-internal value.
+     *
+     * @param array $values
+     * @return array|null
+     */
+    public function generate(array $values): ?array;
 }

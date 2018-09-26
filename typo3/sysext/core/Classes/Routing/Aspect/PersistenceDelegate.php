@@ -18,6 +18,10 @@ namespace TYPO3\CMS\Core\Routing\Aspect;
 
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
+/**
+ * Delegate implementation in order to retrieve and generate values
+ * using a database connection.
+ */
 class PersistenceDelegate implements Delegable
 {
     /**
@@ -48,11 +52,12 @@ class PersistenceDelegate implements Delegable
     }
 
     /**
+     * @param array $values
      * @return int
      */
-    public function exists(string $value): bool
+    public function exists(array $values): bool
     {
-        $this->applyValueModifier($this->resolveModifier, $value);
+        $this->applyValueModifier($this->resolveModifier, $values);
         return $this->queryBuilder
             ->count('*')
             ->execute()
@@ -60,35 +65,37 @@ class PersistenceDelegate implements Delegable
     }
 
     /**
-     * @return string
+     * @param array $values
+     * @return null|array
      */
-    public function resolve(string $value): ?string
+    public function resolve(array $values): ?array
     {
-        $this->applyValueModifier($this->resolveModifier, $value);
+        $this->applyValueModifier($this->resolveModifier, $values);
         $result = $this->queryBuilder
             ->execute()
-            ->fetchColumn(0);
-        return $result !== false ? (string)$result : null;
+            ->fetch();
+        return $result !== false ? $result : null;
     }
 
     /**
-     * @return string
+     * @param array $values
+     * @return null|string
      */
-    public function generate(string $value): ?string
+    public function generate(array $values): ?array
     {
-        $this->applyValueModifier($this->generateModifier, $value);
+        $this->applyValueModifier($this->generateModifier, $values);
         $result = $this->queryBuilder
             ->execute()
-            ->fetchColumn(0);
-        return $result !== false ? (string)$result : null;
+            ->fetch();
+        return $result !== false ? $result : null;
     }
 
     /**
      * @param \Closure $modifier
-     * @param string $value
+     * @param array $values
      */
-    protected function applyValueModifier(\Closure $modifier, string $value)
+    protected function applyValueModifier(\Closure $modifier, array $values)
     {
-        $modifier($this->queryBuilder, $value);
+        $modifier($this->queryBuilder, $values);
     }
 }

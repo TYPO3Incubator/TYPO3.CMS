@@ -95,9 +95,13 @@ class PersistedAliasMapper implements Mappable, StaticMappable
      */
     public function generate(string $value): ?string
     {
-        $result = $this->getPersistenceDelegate()->generate($value);
-        $result = $this->purgeRouteValuePrefix($result);
-        return $result;
+        $result = $this->getPersistenceDelegate()->generate([
+            $this->valueFieldName => $value
+        ]);
+        $result = $this->purgeRouteValuePrefix(
+            $result[$this->routeFieldName] ?? null
+        );
+        return $result ? (string)$result : null;
     }
 
     /**
@@ -107,16 +111,20 @@ class PersistedAliasMapper implements Mappable, StaticMappable
     public function resolve(string $value): ?string
     {
         $value = $this->routeValuePrefix . $this->purgeRouteValuePrefix($value);
-        return $this->getPersistenceDelegate()->resolve($value);
+        $result = $this->getPersistenceDelegate()->resolve([
+            $this->routeFieldName => $value
+        ]);
+        $result = $result[$this->valueFieldName] ?? null;
+        return $result ? (string)$result : null;
     }
 
     /**
-     * @param string $value
+     * @param string|null $value
      * @return string
      */
-    protected function purgeRouteValuePrefix(string $value): string
+    protected function purgeRouteValuePrefix(?string $value): ?string
     {
-        if (empty($this->routeValuePrefix)) {
+        if (empty($this->routeValuePrefix) || $value === null) {
             return $value;
         }
         return ltrim($value, $this->routeValuePrefix);
@@ -135,20 +143,14 @@ class PersistedAliasMapper implements Mappable, StaticMappable
             ->from($this->tableName);
         // @todo Restrictions (Hidden? Workspace?)
 
-        $resolveModifier = function(QueryBuilder $queryBuilder, string $value) {
+        $resolveModifier = function(QueryBuilder $queryBuilder, array $values) {
             return $queryBuilder->select($this->valueFieldName)->where(
-                $queryBuilder->expr()->eq(
-                    $this->routeFieldName,
-                    $queryBuilder->createNamedParameter($value, \PDO::PARAM_STR)
-                )
+                ...$this->createFieldConstraints($queryBuilder, $values)
             );
         };
-        $generateModifier = function(QueryBuilder $queryBuilder, string $value) {
+        $generateModifier = function(QueryBuilder $queryBuilder, array $values) {
             return $queryBuilder->select($this->routeFieldName)->where(
-                $queryBuilder->expr()->eq(
-                    $this->valueFieldName,
-                    $queryBuilder->createNamedParameter($value, \PDO::PARAM_STR)
-                )
+                ...$this->createFieldConstraints($queryBuilder, $values)
             );
         };
 
@@ -157,5 +159,22 @@ class PersistedAliasMapper implements Mappable, StaticMappable
             $resolveModifier,
             $generateModifier
         );
+    }
+
+    /**
+     * @param QueryBuilder $queryBuilder
+     * @param array $values
+     * @return array
+     */
+    protected function createFieldConstraints(QueryBuilder $queryBuilder, array $values): array
+    {
+        $constraints = [];
+        foreach ($values as $fieldName => $fieldValue) {
+            $constraints[] = $queryBuilder->expr()->eq(
+                $fieldName,
+                $queryBuilder->createNamedParameter($fieldValue, \PDO::PARAM_STR)
+            );
+        }
+        return $constraints;
     }
 }
