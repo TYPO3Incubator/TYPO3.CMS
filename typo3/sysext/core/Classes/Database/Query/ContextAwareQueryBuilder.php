@@ -17,6 +17,7 @@ namespace TYPO3\CMS\Core\Database\Query;
 
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface;
 use TYPO3\CMS\Core\Database\Query\Restriction\RecordRestrictionInterface;
@@ -99,73 +100,233 @@ class ContextAwareQueryBuilder extends QueryBuilder
             return parent::execute();
         }
 
-        // @todo not sure whether this "unquote" is correct, otherwise collect in 'from()'
-        $tableName = $this->tableIdentifier->getTableName();
+        $subqueryBuilder = GeneralUtility::makeInstance(QueryBuilder::class, $this->connection);
 
-        if ($this->context->hasAspect('workspace')) {
-            $workspaceResolver = new \TYPO3\CMS\Core\Database\Query\Context\WorkspaceAspectResolver(
-                $this->connection,
-                $this->context->getAspect('workspace'),
-                $tableName
-            );
+        $this->prepareWorkspaceSubquery($subqueryBuilder);
 
-            $originalWhereConditions = $this->concreteQueryBuilder->getQueryPart('where');
-            $this->concreteQueryBuilder->andWhere(
-                $this->expr()->in(
-                    'uid',
-                    $this->concreteQueryBuilder->createNamedParameter($workspaceResolver->getUids(), Connection::PARAM_INT_ARRAY)
-                )
-            );
+        $this->concreteQueryBuilder->resetQueryPart('from');
+        $this->concreteQueryBuilder->from(
+            sprintf('(%s)', $subqueryBuilder->getSQL()), 
+            $this->quoteIdentifier($this->tableIdentifier->getAlias() ?? $this->tableIdentifier->getTableName())
+        );
 
-            $additionalIdentifiers = $this->appendAdditionalSelects('uid', 'pid');
-
-            // @todo Why are there three restrictions for workspaces?!
-            $this->addAdditionalWhereConditions(
-                \TYPO3\CMS\Core\Database\Query\Restriction\WorkspaceRestriction::class,
-                \TYPO3\CMS\Core\Database\Query\Restriction\FrontendWorkspaceRestriction::class,
-                \TYPO3\CMS\Core\Database\Query\Restriction\BackendWorkspaceRestriction::class
+        foreach ($subqueryBuilder->getParameters() as $key => $value) {
+            // @todo Throw exception if parameter is already set
+            $this->concreteQueryBuilder->setParameter(
+                $key, 
+                $value, 
+                $subqueryBuilder->getParameterType($key)
             );
-            $result = GeneralUtility::makeInstance(
-                ContextAwareStatement::class,
-                $additionalIdentifiers,
-                $this->concreteQueryBuilder->execute(),
-                $this->context,
-                $this->tableIdentifier,
-                $this->restrictionContainer,
-                $workspaceResolver->getVersionMap()
-            );
-            $this->concreteQueryBuilder->add('where', $originalWhereConditions, false);
         }
 
-        return $result;
+        return $this->concreteQueryBuilder->execute();
     }
 
-    private function appendAdditionalSelects(string ...$fieldNames): array
+    private function prepareWorkspaceSubquery(QueryBuilder $queryBuilder)
     {
-        $additionalSelects = [];
-        $additionalIdentifiers = [];
-        foreach ($fieldNames as $fieldName) {
-            if ($this->selectIdentifierCollection->hasFieldName($this->tableIdentifier, $fieldName)) {
+        $tableName = $this->tableIdentifier->getTableName();
+        $workspaceId = (int) $this->context->getAspect('workspace')->getId();
+        $fieldNames = [];
+
+        // @todo Support any literal
+        foreach ($this->selectIdentifierCollection as $selectIdentifier) {
+            if ($selectIdentifier->getTableName() !== null 
+                && $selectIdentifier->getTableName() !== $tableName
+            ) {
                 continue;
             }
-            $alias = md5(uniqid($fieldName, true));
-            $additionalIdentifiers[$fieldName] = $alias;
-            $additionalSelects[$alias] = sprintf(
-                '%s.%s AS %s',
-                $this->tableIdentifier->getAlias() ?? $this->tableIdentifier->getTableName(),
-                $fieldName,
-                $alias
+
+            if ($selectIdentifier->getFieldName() === '*') {
+                $columns = GeneralUtility::makeInstance(ConnectionPool::class)
+                    ->getConnectionForTable($tableName)
+                    ->getSchemaManager()
+                    ->listTableDetails($tableName)
+                    ->getColumns();
+                
+                foreach ($columns as $column) {
+                    $fieldNames[] = $column->getName();
+                }
+
+                $fieldNames[] = '_ORIG_uid';
+                $fieldNames[] = '_ORIG_pid';
+            } else {
+                $fieldNames[] = $selectIdentifier->getFieldName();
+            }
+        }
+
+        foreach ($fieldNames as $fieldName) {
+            if ($fieldName === 'uid') {
+                $queryBuilder->addSelectLiteral(
+                    sprintf(
+                        'COALESCE(%s,%s) AS %s',
+                        $queryBuilder->quoteIdentifier('original.uid'),
+                        $queryBuilder->quoteIdentifier($tableName . '.uid'),
+                        $queryBuilder->quoteIdentifier('uid')
+                    )
+                );
+            } elseif ($fieldName === 'pid') {
+                $queryBuilder->addSelectLiteral(
+                    sprintf(
+                        'COALESCE(%s,%s,%s) AS %s',
+                        $queryBuilder->quoteIdentifier('placeholder.pid'),
+                        $queryBuilder->quoteIdentifier('original.pid'),
+                        $queryBuilder->quoteIdentifier($tableName . '.pid'),
+                        $queryBuilder->quoteIdentifier('pid')
+                    )
+                );
+            } elseif ($fieldName === '_ORIG_uid') {
+                $queryBuilder->addSelectLiteral(
+                    sprintf(
+                        'CASE WHEN %s IS NULL THEN NULL ELSE %s END AS %s',
+                        $queryBuilder->quoteIdentifier('original.uid'),
+                        $queryBuilder->quoteIdentifier($tableName . '.uid'),
+                        $queryBuilder->quoteIdentifier('_ORIG_uid')
+                    )
+                );
+            } elseif ($fieldName === '_ORIG_pid') {
+                $queryBuilder->addSelectLiteral(
+                    sprintf(
+                        'CASE WHEN %s IS NULL THEN NULL ELSE %s END AS %s',
+                        $queryBuilder->quoteIdentifier('original.pid'),
+                        $queryBuilder->quoteIdentifier($tableName . '.pid'),
+                        $queryBuilder->quoteIdentifier('_ORIG_pid')
+                    )
+                );
+            } else {
+                $queryBuilder->addSelect($tableName . '.' . $fieldName);
+            }
+        }
+
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
+
+        $queryBuilder
+            ->from($tableName)
+            ->leftJoin(
+                $tableName,
+                $tableName,
+                'version',
+                (string) $queryBuilder->expr()->andX(
+                    $queryBuilder->expr()->eq(
+                        $tableName . '.uid',
+                        $queryBuilder->quoteIdentifier('version.t3ver_oid')
+                    ),
+                    $queryBuilder->expr()->eq(
+                        $tableName . '.t3ver_wsid',
+                        $queryBuilder->createNamedParameter(
+                            0,
+                            \PDO::PARAM_INT,
+                            ':_' . md5('workspaceLive')
+                        )
+                    ),
+                    $queryBuilder->expr()->eq(
+                        'version.t3ver_wsid',
+                        $queryBuilder->createNamedParameter(
+                            $workspaceId,
+                            \PDO::PARAM_INT,
+                            ':_' . md5('workspaceContext')
+                        )
+                    )
+                )
+            )
+            ->leftJoin(
+                $tableName,
+                $tableName,
+                'original',
+                (string) $queryBuilder->expr()->andX(
+                    $queryBuilder->expr()->eq(
+                        $tableName . '.t3ver_oid',
+                        $queryBuilder->quoteIdentifier('original.uid')
+                    ),
+                    $queryBuilder->expr()->eq(
+                        $tableName . '.t3ver_wsid',
+                        $queryBuilder->createNamedParameter(
+                            $workspaceId,
+                            \PDO::PARAM_INT,
+                            ':_' . md5('workspaceContext')
+                        )
+                    ),
+                    $queryBuilder->expr()->in(
+                        'original.t3ver_wsid',
+                        $queryBuilder->createNamedParameter(
+                            [0, $workspaceId],
+                            Connection::PARAM_INT_ARRAY,
+                            ':_' . md5('workspaceIdentifiers')
+                        )
+                    )
+                )
+            )
+            ->leftJoin(
+                $tableName,
+                $tableName,
+                'placeholder',
+                (string) $queryBuilder->expr()->andX(
+                    $queryBuilder->expr()->eq(
+                        $tableName . '.t3ver_oid',
+                        $queryBuilder->quoteIdentifier('placeholder.t3ver_move_id')
+                    ),
+                    $queryBuilder->expr()->neq(
+                        'placeholder.t3ver_wsid',
+                        $queryBuilder->createNamedParameter(
+                            0,
+                            \PDO::PARAM_INT,
+                            ':_' . md5('workspaceLive')
+                        )
+                    ),
+                    $queryBuilder->expr()->eq(
+                        $tableName . '.t3ver_wsid',
+                        $queryBuilder->createNamedParameter(
+                            $workspaceId,
+                            \PDO::PARAM_INT,
+                            ':_' . md5('workspaceContext')
+                        )
+                    ),
+                    $queryBuilder->expr()->in(
+                        'placeholder.t3ver_wsid',
+                        $queryBuilder->createNamedParameter(
+                            [0, $workspaceId],
+                            Connection::PARAM_INT_ARRAY,
+                            ':_' . md5('workspaceIdentifiers')
+                        )
+                    )
+                )
+            )
+            ->andWhere(
+                $queryBuilder->expr()->orX(
+                    $queryBuilder->expr()->andX(
+                        $queryBuilder->expr()->eq(
+                            $tableName . '.t3ver_wsid',
+                            $queryBuilder->createNamedParameter(
+                                0,
+                                \PDO::PARAM_INT,
+                                ':_' . md5('workspaceLive')
+                            )
+                        ),
+                        $queryBuilder->expr()->isNull(
+                            'version.uid'
+                        )
+                    ),
+                    $queryBuilder->expr()->andX(
+                        $queryBuilder->expr()->eq(
+                            $tableName . '.t3ver_wsid',
+                            $queryBuilder->createNamedParameter(
+                                $workspaceId,
+                                \PDO::PARAM_INT,
+                                ':_' . md5('workspaceContext')
+                            )
+                        ),
+                        $queryBuilder->expr()->notIn(
+                            $tableName . '.t3ver_state',
+                            $queryBuilder->createNamedParameter(
+                                [1, 3],
+                                Connection::PARAM_INT_ARRAY,
+                                ':_' . md5('workspaceStates')
+                            )
+                        )
+                    )
+                )
             );
-        }
-        if (count($additionalSelects) === 0) {
-            return [];
-        }
-        $this->concreteQueryBuilder->add(
-            'select',
-            $this->quoteIdentifiersForSelect(array_values($additionalSelects)),
-            true
-        );
-        return $additionalIdentifiers;
     }
 
     /**

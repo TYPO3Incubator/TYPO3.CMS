@@ -17,7 +17,7 @@ namespace TYPO3\CMS\Core\Database\Query;
 
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class SelectIdentifierCollection
+class SelectIdentifierCollection implements \IteratorAggregate
 {
     /**
      * @var SelectIdentifier[]
@@ -63,5 +63,9 @@ class SelectIdentifierCollection
             }
         }
         return false;
+    }
+
+    public function getIterator() {
+        return new \ArrayIterator($this->identifiers);
     }
 }
