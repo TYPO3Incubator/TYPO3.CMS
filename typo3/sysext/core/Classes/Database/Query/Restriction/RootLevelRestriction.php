@@ -21,7 +21,7 @@ use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 /**
  * Restriction to filter records which are not stored on the root page.
  */
-class RootLevelRestriction implements QueryRestrictionInterface, RecordRestrictionInterface
+class RootLevelRestriction implements QueryRestrictionInterface
 {
     /**
      * @var array
@@ -55,10 +55,5 @@ class RootLevelRestriction implements QueryRestrictionInterface, RecordRestricti
             }
         }
         return $expressionBuilder->andX(...$constraints);
-    }
-
-    public function isRecordRestricted(string $tableName, array $record): bool
-    {
-        return (int)$record['pid'] !== 0;
     }
 }

@@ -21,7 +21,7 @@ use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 /**
  * Restriction to filter records with an end time set that has passed
  */
-class EndTimeRestriction implements QueryRestrictionInterface, RecordRestrictionInterface
+class EndTimeRestriction implements QueryRestrictionInterface
 {
     /**
      * @var int
@@ -65,14 +65,5 @@ class EndTimeRestriction implements QueryRestrictionInterface, RecordRestriction
             }
         }
         return $expressionBuilder->andX(...$constraints);
-    }
-
-    public function isRecordRestricted(string $tableName, array $record): bool
-    {
-        if (!isset($GLOBALS['TCA'][$tableName]['ctrl']['enablecolumns']['endtime'])) {
-            return false;
-        }
-        $fieldName = $GLOBALS['TCA'][$tableName]['ctrl']['enablecolumns']['endtime'];
-        return (int)$record[$fieldName] !== 0 && (int)$record[$fieldName] <= (int)$this->accessTimeStamp;
     }
 }

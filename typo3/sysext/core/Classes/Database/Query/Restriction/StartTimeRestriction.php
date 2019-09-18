@@ -21,7 +21,7 @@ use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 /**
  * Restriction to filter records, that should not be shown until the start time has been reached
  */
-class StartTimeRestriction implements QueryRestrictionInterface, RecordRestrictionInterface
+class StartTimeRestriction implements QueryRestrictionInterface
 {
     /**
      * @param int $accessTimeStamp
@@ -64,14 +64,5 @@ class StartTimeRestriction implements QueryRestrictionInterface, RecordRestricti
             }
         }
         return $expressionBuilder->andX(...$constraints);
-    }
-
-    public function isRecordRestricted(string $tableName, array $record): bool
-    {
-        if (!isset($GLOBALS['TCA'][$tableName]['ctrl']['enablecolumns']['starttime'])) {
-            return false;
-        }
-        $fieldName = $GLOBALS['TCA'][$tableName]['ctrl']['enablecolumns']['starttime'];
-        return (int)$record[$fieldName] > (int)$this->accessTimeStamp;
     }
 }

@@ -24,7 +24,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 /**
  * Restriction to filter records, which are limited to the given user groups
  */
-class FrontendGroupRestriction implements QueryRestrictionInterface, RecordRestrictionInterface
+class FrontendGroupRestriction implements QueryRestrictionInterface
 {
     /**
      * @var array
@@ -75,15 +75,5 @@ class FrontendGroupRestriction implements QueryRestrictionInterface, RecordRestr
             }
         }
         return $expressionBuilder->orX(...$constraints);
-    }
-
-    public function isRecordRestricted(string $tableName, array $record): bool
-    {
-        if (!isset($GLOBALS['TCA'][$tableName]['ctrl']['enablecolumns']['fe_group'])) {
-            return false;
-        }
-        $fieldName = $GLOBALS['TCA'][$tableName]['ctrl']['enablecolumns']['fe_group'];
-        $frontendGroupIds = array_map('strval', $this->frontendGroupIds);
-        return !empty($record[$fieldName]) && !in_array((string)$record[$fieldName], $frontendGroupIds, true);
     }
 }
