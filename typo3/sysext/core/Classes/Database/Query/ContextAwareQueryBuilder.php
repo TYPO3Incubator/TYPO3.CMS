@@ -18,28 +18,22 @@ namespace TYPO3\CMS\Core\Database\Query;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Context\LanguageAspectView;
-use TYPO3\CMS\Core\Database\Query\Context\WorkspaceAspectView;
+use TYPO3\CMS\Core\Database\Query\View\LanguageAspectView;
+use TYPO3\CMS\Core\Database\Query\View\WorkspaceAspectView;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface;
 use TYPO3\CMS\Core\Database\Query\Restriction\RecordRestrictionInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
- * Object oriented approach to building SQL queries.
+ * Object oriented approach to building context aware SQL queries.
  *
- * This is an advanced query over the simple Doctrine DBAL / TYPO3 QueryBuilder by taking into account the
- * context - that is next to enableFields the proper fetching of resolved langauge and workspace records, if given.
- *
- *
- * For this to work, the concept of map/reduce is applied. Example:
- *
- * - Fetch all records that match live and workspace ID
- * - Fetch all records that match the target language + the fallback records
- *
- * Then filter out the criteria that match based on enableFields + "overlays".
+ * It's an advanced query builder by taking into account the context - that is 
+ * the proper fetching of resolved language and workspace records, if given.
+ * 
+ * @api
  */
-class ContextAwareQueryBuilder extends QueryBuilder
+final class ContextAwareQueryBuilder extends QueryBuilder
 {
     /**
      * @var Context
@@ -47,19 +41,14 @@ class ContextAwareQueryBuilder extends QueryBuilder
     protected $context;
 
     /**
-     * @var SelectIdentifierCollection
-     */
-    private $selectIdentifierCollection;
-
-    /**
      * @var TableIdentifier
      */
     private $tableIdentifier;
 
     /**
-     * Initializes a new QueryBuilder.
+     * Initializes a new context aware query builder.
      *
-     * @param Connection $connection The DBAL Connection.
+     * @param Connection $connection
      * @param Context $context
      * @param QueryRestrictionContainerInterface $restrictionContainer
      * @param \Doctrine\DBAL\Query\QueryBuilder $concreteQueryBuilder
@@ -76,22 +65,18 @@ class ContextAwareQueryBuilder extends QueryBuilder
         $this->context = $context;
     }
 
-    public function select(string ...$selects): QueryBuilder
-    {
-        $this->selectIdentifierCollection = SelectIdentifierCollection::fromExpressions(...$selects);
-        return parent::select(...$selects);
-    }
-
+    /**
+     * @inheritdoc
+     */
     public function from(string $from, string $alias = null): QueryBuilder
     {
         $this->tableIdentifier = TableIdentifier::create($from, $alias);
+
         return parent::from($from, $alias);
     }
 
     /**
-     * Executes this query using the bound parameters and their types.
-     *
-     * @return \Doctrine\DBAL\Driver\Statement|ContextAwareStatement|int
+     * @inheritdoc
      */
     public function execute()
     {
@@ -99,36 +84,41 @@ class ContextAwareQueryBuilder extends QueryBuilder
             return parent::execute();
         }
 
-        if (!$this->context->hasAspect('workspace') && !$this->context->hasAspect('language')) {
-            return parent::execute();
-        }
+        $inlineViewQueries = $this->getInlineViewQueries();
+        $innerQuery = end($inlineViewQueries);
 
-        $aspectViewQueries = [];
-
-        if ($this->context->hasAspect('workspace')) {
-            $workspaceAspectView = new WorkspaceAspectView($this->connection, $this->context->getAspect('workspace'));
-            $aspectViewQueries[] = $workspaceAspectView->buildQuery($this->tableIdentifier, $this->selectIdentifierCollection);
-        }
-
-        if ($this->context->hasAspect('language')) {
-            $languageAspectView = new LanguageAspectView($this->connection, $this->context->getAspect('language'));
-            $aspectViewQueries[] = $languageAspectView->buildQuery($this->tableIdentifier, $this->selectIdentifierCollection);
-        }
-
-        $innerQuery = end($aspectViewQueries);
-
-        while ($outerQuery = prev($aspectViewQueries)) {
+        while ($outerQuery = prev($inlineViewQueries)) {
             $innerQuery = $this->mergeInlineView($outerQuery, $innerQuery);
         }
 
-        $this->mergeInlineView($this, $innerQuery);
+        if ($innerQuery !== false) {
+            $this->mergeInlineView($this, $innerQuery);
+        }
 
-        return $this->concreteQueryBuilder->execute();
+        $originalWhereConditions = $this->addAdditionalWhereConditions();
+
+        $result = $this->concreteQueryBuilder->execute();
+
+        $this->concreteQueryBuilder->add('where', $originalWhereConditions, false);
+
+        return $result;
     }
 
     /**
-     * Deep clone of the QueryBuilder
-     * @see \Doctrine\DBAL\Query\QueryBuilder::__clone()
+     * @inheritdoc
+     */
+    protected function getQueriedTables(): array
+    {
+        $queriedTables = parent::getQueriedTables();
+        // Fakes the table name of the from clause otherwise the query restrictions won't work.
+        $tableAlias = $this->tableIdentifier->getAlias() ?? $this->tableIdentifier->getTableName();
+        $queriedTables[$tableAlias] = $this->tableIdentifier->getTableName();
+
+        return $queriedTables;
+    }
+
+    /**
+     * @inheritdoc
      */
     public function __clone()
     {
@@ -136,23 +126,53 @@ class ContextAwareQueryBuilder extends QueryBuilder
         $this->context = clone $this->context;
     }
 
+    /**
+     * @todo Make views plugable like restrictions.
+     * @todo Collect all column identifier used by the projection and selection.
+     */
+    private function getInlineViewQueries(): array
+    {
+        $inlineViewQueries = [];
+
+        if ($this->context->hasAspect('workspace')) {
+            $workspaceAspectView = new WorkspaceAspectView($this->connection, $this->context->getAspect('workspace'));
+            $inlineViewQueries[] = $workspaceAspectView->buildQuery($this->tableIdentifier, null);
+        }
+
+        if ($this->context->hasAspect('language')) {
+            $languageAspectView = new LanguageAspectView($this->connection, $this->context->getAspect('language'));
+            $inlineViewQueries[] = $languageAspectView->buildQuery($this->tableIdentifier, null);
+        }
+
+        return array_filter($inlineViewQueries);
+    }
+
+    /**
+     * @todo Throw exception when an inner parameter is already set
+     */
     private function mergeInlineView(QueryBuilder $outerQueryBuilder, QueryBuilder $innerQueryBuilder): QueryBuilder
     {
+        $outerFromPart = $outerQueryBuilder->getQueryPart('from');
+
+        if (
+            !isset($outerFromPart[0]['table']) 
+            || $outerFromPart[0]['table'] !== $this->quoteIdentifier($this->tableIdentifier->getTableName())
+        ) {
+            throw new \Exception('Inline view is not compatible with outer query.', 1574599278);
+        }
+
         $outerQueryBuilder->add(
             'from',
             [
                 [
                     'table' => sprintf('(%s)', $innerQueryBuilder->getSQL()), 
-                    'alias' => $this->quoteIdentifier(
-                        $this->tableIdentifier->getAlias() ?? $this->tableIdentifier->getTableName()
-                    )
+                    'alias' => $outerFromPart[0]['alias'] ?? $outerFromPart[0]['table']
                 ]
             ],
             false
         );
 
         foreach ($innerQueryBuilder->getParameters() as $key => $value) {
-            // @todo Throw exception if parameter is already set
             $outerQueryBuilder->setParameter(
                 $key,
                 $value,

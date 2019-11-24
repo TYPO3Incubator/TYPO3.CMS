@@ -1,6 +1,6 @@
 <?php
 declare(strict_types = 1);
-namespace TYPO3\CMS\Core\Database\Query\Context;
+namespace TYPO3\CMS\Core\Database\Query\View;
 
 /*
  * This file is part of the TYPO3 CMS project.
@@ -18,15 +18,28 @@ namespace TYPO3\CMS\Core\Database\Query\Context;
 use TYPO3\CMS\Core\Context\LanguageAspect;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\ColumnIdentifierCollection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Database\Query\SelectIdentifierCollection;
 use TYPO3\CMS\Core\Database\Query\TableIdentifier;
 use TYPO3\CMS\Core\Database\Query\VersionMap;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class LanguageAspectView
+class LanguageAspectView implements QueryViewInterface
 {
+    /**
+     * @var string
+     */
     private const PARAMETER_PREFIX = ':_';
+
+    /**
+     * @var string
+     */
+    private const ALIAS_TABLE = 't';
+
+    /**
+     * @var string
+     */
+    private const ALIAS_OVERLAY = 'o';
 
     /**
      * @var Connection
@@ -51,39 +64,34 @@ class LanguageAspectView
     }
 
     /**
-     * Builds a query for the view.
-     * 
-     * @param TableIdentifier $tableIdentifier
-     * @param SelectIdentifierCollection $selectIdentifiers
+     * @inheritdoc
      */
-    public function buildQuery(TableIdentifier $tableIdentifier, SelectIdentifierCollection $selectIdentifiers): QueryBuilder
+    public function buildQuery(TableIdentifier $tableIdentifier, ?ColumnIdentifierCollection $columnIdentifiers): ?QueryBuilder
     {
         $tableName = $tableIdentifier->getTableName();
 
+        if (!$this->hasAspect($tableName) || $this->languageAspect->getContentId() < 0) {
+            return null;
+        }
+
         $queryBuilder = $this->getQueryBuilder()
-            ->from($tableName);
+            ->from($tableName, self::ALIAS_TABLE);
 
         $queryBuilder
             ->getRestrictions()
             ->removeAll();
 
-        $this->project($tableName, $selectIdentifiers, $queryBuilder);
+        $this->project($tableName, $columnIdentifiers, $queryBuilder);
 
-        if (!isset($GLOBALS['TCA'][$table]['ctrl']['languageField'])
-            || !isset($GLOBALS['TCA'][$table]['ctrl']['transOrigPointerField'])
-        ) {
-            return $queryBuilder;
-        }
-
-        $languageField = $GLOBALS['TCA'][$table]['ctrl']['languageField'];
-        $translationParent = $GLOBALS['TCA'][$table]['ctrl']['transOrigPointerField'];
+        $languageField = $GLOBALS['TCA'][$tableName]['ctrl']['languageField'];
+        $translationParent = $GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField'];
 
         if ($this->languageAspect->getContentId() > 0) {
             switch ($this->languageAspect->getOverlayType()) {
                 case LanguageAspect::OVERLAYS_OFF:
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->in(
-                            $tableName . '.' . $languageField,
+                            self::ALIAS_TABLE . '.' . $languageField,
                             $queryBuilder->createNamedParameter(
                                 [-1, $this->languageAspect->getContentId()],
                                 Connection::PARAM_INT_ARRAY,
@@ -91,7 +99,7 @@ class LanguageAspectView
                             )
                         ),
                         $queryBuilder->expr()->eq(
-                            $tableName . '.' . $translationParent,
+                            self::ALIAS_TABLE . '.' . $translationParent,
                             $queryBuilder->createNamedParameter(
                                 0,
                                 \PDO::PARAM_INT,
@@ -101,19 +109,19 @@ class LanguageAspectView
                     );
                     break;
                 case LanguageAspect::OVERLAYS_MIXED:
-                    $builder->leftJoin(
+                    $queryBuilder->leftJoin(
+                        self::ALIAS_TABLE,
                         $tableName,
-                        $tableName,
-                        'overlay',
-                        (string) $builder->expr()->eq(
-                            $tableName . '.uid',
-                            $builder->quoteIdentifier('overlay.' . $translationParent)
+                        self::ALIAS_OVERLAY,
+                        (string) $queryBuilder->expr()->eq(
+                            self::ALIAS_TABLE . '.uid',
+                            $queryBuilder->quoteIdentifier('o.' . $translationParent)
                         )
                     )->andWhere(
                         $queryBuilder->expr()->orX(
                             $queryBuilder->expr()->andX(
                                 $queryBuilder->expr()->neq(
-                                    $tableName . '.' . $translationParent,
+                                    self::ALIAS_TABLE . '.' . $translationParent,
                                     $queryBuilder->createNamedParameter(
                                         0,
                                         \PDO::PARAM_INT,
@@ -121,7 +129,7 @@ class LanguageAspectView
                                     )
                                 ),
                                 $queryBuilder->expr()->eq(
-                                    $tableName . '.' . $languageField,
+                                    self::ALIAS_TABLE . '.' . $languageField,
                                     $queryBuilder->createNamedParameter(
                                         $this->languageAspect->getContentId(),
                                         \PDO::PARAM_INT,
@@ -130,7 +138,7 @@ class LanguageAspectView
                                 )
                             ),
                             $queryBuilder->expr()->in(
-                                $tableName . '.' . $languageField,
+                                self::ALIAS_TABLE . '.' . $languageField,
                                 $queryBuilder->createNamedParameter(
                                     [-1, 0],
                                     Connection::PARAM_INT_ARRAY,
@@ -138,15 +146,15 @@ class LanguageAspectView
                                 )
                             )
                         ),
-                        $builder->expr()->isNull(
-                            'overlay.uid'
+                        $queryBuilder->expr()->isNull(
+                            self::ALIAS_OVERLAY . '.uid'
                         )
                     );
                     break;
                 case LanguageAspect::OVERLAYS_ON:
                     $queryBuilder->orWhere(
                         $queryBuilder->expr()->eq(
-                            $tableName . '.' . $languageField,
+                            self::ALIAS_TABLE . '.' . $languageField,
                             $queryBuilder->createNamedParameter(
                                 -1,
                                 \PDO::PARAM_INT,
@@ -155,16 +163,16 @@ class LanguageAspectView
                         ),
                         $queryBuilder->expr()->andX(
                             $queryBuilder->expr()->eq(
-                                $tableName . '.' . $languageField,
-                                $builder->createNamedParameter(
+                                self::ALIAS_TABLE . '.' . $languageField,
+                                $queryBuilder->createNamedParameter(
                                     $this->languageAspect->getContentId(),
                                     \PDO::PARAM_INT,
                                     self::PARAMETER_PREFIX . md5('languageIdentifier')
                                 )
                             ),
                             $queryBuilder->expr()->neq(
-                                $tableName . '.' . $translationParent,
-                                $builder->createNamedParameter(
+                                self::ALIAS_TABLE . '.' . $translationParent,
+                                $queryBuilder->createNamedParameter(
                                     0,
                                     \PDO::PARAM_INT,
                                     self::PARAMETER_PREFIX . md5('languageDefault')
@@ -177,7 +185,7 @@ class LanguageAspectView
                 case LanguageAspect::OVERLAYS_ON_WITH_FLOATING:
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->in(
-                            $tableName . '.' . $languageField,
+                            self::ALIAS_TABLE . '.' . $languageField,
                             $queryBuilder->createNamedParameter(
                                 [-1, $this->languageAspect->getContentId()],
                                 Connection::PARAM_INT_ARRAY,
@@ -190,7 +198,7 @@ class LanguageAspectView
         } elseif ($this->languageAspect->getContentId() === 0) {
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->in(
-                    $tableName . '.' . $languageField,
+                    self::ALIAS_TABLE . '.' . $languageField,
                     $queryBuilder->createNamedParameter(
                         [-1, 0],
                         Connection::PARAM_INT_ARRAY,
@@ -203,37 +211,33 @@ class LanguageAspectView
         return $queryBuilder;
     }
 
-    private function project(string $tableName, SelectIdentifierCollection $selectIdentifiers, QueryBuilder $queryBuilder): QueryBuilder
+    private function project(string $tableName, ?ColumnIdentifierCollection $columnIdentifiers, QueryBuilder $queryBuilder): QueryBuilder
     {
         $fieldNames = [];
-
-        foreach ($selectIdentifiers as $selectIdentifier) {
-            if ($selectIdentifier->getTableName() !== null 
-                && $selectIdentifier->getTableName() !== $tableName
-            ) {
-                continue;
-            }
-
-            if ($selectIdentifier->getFieldName() === '*') {
-                $columns = GeneralUtility::makeInstance(ConnectionPool::class)
-                    ->getConnectionForTable($tableName)
-                    ->getSchemaManager()
-                    ->listTableDetails($tableName)
-                    ->getColumns();
-                
-                foreach ($columns as $column) {
-                    $fieldNames[] = $column->getName();
-                }
-            } else {
-                $fieldNames[] = $selectIdentifier->getFieldName();
-            }
+        // As long as we do not have all columns used in the 
+        // outer query we have to project them all.
+        if ($columnIdentifiers === null) {
+            $fieldNames = array_map(function ($tableColumn) {
+                return $tableColumn->getName();
+            }, GeneralUtility::makeInstance(ConnectionPool::class)
+                ->getConnectionForTable($tableName)
+                ->getSchemaManager()
+                ->listTableDetails($tableName)
+                ->getColumns()
+            );
         }
 
         foreach ($fieldNames as $fieldName) {
-            $queryBuilder->addSelect($tableName . '.' . $fieldName);
+            $queryBuilder->addSelect(self::ALIAS_TABLE . '.' . $fieldName);
         }
 
         return $queryBuilder;
+    }
+
+    private function hasAspect(string $tableName): bool
+    {
+        return isset($GLOBALS['TCA'][$tableName]['ctrl']['languageField'])
+            && isset($GLOBALS['TCA'][$tableName]['ctrl']['transOrigPointerField']);
     }
 
     private function getQueryBuilder(): QueryBuilder

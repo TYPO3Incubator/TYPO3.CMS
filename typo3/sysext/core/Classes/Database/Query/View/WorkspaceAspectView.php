@@ -1,6 +1,6 @@
 <?php
 declare(strict_types = 1);
-namespace TYPO3\CMS\Core\Database\Query\Context;
+namespace TYPO3\CMS\Core\Database\Query\View;
 
 /*
  * This file is part of the TYPO3 CMS project.
@@ -18,15 +18,38 @@ namespace TYPO3\CMS\Core\Database\Query\Context;
 use TYPO3\CMS\Core\Context\WorkspaceAspect;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\ColumnIdentifierCollection;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Database\Query\SelectIdentifierCollection;
 use TYPO3\CMS\Core\Database\Query\TableIdentifier;
 use TYPO3\CMS\Core\Database\Query\VersionMap;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class WorkspaceAspectView
+class WorkspaceAspectView implements QueryViewInterface
 {
+    /**
+     * @var string
+     */
     private const PARAMETER_PREFIX = ':_';
+    
+    /**
+     * @var string
+     */
+    private const ALIAS_TABLE = 't';
+
+    /**
+     * @var string
+     */
+    private const ALIAS_VERSION = 'v';
+
+    /**
+     * @var string
+     */
+    private const ALIAS_PLACEHOLDER = 'p';
+
+    /**
+     * @var string
+     */
+    private const ALIAS_ORIGINAL = 'o';
 
     /**
      * @var Connection
@@ -51,41 +74,38 @@ class WorkspaceAspectView
     }
 
     /**
-     * Builds a query for the view.
-     * 
-     * @param TableIdentifier $tableIdentifier
-     * @param SelectIdentifierCollection $selectIdentifiers
+     * @inheritdoc
      */
-    public function buildQuery(TableIdentifier $tableIdentifier, SelectIdentifierCollection $selectIdentifiers): QueryBuilder
+    public function buildQuery(TableIdentifier $tableIdentifier, ?ColumnIdentifierCollection $columnIdentifiers): ?QueryBuilder
     {
         $tableName = $tableIdentifier->getTableName();
         $workspaceId = (int) $this->workspaceAspect->getId();
-        
+
+        if (!$this->hasAspect($tableName)) {
+            return null;
+        }
+
         $queryBuilder = $this->getQueryBuilder()
-            ->from($tableName);
+            ->from($tableName, self::ALIAS_TABLE);
 
         $queryBuilder
             ->getRestrictions()
             ->removeAll();
 
-        $this->project($tableName, $selectIdentifiers, $queryBuilder);
-
-        if (!isset($GLOBALS['TCA'][$tableName]['ctrl']['versioningWS'])) {
-            return $queryBuilder;
-        }
+        $this->project($tableName, $columnIdentifiers, $queryBuilder);
 
         $queryBuilder
             ->leftJoin(
+                self::ALIAS_TABLE,
                 $tableName,
-                $tableName,
-                'version',
+                self::ALIAS_VERSION,
                 (string) $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->eq(
-                        $tableName . '.uid',
-                        $queryBuilder->quoteIdentifier('version.t3ver_oid')
+                        self::ALIAS_TABLE . '.uid',
+                        $queryBuilder->quoteIdentifier(self::ALIAS_VERSION . '.t3ver_oid')
                     ),
                     $queryBuilder->expr()->eq(
-                        $tableName . '.t3ver_wsid',
+                        self::ALIAS_TABLE . '.t3ver_wsid',
                         $queryBuilder->createNamedParameter(
                             0,
                             \PDO::PARAM_INT,
@@ -93,7 +113,7 @@ class WorkspaceAspectView
                         )
                     ),
                     $queryBuilder->expr()->eq(
-                        'version.t3ver_wsid',
+                        self::ALIAS_VERSION . '.t3ver_wsid',
                         $queryBuilder->createNamedParameter(
                             $workspaceId,
                             \PDO::PARAM_INT,
@@ -103,16 +123,16 @@ class WorkspaceAspectView
                 )
             )
             ->leftJoin(
+                self::ALIAS_TABLE,
                 $tableName,
-                $tableName,
-                'original',
+                self::ALIAS_ORIGINAL,
                 (string) $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->eq(
-                        $tableName . '.t3ver_oid',
-                        $queryBuilder->quoteIdentifier('original.uid')
+                        self::ALIAS_TABLE . '.t3ver_oid',
+                        $queryBuilder->quoteIdentifier(self::ALIAS_ORIGINAL . '.uid')
                     ),
                     $queryBuilder->expr()->eq(
-                        $tableName . '.t3ver_wsid',
+                        self::ALIAS_TABLE . '.t3ver_wsid',
                         $queryBuilder->createNamedParameter(
                             $workspaceId,
                             \PDO::PARAM_INT,
@@ -120,7 +140,7 @@ class WorkspaceAspectView
                         )
                     ),
                     $queryBuilder->expr()->in(
-                        'original.t3ver_wsid',
+                        self::ALIAS_ORIGINAL . '.t3ver_wsid',
                         $queryBuilder->createNamedParameter(
                             [0, $workspaceId],
                             Connection::PARAM_INT_ARRAY,
@@ -130,16 +150,16 @@ class WorkspaceAspectView
                 )
             )
             ->leftJoin(
+                self::ALIAS_TABLE,
                 $tableName,
-                $tableName,
-                'placeholder',
+                self::ALIAS_PLACEHOLDER,
                 (string) $queryBuilder->expr()->andX(
                     $queryBuilder->expr()->eq(
-                        $tableName . '.t3ver_oid',
-                        $queryBuilder->quoteIdentifier('placeholder.t3ver_move_id')
+                        self::ALIAS_TABLE . '.t3ver_oid',
+                        $queryBuilder->quoteIdentifier(self::ALIAS_PLACEHOLDER . '.t3ver_move_id')
                     ),
                     $queryBuilder->expr()->neq(
-                        'placeholder.t3ver_wsid',
+                        self::ALIAS_PLACEHOLDER . '.t3ver_wsid',
                         $queryBuilder->createNamedParameter(
                             0,
                             \PDO::PARAM_INT,
@@ -147,7 +167,7 @@ class WorkspaceAspectView
                         )
                     ),
                     $queryBuilder->expr()->eq(
-                        $tableName . '.t3ver_wsid',
+                        self::ALIAS_TABLE . '.t3ver_wsid',
                         $queryBuilder->createNamedParameter(
                             $workspaceId,
                             \PDO::PARAM_INT,
@@ -155,7 +175,7 @@ class WorkspaceAspectView
                         )
                     ),
                     $queryBuilder->expr()->in(
-                        'placeholder.t3ver_wsid',
+                        self::ALIAS_PLACEHOLDER . '.t3ver_wsid',
                         $queryBuilder->createNamedParameter(
                             [0, $workspaceId],
                             Connection::PARAM_INT_ARRAY,
@@ -168,7 +188,7 @@ class WorkspaceAspectView
                 $queryBuilder->expr()->orX(
                     $queryBuilder->expr()->andX(
                         $queryBuilder->expr()->eq(
-                            $tableName . '.t3ver_wsid',
+                            self::ALIAS_TABLE . '.t3ver_wsid',
                             $queryBuilder->createNamedParameter(
                                 0,
                                 \PDO::PARAM_INT,
@@ -176,12 +196,12 @@ class WorkspaceAspectView
                             )
                         ),
                         $queryBuilder->expr()->isNull(
-                            'version.uid'
+                            self::ALIAS_VERSION . '.uid'
                         )
                     ),
                     $queryBuilder->expr()->andX(
                         $queryBuilder->expr()->eq(
-                            $tableName . '.t3ver_wsid',
+                            self::ALIAS_TABLE . '.t3ver_wsid',
                             $queryBuilder->createNamedParameter(
                                 $workspaceId,
                                 \PDO::PARAM_INT,
@@ -189,7 +209,7 @@ class WorkspaceAspectView
                             )
                         ),
                         $queryBuilder->expr()->notIn(
-                            $tableName . '.t3ver_state',
+                            self::ALIAS_TABLE . '.t3ver_state',
                             $queryBuilder->createNamedParameter(
                                 [1, 3],
                                 Connection::PARAM_INT_ARRAY,
@@ -203,81 +223,69 @@ class WorkspaceAspectView
         return $queryBuilder;
     }
 
-    private function project(string $tableName, SelectIdentifierCollection $selectIdentifiers, QueryBuilder $queryBuilder): QueryBuilder
+    private function project(string $tableName, ?ColumnIdentifierCollection $columnIdentifiers, QueryBuilder $queryBuilder): QueryBuilder
     {
         $fieldNames = [];
-
-        foreach ($selectIdentifiers as $selectIdentifier) {
-            if ($selectIdentifier->getTableName() !== null 
-                && $selectIdentifier->getTableName() !== $tableName
-            ) {
-                continue;
-            }
-
-            if ($selectIdentifier->getFieldName() === '*') {
-                $columns = GeneralUtility::makeInstance(ConnectionPool::class)
-                    ->getConnectionForTable($tableName)
-                    ->getSchemaManager()
-                    ->listTableDetails($tableName)
-                    ->getColumns();
-                
-                foreach ($columns as $column) {
-                    $fieldNames[] = $column->getName();
-                }
-
-                if (isset($GLOBALS['TCA'][$tableName]['ctrl']['versioningWS'])) {
-                    $fieldNames[] = '_ORIG_uid';
-                    $fieldNames[] = '_ORIG_pid';
-                }
-            } else {
-                $fieldNames[] = $selectIdentifier->getFieldName();
-            }
+        // As long as we do not have all columns used in the 
+        // outer query we have to project them all.
+        if ($columnIdentifiers === null) {
+            $fieldNames = array_map(function ($tableColumn) {
+                return $tableColumn->getName();
+            }, GeneralUtility::makeInstance(ConnectionPool::class)
+                ->getConnectionForTable($tableName)
+                ->getSchemaManager()
+                ->listTableDetails($tableName)
+                ->getColumns()
+            );
         }
 
-        foreach ($fieldNames as $fieldName) {
-            if ($fieldName === 'uid' && isset($GLOBALS['TCA'][$tableName]['ctrl']['versioningWS'])) {
-                $queryBuilder->addSelectLiteral(
-                    sprintf(
-                        'COALESCE(%s,%s) AS %s',
-                        $queryBuilder->quoteIdentifier('original.uid'),
-                        $queryBuilder->quoteIdentifier($tableName . '.uid'),
-                        $queryBuilder->quoteIdentifier('uid')
-                    )
-                );
-            } elseif ($fieldName === 'pid' && isset($GLOBALS['TCA'][$tableName]['ctrl']['versioningWS'])) {
-                $queryBuilder->addSelectLiteral(
-                    sprintf(
-                        'COALESCE(%s,%s,%s) AS %s',
-                        $queryBuilder->quoteIdentifier('placeholder.pid'),
-                        $queryBuilder->quoteIdentifier('original.pid'),
-                        $queryBuilder->quoteIdentifier($tableName . '.pid'),
-                        $queryBuilder->quoteIdentifier('pid')
-                    )
-                );
-            } elseif ($fieldName === '_ORIG_uid') {
-                $queryBuilder->addSelectLiteral(
-                    sprintf(
-                        'CASE WHEN %s IS NULL THEN NULL ELSE %s END AS %s',
-                        $queryBuilder->quoteIdentifier('original.uid'),
-                        $queryBuilder->quoteIdentifier($tableName . '.uid'),
-                        $queryBuilder->quoteIdentifier('_ORIG_uid')
-                    )
-                );
-            } elseif ($fieldName === '_ORIG_pid') {
-                $queryBuilder->addSelectLiteral(
-                    sprintf(
-                        'CASE WHEN %s IS NULL THEN NULL ELSE %s END AS %s',
-                        $queryBuilder->quoteIdentifier('original.pid'),
-                        $queryBuilder->quoteIdentifier($tableName . '.pid'),
-                        $queryBuilder->quoteIdentifier('_ORIG_pid')
-                    )
-                );
-            } else {
-                $queryBuilder->addSelect($tableName . '.' . $fieldName);
+        if ($this->hasAspect($tableName)) {
+            $fieldLiterals = [
+                'uid' => [
+                    'literal' => 'COALESCE(%s,%s)',
+                    'identifiers' => [self::ALIAS_ORIGINAL . '.uid', self::ALIAS_TABLE . '.uid'],
+                ],
+                'pid' => [
+                    'literal' => 'COALESCE(%s,%s,%s)',
+                    'identifiers' => [self::ALIAS_PLACEHOLDER . '.pid', self::ALIAS_ORIGINAL . '.pid', self::ALIAS_TABLE . '.pid'],
+                ],
+                'deleted' => [
+                    'literal' => 'CASE WHEN %s = 2 THEN 1 ELSE %s END',
+                    'identifiers' => [self::ALIAS_TABLE . '.t3ver_state', self::ALIAS_TABLE . '.deleted'],
+                ],
+                'sorting' => [
+                    'literal' => 'COALESCE(%s,%s)',
+                    'identifiers' => [self::ALIAS_PLACEHOLDER . '.sorting', self::ALIAS_TABLE . '.sorting'],
+                ],
+            ];
+
+            foreach ($fieldNames as $fieldName) {
+                if (isset($fieldLiterals[$fieldName])) {
+                    $queryBuilder->addSelectLiteral(
+                        sprintf(
+                            $fieldLiterals[$fieldName]['literal'] 
+                                . ' AS ' . $queryBuilder->quoteIdentifier($fieldName),
+                            ...array_map(function($identifier) use ($queryBuilder) {
+                                return $queryBuilder->quoteIdentifier($identifier);
+                            }, $fieldLiterals[$fieldName]['identifiers'])
+                        )
+                    );
+                } else {
+                    $queryBuilder->addSelect(self::ALIAS_TABLE . '.' . $fieldName);
+                }
+            }
+        } else {
+            foreach ($fieldNames as $fieldName) {
+                $queryBuilder->addSelect(self::ALIAS_TABLE . '.' . $fieldName);
             }
         }
 
         return $queryBuilder;
+    }
+
+    private function hasAspect(string $tableName): bool
+    {
+        return isset($GLOBALS['TCA'][$tableName]['ctrl']['versioningWS']);
     }
 
     private function getQueryBuilder(): QueryBuilder

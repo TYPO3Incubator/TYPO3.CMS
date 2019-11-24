@@ -17,44 +17,23 @@ namespace TYPO3\CMS\Core\Database\Query;
 
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class SelectIdentifierCollection implements \IteratorAggregate
+class ColumnIdentifierCollection implements \IteratorAggregate
 {
     /**
-     * @var SelectIdentifier[]
+     * @var ColumnIdentifier[]
      */
     private $identifiers;
 
-    public static function fromExpressions(string ...$expressions): self
-    {
-        $identifiers = array_map(
-            function (string $expression) {
-                return SelectIdentifier::fromExpression($expression);
-            },
-            $expressions
-        );
-        return GeneralUtility::makeInstance(static::class, ...$identifiers);
-    }
-
-    public function __construct(SelectIdentifier ...$identifiers)
+    public function __construct(ColumnIdentifier ...$identifiers)
     {
         $this->identifiers = $identifiers;
     }
 
-    public function quoteForSelect(\Closure $handler): array
-    {
-        return array_map(
-            function (SelectIdentifier $identifier) use ($handler) {
-                return $identifier->quoteForSelect($handler);
-            },
-            $this->identifiers
-        );
-    }
-
-    public function hasFieldName(TableIdentifier $tableIdentifier, string $fieldName): bool
+    public function hasColumnName(TableIdentifier $tableIdentifier, string $columnName): bool
     {
         $tableName = $tableIdentifier->getAlias() ?? $tableIdentifier->getTableName();
         foreach ($this->identifiers as $identifier) {
-            if ($identifier->getFieldName() !== $fieldName) {
+            if ($identifier->getFieldName() !== $columnName) {
                 continue;
             }
             // either `tableAlias.field` or just `field`
